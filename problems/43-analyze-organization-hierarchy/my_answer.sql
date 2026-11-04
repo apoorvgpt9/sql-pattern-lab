@@ -1,0 +1,3 @@
+-- Your answer for Analyze Organization Hierarchy. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 43-analyze-organization-hierarchy --mine
+-- Output columns: employee_id, employee_name, level, team_size, budget

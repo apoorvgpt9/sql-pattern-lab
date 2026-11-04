@@ -1,0 +1,2 @@
+-- No orders at all: no store has orders, so nothing is reported (not a NULL median).
+-- expect-empty: StoreOrders is empty

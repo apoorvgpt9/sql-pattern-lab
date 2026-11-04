@@ -1,0 +1,3 @@
+-- Your answer for Produce a CTE that can return the upward recommendation chain for any member. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 42-produce-a-cte-that-can-return-the-upward-recommendation-chain-for-any-member --mine
+-- Output columns: member, recommender, firstname, surname

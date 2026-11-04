@@ -1,0 +1,3 @@
+-- Your answer for Find the downward recommendation chain for member ID 1. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 41-find-the-downward-recommendation-chain-for-member-id-1 --mine
+-- Output columns: memid, firstname, surname

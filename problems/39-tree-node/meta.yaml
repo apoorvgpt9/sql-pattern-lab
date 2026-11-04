@@ -1,0 +1,47 @@
+id: 39
+source: leetcode
+source_id: 608
+title: Tree Node
+url: https://leetcode.com/problems/tree-node/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: recursive_cte
+pattern_secondary:
+- existence
+- hierarchy_classification
+batch: B6
+trigger_phrases:
+- phrase: Root ... Inner ... Leaf
+  meaning: 'CASE: p_id IS NULL -> Root; has a child (EXISTS row with p_id = id) -> Inner; else Leaf'
+- phrase: valid tree
+  meaning: exactly one root; a lone root with no children is still 'Root'
+schema:
+- table: Tree
+  columns:
+  - name: id
+    type: int
+    pk: true
+  - name: p_id
+    type: int
+    note: parent id; NULL for root
+  grain: one row per node
+requirement: Label each node 'Root' if it has no parent, 'Inner' if it has a parent and at least one child, otherwise
+  'Leaf'.
+output:
+  columns:
+  - id
+  - type
+  ordering: any order
+  grain: one row per node
+rules:
+  ties: n/a
+  nulls: beware NOT IN (SELECT p_id ...) when p_id contains NULL - returns nothing; use NOT EXISTS or filter NULLs
+  empty: n/a
+  other: Root check must come first in CASE
+confidence: high

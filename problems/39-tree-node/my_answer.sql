@@ -1,0 +1,3 @@
+-- Your answer for Tree Node. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 39-tree-node --mine
+-- Output columns: id, type

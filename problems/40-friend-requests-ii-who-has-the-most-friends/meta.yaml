@@ -1,0 +1,48 @@
+id: 40
+source: leetcode
+source_id: 602
+title: 'Friend Requests II: Who Has the Most Friends'
+url: https://leetcode.com/problems/friend-requests-ii-who-has-the-most-friends/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: self_join
+pattern_secondary:
+- unpivot_edges
+- union_all
+batch: B6
+trigger_phrases:
+- phrase: people who have the most friends
+  meaning: 'friendship is symmetric: UNION ALL (requester, accepter) with (accepter, requester), then count per
+    person'
+- phrase: only one person has the most friends
+  meaning: ORDER BY count DESC LIMIT 1 is acceptable
+schema:
+- table: RequestAccepted
+  columns:
+  - name: requester_id
+    type: int
+  - name: accepter_id
+    type: int
+  - name: accept_date
+    type: date
+  grain: PK (requester_id, accepter_id); one row per accepted friendship
+requirement: Each row is a friendship between two users. Find the user with the most friends (counting both roles)
+  and that count.
+output:
+  columns:
+  - id
+  - num
+  ordering: single row
+  grain: one row
+rules:
+  ties: 'test data guarantees a single winner (follow-up: return all tied)'
+  nulls: n/a
+  empty: n/a
+  other: use UNION ALL, not UNION
+confidence: high

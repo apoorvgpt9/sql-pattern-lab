@@ -1,0 +1,53 @@
+id: 45
+source: original
+source_id: SPL-MED-01
+title: Median Order Amount per Store
+url: null
+difficulty: hard
+free_verified: null
+free_evidence:
+- authored for sql-pattern-lab; no third-party content
+license: original-work (sql-pattern-lab; no third-party text)
+license_evidence: null
+postgres_on_leetcode: n/a
+pattern_primary: median_percentile
+pattern_secondary:
+- row_number_and_count
+- even_odd_middle
+batch: B6
+trigger_phrases:
+- phrase: median order amount per store
+  meaning: 'no MEDIAN()/PERCENTILE_CONT in MySQL 8: ROW_NUMBER + COUNT per partition'
+- phrase: even number of orders
+  meaning: average the two middle values
+- phrase: duplicate amounts
+  meaning: ties must not break positional logic -> ROW_NUMBER with a tiebreak column, not RANK
+schema:
+- table: StoreOrders
+  columns:
+  - name: order_id
+    type: int
+    pk: true
+  - name: store_id
+    type: int
+  - name: amount
+    type: decimal(10,2)
+  grain: one row per order
+requirement: 'For each store, report the median of its order amounts: with n orders sorted by amount (ties broken
+  by order_id), the median is the middle value when n is odd and the mean of the two middle values when n is even.
+  Round to 2 decimals. Stores with no orders do not appear.'
+output:
+  columns:
+  - store_id
+  - median_amount
+  ordering: store_id ascending
+  grain: one row per store with orders
+rules:
+  ties: duplicate amounts are fine; positions use (amount, order_id)
+  nulls: amount is never NULL
+  empty: empty table -> empty result
+  other: rows with ROW_NUMBER IN (FLOOR((n+1)/2), FLOOR(n/2)+1) are the middle rows
+confidence: high
+difficulty_source: curator judgement
+confidence_note: 'Original problem authored to fill the median gap (LeetCode #569 and #571 are Premium). Build session
+  must create its own fixtures.'
