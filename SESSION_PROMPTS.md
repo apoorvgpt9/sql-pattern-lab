@@ -83,6 +83,19 @@ For each problem, in problems.yaml order:
 If a problem's spec in problems.yaml is ambiguous or wrong, add an "Assumptions" section, test the assumption, and list
 it in the PR body. Do not skip problems; if one is genuinely blocked, finish the rest and explain the blocker in the PR.
 
+Skip any problem whose folder already exists under problems/ (problem 01 is the finished example).
+
+Save progress as you go: after each problem passes, commit it and push the branch. Open the PR as a draft after the
+first problem, so partial work survives if the session is cut off; mark it ready when the batch is done.
+
+Harness constraints:
+- If meta.yaml output.ordering is anything other than "any order" or "single row", edge results are compared in exact
+  order. Never put rows in an edge dataset that tie on every ordering key unless the spec defines the tie-break —
+  otherwise the expected order is undefined. Add one edge dataset that tests the ordering itself.
+- MySQL division gives 4 extra decimal places (div_precision_increment=4): 1/3 = 0.3333. Hand-computed expected values
+  must follow MySQL's arithmetic and the spec's ROUND(), not exact math. Show the arithmetic in the expect: comment.
+- Add mistakes/*.sql for every "this breaks the naive query" claim in your Edge cases section, as in problem 01.
+
 Open one PR "batch Bn: <pattern names>" with a checklist of problems and their status. Make CI green.
 ```
 
