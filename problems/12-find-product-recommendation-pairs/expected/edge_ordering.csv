@@ -1,0 +1,7 @@
+product1_id,product2_id,product1_category,product2_category,customer_count
+9,12,C-cat,D-cat,4
+5,7,A-cat,B-cat,3
+5,9,A-cat,C-cat,3
+5,12,A-cat,D-cat,3
+7,9,B-cat,C-cat,3
+7,12,B-cat,D-cat,3
