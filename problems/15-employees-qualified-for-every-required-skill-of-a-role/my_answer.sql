@@ -1,0 +1,3 @@
+-- Your answer for Employees Qualified for Every Required Skill of a Role. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 15-employees-qualified-for-every-required-skill-of-a-role --mine
+-- Output columns: role, employee_id

@@ -1,0 +1,56 @@
+id: 15
+source: original
+source_id: SPL-DIV-01
+title: Employees Qualified for Every Required Skill of a Role
+url: null
+difficulty: hard
+free_verified: null
+free_evidence:
+- authored for sql-pattern-lab; no third-party content
+license: original-work (sql-pattern-lab; no third-party text)
+license_evidence: null
+postgres_on_leetcode: n/a
+pattern_primary: relational_division
+pattern_secondary:
+- per_group_division
+- not_exists_double_negation
+batch: B2
+trigger_phrases:
+- phrase: has every skill required
+  meaning: 'division: no required skill is missing (double NOT EXISTS) or matched-count = required-count'
+- phrase: for each role
+  meaning: 'division is per group: compare against that role''s requirement count, not a global count'
+- phrase: skills table may repeat
+  meaning: COUNT(DISTINCT skill) on the employee side
+schema:
+- table: EmployeeSkills
+  columns:
+  - name: employee_id
+    type: int
+  - name: skill
+    type: varchar
+  grain: one row per (employee, skill) claim; exact duplicates possible
+- table: RoleRequirements
+  columns:
+  - name: role
+    type: varchar
+  - name: skill
+    type: varchar
+  grain: one row per (role, required skill), unique
+requirement: For each role, list every employee who holds ALL skills that the role requires (extra skills are fine).
+  Roles with no rows in RoleRequirements are not reported. An employee may qualify for several roles.
+output:
+  columns:
+  - role
+  - employee_id
+  ordering: role ASC, employee_id ASC
+  grain: one row per (role, qualifying employee)
+rules:
+  ties: n/a
+  nulls: no NULLs in either table
+  empty: a role that nobody fully satisfies produces no rows
+  other: skill matching is exact string equality
+confidence: high
+difficulty_source: curator judgement
+confidence_note: 'Original problem authored to fill the relational-division gap (LeetCode free pool has only #1045).
+  Spec is authoritative as written; build session must create its own fixtures.'

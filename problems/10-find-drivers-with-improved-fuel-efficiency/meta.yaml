@@ -1,0 +1,71 @@
+id: 10
+source: leetcode
+source_id: 3601
+title: Find Drivers with Improved Fuel Efficiency
+url: https://leetcode.com/problems/find-drivers-with-improved-fuel-efficiency/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: pivot
+pattern_secondary:
+- conditional_aggregation
+- rounding_order
+batch: B2
+trigger_phrases:
+- phrase: first half ... second half of the year
+  meaning: bucket by MONTH(trip_date) <= 6 vs >= 7, pivot into two columns
+- phrase: trips in both halves
+  meaning: HAVING both bucket averages non-NULL
+- phrase: efficiency improved
+  meaning: keep only second_half_avg > first_half_avg
+- phrase: distance_km / fuel_consumed for each trip
+  meaning: average of per-trip ratios, NOT sum(distance)/sum(fuel)
+schema:
+- table: drivers
+  columns:
+  - name: driver_id
+    type: int
+    pk: true
+  - name: driver_name
+    type: varchar
+  grain: one row per driver
+- table: trips
+  columns:
+  - name: trip_id
+    type: int
+    pk: true
+  - name: driver_id
+    type: int
+  - name: trip_date
+    type: date
+  - name: distance_km
+    type: decimal
+  - name: fuel_consumed
+    type: decimal
+  grain: one row per trip
+requirement: Per trip, efficiency = distance_km / fuel_consumed. For each driver compute the mean efficiency of
+  trips in January-June and of trips in July-December (month only; years are not separated). Keep drivers with trips
+  in both halves whose second-half mean exceeds the first-half mean. improvement = second_half_avg - first_half_avg
+  computed from UNROUNDED averages, then rounded. All three numbers rounded to 2 decimals.
+output:
+  columns:
+  - driver_id
+  - driver_name
+  - first_half_avg
+  - second_half_avg
+  - efficiency_improvement
+  ordering: efficiency_improvement DESC, driver_name ASC
+  grain: one row per qualifying driver
+rules:
+  ties: ordering tie -> driver_name asc
+  nulls: n/a
+  empty: empty -> empty
+  other: 'rounding trap: example yields 2.10 from 13.33 and 11.24 because the difference is taken before rounding'
+confidence: medium
+confidence_note: Whether drivers with zero/negative improvement are excluded is inferred from the title and the
+  reference solution (filters avg1 < avg2); statement text only says 'find drivers whose efficiency has improved'.

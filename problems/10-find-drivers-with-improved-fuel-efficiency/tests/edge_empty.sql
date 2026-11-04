@@ -1,0 +1,3 @@
+-- Both tables empty: no drivers, no trips, no rows.
+-- (Intentionally no INSERT.)
+-- expect-empty: nothing to compare

@@ -1,0 +1,50 @@
+id: 8
+source: leetcode
+source_id: 3220
+title: Odd and Even Transactions
+url: https://leetcode.com/problems/odd-and-even-transactions/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: pivot
+pattern_secondary:
+- conditional_aggregation
+batch: B2
+trigger_phrases:
+- phrase: odd and even transactions
+  meaning: parity of the AMOUNT, not of transaction_id
+- phrase: for each day
+  meaning: GROUP BY transaction_date
+- phrase: display as 0
+  meaning: SUM(CASE ... ELSE 0) so missing side is 0 not NULL
+schema:
+- table: transactions
+  columns:
+  - name: transaction_id
+    type: int
+    pk: true
+  - name: amount
+    type: int
+  - name: transaction_date
+    type: date
+  grain: one row per transaction
+requirement: For each transaction_date, output the sum of amounts that are odd and the sum of amounts that are even
+  as two columns. A side with no matching transactions shows 0.
+output:
+  columns:
+  - transaction_date
+  - odd_sum
+  - even_sum
+  ordering: transaction_date ascending
+  grain: one row per date present
+rules:
+  ties: n/a
+  nulls: 0 not NULL
+  empty: empty -> empty
+  other: odd/even = amount % 2
+confidence: high

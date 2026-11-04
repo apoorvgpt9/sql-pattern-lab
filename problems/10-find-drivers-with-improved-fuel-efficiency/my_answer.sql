@@ -1,0 +1,3 @@
+-- Your answer for Find Drivers with Improved Fuel Efficiency. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 10-find-drivers-with-improved-fuel-efficiency --mine
+-- Output columns: driver_id, driver_name, first_half_avg, second_half_avg, efficiency_improvement

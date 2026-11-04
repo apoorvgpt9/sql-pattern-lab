@@ -1,0 +1,3 @@
+-- No activity at all: no users, so no rows.
+-- (Intentionally no INSERT.)
+-- expect-empty: nothing to group

@@ -1,0 +1,53 @@
+id: 11
+source: leetcode
+source_id: 3497
+title: Analyze Subscription Conversion
+url: https://leetcode.com/problems/analyze-subscription-conversion/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: pivot
+pattern_secondary:
+- conditional_aggregation
+batch: B2
+trigger_phrases:
+- phrase: converted from free trial to paid
+  meaning: user has at least one free_trial row AND at least one paid row
+- phrase: average daily activity duration during
+  meaning: AVG(activity_duration) filtered by activity_type, pivoted to two columns
+- phrase: rounded to 2 decimal places
+  meaning: ROUND each average
+schema:
+- table: UserActivity
+  columns:
+  - name: user_id
+    type: int
+  - name: activity_date
+    type: date
+  - name: activity_type
+    type: varchar
+    note: '''free_trial'' | ''paid'' | ''cancelled'''
+  - name: activity_duration
+    type: int
+    note: minutes that day
+  grain: one row per (user_id, activity_date, activity_type)
+requirement: For users who have both free_trial and paid activity rows, report the average activity_duration over
+  their free_trial rows and the average over their paid rows, each rounded to 2 decimals. Cancelled rows are ignored.
+output:
+  columns:
+  - user_id
+  - trial_avg_duration
+  - paid_avg_duration
+  ordering: user_id ascending
+  grain: one row per converted user
+rules:
+  ties: n/a
+  nulls: n/a
+  empty: empty -> empty
+  other: average is per row of that type (each row is one day)
+confidence: high

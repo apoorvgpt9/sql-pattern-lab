@@ -1,0 +1,3 @@
+-- Your answer for Find Product Recommendation Pairs. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 12-find-product-recommendation-pairs --mine
+-- Output columns: product1_id, product2_id, product1_category, product2_category, customer_count

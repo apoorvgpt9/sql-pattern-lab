@@ -1,0 +1,3 @@
+-- Your answer for Odd and Even Transactions. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 08-odd-and-even-transactions --mine
+-- Output columns: transaction_date, odd_sum, even_sum

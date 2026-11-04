@@ -1,0 +1,62 @@
+id: 12
+source: leetcode
+source_id: 3521
+title: Find Product Recommendation Pairs
+url: https://leetcode.com/problems/find-product-recommendation-pairs/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: self_join
+pattern_secondary:
+- pairwise_counting
+batch: B2
+trigger_phrases:
+- phrase: product1_id < product2_id
+  meaning: self-join on user_id with a.product_id < b.product_id to avoid mirror duplicates
+- phrase: how many customers purchased both
+  meaning: COUNT(DISTINCT user_id) per pair
+- phrase: at least 3 different customers
+  meaning: HAVING count >= 3
+schema:
+- table: ProductPurchases
+  columns:
+  - name: user_id
+    type: int
+  - name: product_id
+    type: int
+  - name: quantity
+    type: int
+  grain: one row per (user_id, product_id)
+- table: ProductInfo
+  columns:
+  - name: product_id
+    type: int
+    pk: true
+  - name: category
+    type: varchar
+  - name: price
+    type: decimal
+  grain: one row per product
+requirement: Find every unordered pair of distinct products (reported with product1_id < product2_id) bought by
+  the same customer, count the distinct customers who bought both, keep pairs with at least 3 such customers, and
+  attach each product's category.
+output:
+  columns:
+  - product1_id
+  - product2_id
+  - product1_category
+  - product2_category
+  - customer_count
+  ordering: customer_count DESC, product1_id ASC, product2_id ASC
+  grain: one row per qualifying product pair
+rules:
+  ties: see ordering
+  nulls: n/a
+  empty: empty -> empty
+  other: quantity is irrelevant
+confidence: high
