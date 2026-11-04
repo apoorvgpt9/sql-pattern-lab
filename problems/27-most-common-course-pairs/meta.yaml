@@ -1,0 +1,56 @@
+id: 27
+source: leetcode
+source_id: 3764
+title: Most Common Course Pairs
+url: https://leetcode.com/problems/most-common-course-pairs/
+difficulty: hard
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: lag_lead
+pattern_secondary:
+- filter_cohort_first
+- transition_counting
+batch: B4
+trigger_phrases:
+- phrase: at least 5 courses
+  meaning: top performers = >=5 courses AND avg rating >= 4; pre-filter users via GROUP BY/HAVING before windowing
+- phrase: consecutive course pairs
+  meaning: LEAD(course_name) OVER (PARTITION BY user ORDER BY completion_date)
+- phrase: pair frequency
+  meaning: GROUP BY (first, second) COUNT(*) after dropping NULL leads
+schema:
+- table: course_completions
+  columns:
+  - name: user_id
+    type: int
+  - name: course_id
+    type: int
+  - name: course_name
+    type: varchar
+  - name: completion_date
+    type: date
+  - name: course_rating
+    type: int
+    note: 1-5
+  grain: PK (user_id, course_id)
+requirement: Top performers are users with at least 5 completed courses and average course_rating >= 4. For each
+  top performer order their completions by completion_date and form each adjacent (course A -> course B) transition.
+  Count how many times each ordered transition occurs across all top performers.
+output:
+  columns:
+  - first_course
+  - second_course
+  - transition_count
+  ordering: transition_count DESC, first_course ASC, second_course ASC
+  grain: one row per distinct ordered course-name pair
+rules:
+  ties: same completion_date for one user not addressed
+  nulls: last course of each user has no successor -> excluded
+  empty: no top performers -> empty
+  other: pairs are ordered (A->B differs from B->A)
+confidence: high

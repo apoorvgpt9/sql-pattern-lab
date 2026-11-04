@@ -1,0 +1,8 @@
+first_course,second_course,transition_count
+SQL,Python,2
+Airflow,dbt,1
+dbt,Spark,1
+Python,dbt,1
+Python,Spark,1
+Spark,Airflow,1
+Spark,Kafka,1
