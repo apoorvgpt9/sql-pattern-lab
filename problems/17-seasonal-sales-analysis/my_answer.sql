@@ -1,0 +1,3 @@
+-- Your answer for Seasonal Sales Analysis. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 17-seasonal-sales-analysis --mine
+-- Output columns: season, category, total_quantity, total_revenue

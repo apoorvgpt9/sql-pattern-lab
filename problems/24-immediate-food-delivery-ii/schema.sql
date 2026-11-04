@@ -1,0 +1,12 @@
+-- Immediate Food Delivery II: tables for MySQL 8.0. Names mirror the original.
+-- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
+-- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+
+-- grain: one row per order
+-- CREATE TABLE Delivery (
+--   delivery_id INT,
+--   customer_id INT,
+--   order_date DATE,
+--   customer_pref_delivery_date DATE,  -- >= order_date
+--   PRIMARY KEY (delivery_id)
+-- );

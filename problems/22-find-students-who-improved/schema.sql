@@ -1,0 +1,11 @@
+-- Find Students Who Improved: tables for MySQL 8.0. Names mirror the original.
+-- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
+-- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+
+-- grain: PK (student_id, subject, exam_date)
+-- CREATE TABLE Scores (
+--   student_id INT,
+--   subject VARCHAR(100),
+--   score INT,  -- 0-100
+--   exam_date VARCHAR(100)  -- ISO 'YYYY-MM-DD' string
+-- );

@@ -1,0 +1,11 @@
+-- Game Play Analysis IV: tables for MySQL 8.0. Names mirror the original.
+-- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
+-- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+
+-- grain: PK (player_id, event_date)
+-- CREATE TABLE Activity (
+--   player_id INT,
+--   device_id INT,
+--   event_date DATE,
+--   games_played INT
+-- );

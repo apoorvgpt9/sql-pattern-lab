@@ -1,0 +1,3 @@
+-- Your answer for Product Sales Analysis III. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 20-product-sales-analysis-iii --mine
+-- Output columns: product_id, first_year, quantity, price

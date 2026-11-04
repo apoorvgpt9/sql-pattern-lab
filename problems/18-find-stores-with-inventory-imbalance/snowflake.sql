@@ -1,0 +1,1 @@
+-- UNVERIFIED: Snowflake version of the optimal approach; CI cannot run it.

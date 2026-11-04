@@ -1,0 +1,21 @@
+-- Find Stores with Inventory Imbalance: tables for MySQL 8.0. Names mirror the original.
+-- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
+-- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+
+-- grain: one row per store
+-- CREATE TABLE stores (
+--   store_id INT,
+--   store_name VARCHAR(100),
+--   location VARCHAR(100),
+--   PRIMARY KEY (store_id)
+-- );
+
+-- grain: one row per product stocked at a store
+-- CREATE TABLE inventory (
+--   inventory_id INT,
+--   store_id INT,
+--   product_name VARCHAR(100),
+--   quantity INT,
+--   price DECIMAL(10,2),
+--   PRIMARY KEY (inventory_id)
+-- );

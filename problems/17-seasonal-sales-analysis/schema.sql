@@ -1,0 +1,21 @@
+-- Seasonal Sales Analysis: tables for MySQL 8.0. Names mirror the original.
+-- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
+-- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+
+-- grain: one row per sale
+-- CREATE TABLE sales (
+--   sale_id INT,
+--   product_id INT,
+--   sale_date DATE,
+--   quantity INT,
+--   price DECIMAL(10,2),  -- per unit
+--   PRIMARY KEY (sale_id)
+-- );
+
+-- grain: one row per product
+-- CREATE TABLE products (
+--   product_id INT,
+--   product_name VARCHAR(100),
+--   category VARCHAR(100),
+--   PRIMARY KEY (product_id)
+-- );

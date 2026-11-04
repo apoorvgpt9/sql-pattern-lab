@@ -1,0 +1,3 @@
+-- Your answer for Find Stores with Inventory Imbalance. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 18-find-stores-with-inventory-imbalance --mine
+-- Output columns: store_id, store_name, location, most_exp_product, cheapest_product, imbalance_ratio

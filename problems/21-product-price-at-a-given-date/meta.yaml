@@ -1,0 +1,47 @@
+id: 21
+source: leetcode
+source_id: 1164
+title: Product Price at a Given Date
+url: https://leetcode.com/problems/product-price-at-a-given-date/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: dedup_latest
+pattern_secondary:
+- as_of_lookup
+- default_value
+batch: B3
+trigger_phrases:
+- phrase: Initially, all products have price 10
+  meaning: products with no change on/before the date fall back to 10 -> LEFT JOIN + COALESCE
+- phrase: prices ... on the date 2019-08-16
+  meaning: latest change_date <= '2019-08-16' per product (inclusive)
+schema:
+- table: Products
+  columns:
+  - name: product_id
+    type: int
+  - name: new_price
+    type: int
+  - name: change_date
+    type: date
+  grain: PK (product_id, change_date); one row per price change
+requirement: 'For every distinct product_id in Products, report its price as of 2019-08-16: the new_price of its
+  most recent change on or before that date, or 10 if it has no change on or before that date.'
+output:
+  columns:
+  - product_id
+  - price
+  ordering: any order
+  grain: one row per distinct product
+rules:
+  ties: impossible (PK)
+  nulls: never NULL; default 10
+  empty: empty -> empty
+  other: a change dated exactly 2019-08-16 is in effect
+confidence: high

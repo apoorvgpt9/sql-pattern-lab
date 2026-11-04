@@ -1,0 +1,3 @@
+-- Your answer for Immediate Food Delivery II. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 24-immediate-food-delivery-ii --mine
+-- Output columns: immediate_percentage

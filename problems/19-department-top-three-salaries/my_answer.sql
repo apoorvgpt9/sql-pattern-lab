@@ -1,0 +1,3 @@
+-- Your answer for Department Top Three Salaries. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 19-department-top-three-salaries --mine
+-- Output columns: Department, Employee, Salary

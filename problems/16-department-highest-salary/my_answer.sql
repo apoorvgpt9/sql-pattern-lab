@@ -1,0 +1,3 @@
+-- Your answer for Department Highest Salary. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 16-department-highest-salary --mine
+-- Output columns: Department, Employee, Salary

@@ -1,0 +1,52 @@
+id: 22
+source: leetcode
+source_id: 3421
+title: Find Students Who Improved
+url: https://leetcode.com/problems/find-students-who-improved/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: dedup_latest
+pattern_secondary:
+- first_and_last_per_group
+batch: B3
+trigger_phrases:
+- phrase: at least two different dates
+  meaning: per (student, subject) need >= 2 exams
+- phrase: latest score ... higher than their first score
+  meaning: FIRST_VALUE / ROW_NUMBER both directions, compare strictly
+schema:
+- table: Scores
+  columns:
+  - name: student_id
+    type: int
+  - name: subject
+    type: varchar
+  - name: score
+    type: int
+    note: 0-100
+  - name: exam_date
+    type: varchar
+    note: ISO 'YYYY-MM-DD' string
+  grain: PK (student_id, subject, exam_date)
+requirement: For each (student, subject) with exams on at least two different dates, compare the score on the earliest
+  exam_date with the score on the latest exam_date; return pairs where latest > first.
+output:
+  columns:
+  - student_id
+  - subject
+  - first_score
+  - latest_score
+  ordering: student_id ASC, subject ASC
+  grain: one row per improving (student, subject)
+rules:
+  ties: impossible (PK)
+  nulls: n/a
+  empty: empty -> empty
+  other: exam_date is varchar but ISO formatted so string order = date order
+confidence: high

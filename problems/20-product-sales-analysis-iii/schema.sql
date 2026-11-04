@@ -1,0 +1,12 @@
+-- Product Sales Analysis III: tables for MySQL 8.0. Names mirror the original.
+-- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
+-- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+
+-- grain: PK (sale_id, year); a product may have several rows per year
+-- CREATE TABLE Sales (
+--   sale_id INT,
+--   product_id INT,
+--   year INT,
+--   quantity INT,
+--   price INT  -- per unit
+-- );

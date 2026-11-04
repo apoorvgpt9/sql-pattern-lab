@@ -1,0 +1,73 @@
+id: 18
+source: leetcode
+source_id: 3626
+title: Find Stores with Inventory Imbalance
+url: https://leetcode.com/problems/find-stores-with-inventory-imbalance/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: ranking_per_group
+pattern_secondary:
+- first_last_per_group
+- self_join
+batch: B3
+trigger_phrases:
+- phrase: most expensive product ... cheapest product
+  meaning: two rankings per store (price DESC and price ASC), pick rank 1 of each, join them
+- phrase: at least 3 different products
+  meaning: COUNT per store >= 3 (window COUNT or pre-aggregate)
+- phrase: quantity is less than
+  meaning: 'strict: expensive_qty < cheap_qty'
+- phrase: imbalance ratio
+  meaning: cheapest_quantity / most_expensive_quantity rounded 2
+schema:
+- table: stores
+  columns:
+  - name: store_id
+    type: int
+    pk: true
+  - name: store_name
+    type: varchar
+  - name: location
+    type: varchar
+  grain: one row per store
+- table: inventory
+  columns:
+  - name: inventory_id
+    type: int
+    pk: true
+  - name: store_id
+    type: int
+  - name: product_name
+    type: varchar
+  - name: quantity
+    type: int
+  - name: price
+    type: decimal
+  grain: one row per product stocked at a store
+requirement: For stores stocking at least 3 products, identify the highest-priced product and the lowest-priced
+  product. Keep stores where the highest-priced product's quantity is strictly less than the lowest-priced product's
+  quantity. Report both product names and ratio = cheapest quantity / most expensive quantity rounded to 2 decimals.
+output:
+  columns:
+  - store_id
+  - store_name
+  - location
+  - most_exp_product
+  - cheapest_product
+  - imbalance_ratio
+  ordering: imbalance_ratio DESC, store_name ASC
+  grain: one row per qualifying store
+rules:
+  ties: price ties within a store are not addressed in the statement; doocs breaks them by quantity DESC for both
+    ends
+  nulls: n/a
+  empty: empty -> empty
+  other: '''different products'' = inventory rows for that store'
+confidence: medium
+confidence_note: Price-tie handling is unspecified in the statement; spec follows the doocs reference tiebreak.
