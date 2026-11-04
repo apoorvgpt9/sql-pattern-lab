@@ -1,0 +1,3 @@
+-- Your answer for Count Salary Categories. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 09-count-salary-categories --mine
+-- Output columns: category, accounts_count

@@ -1,0 +1,5 @@
+-- Accounts is empty: still exactly three rows, all 0 (a plain GROUP BY would return none).
+-- (Intentionally no INSERT.)
+-- expect: Low Salary,0 | no accounts, category still reported
+-- expect: Average Salary,0 | no accounts, category still reported
+-- expect: High Salary,0 | no accounts, category still reported

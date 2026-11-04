@@ -1,0 +1,49 @@
+id: 9
+source: leetcode
+source_id: 1907
+title: Count Salary Categories
+url: https://leetcode.com/problems/count-salary-categories/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: date_spine
+pattern_secondary:
+- scaffold_left_join
+- unpivot
+batch: B2
+trigger_phrases:
+- phrase: must contain all three categories
+  meaning: build a 3-row scaffold (UNION ALL of literals) and LEFT JOIN counts onto it
+- phrase: return 0
+  meaning: empty category still appears with 0
+- phrase: strictly less than / inclusive range
+  meaning: Low < 20000; Average 20000..50000 inclusive; High > 50000
+schema:
+- table: Accounts
+  columns:
+  - name: account_id
+    type: int
+    pk: true
+  - name: income
+    type: int
+  grain: one row per account
+requirement: 'Count accounts per salary category: ''Low Salary'' (income < 20000), ''Average Salary'' (20000 <=
+  income <= 50000), ''High Salary'' (income > 50000). All three category rows must be present, with 0 when no account
+  falls in a category.'
+output:
+  columns:
+  - category
+  - accounts_count
+  ordering: any order
+  grain: exactly three rows
+rules:
+  ties: n/a
+  nulls: 0 not NULL
+  empty: empty Accounts -> three rows of 0
+  other: category strings exactly 'Low Salary', 'Average Salary', 'High Salary'
+confidence: high
