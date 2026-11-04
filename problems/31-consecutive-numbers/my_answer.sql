@@ -1,0 +1,3 @@
+-- Your answer for Consecutive Numbers. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 31-consecutive-numbers --mine
+-- Output columns: ConsecutiveNums

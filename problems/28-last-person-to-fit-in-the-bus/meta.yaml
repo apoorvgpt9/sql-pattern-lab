@@ -1,0 +1,51 @@
+id: 28
+source: leetcode
+source_id: 1204
+title: Last Person to Fit in the Bus
+url: https://leetcode.com/problems/last-person-to-fit-in-the-bus/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: running_totals
+pattern_secondary:
+- cumulative_threshold
+batch: B4
+trigger_phrases:
+- phrase: weight limit of 1000 kilograms
+  meaning: running SUM(weight) ORDER BY turn <= 1000
+- phrase: last person that can fit
+  meaning: max turn whose cumulative weight <= 1000
+- phrase: only one person can board
+  meaning: boarding is strictly in turn order; stop at the first overflow
+schema:
+- table: Queue
+  columns:
+  - name: person_id
+    type: int
+    pk: true
+  - name: person_name
+    type: varchar
+  - name: weight
+    type: int
+  - name: turn
+    type: int
+    note: 1..n, unique
+  grain: one row per person
+requirement: People board in ascending turn order. Return the name of the last person for whom the cumulative weight
+  of everyone up to and including them is at most 1000.
+output:
+  columns:
+  - person_name
+  ordering: single row
+  grain: one row
+rules:
+  ties: turn is unique
+  nulls: n/a
+  empty: first person always fits
+  other: cumulative = exactly 1000 still fits
+confidence: high

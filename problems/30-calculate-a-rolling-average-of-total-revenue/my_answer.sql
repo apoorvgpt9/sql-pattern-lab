@@ -1,0 +1,3 @@
+-- Your answer for Calculate a rolling average of total revenue. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 30-calculate-a-rolling-average-of-total-revenue --mine
+-- Output columns: date, revenue

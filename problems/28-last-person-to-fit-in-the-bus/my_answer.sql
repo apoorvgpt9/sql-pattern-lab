@@ -1,0 +1,3 @@
+-- Your answer for Last Person to Fit in the Bus. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 28-last-person-to-fit-in-the-bus --mine
+-- Output columns: person_name

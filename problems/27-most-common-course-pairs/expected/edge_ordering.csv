@@ -1,0 +1,10 @@
+first_course,second_course,transition_count
+Algebra,Intro,2
+Basics,Calc,2
+Intro,Algebra,2
+Algebra,Basics,1
+Calc,Basics,1
+Calc,Intro,1
+Intro,Basics,1
+Intro,Calc,1
+Intro,Intro,1

@@ -1,0 +1,3 @@
+-- Your answer for Most Common Course Pairs. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 27-most-common-course-pairs --mine
+-- Output columns: first_course, second_course, transition_count

@@ -1,0 +1,65 @@
+id: 26
+source: leetcode
+source_id: 3580
+title: Find Consistently Improving Employees
+url: https://leetcode.com/problems/find-consistently-improving-employees/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: lag_lead
+pattern_secondary:
+- top_n_per_group
+- strictly_increasing
+batch: B4
+trigger_phrases:
+- phrase: last three reviews
+  meaning: ROW_NUMBER() by review_date DESC <= 3
+- phrase: strictly increasing ratings
+  meaning: 'LAG over the 3 rows: every step > 0'
+- phrase: at least 3 review
+  meaning: employees with fewer than 3 reviews excluded
+- phrase: latest rating and the earliest rating among
+  meaning: improvement_score = rating(rn=1) - rating(rn=3)
+schema:
+- table: employees
+  columns:
+  - name: employee_id
+    type: int
+    pk: true
+  - name: name
+    type: varchar
+  grain: one row per employee
+- table: performance_reviews
+  columns:
+  - name: review_id
+    type: int
+    pk: true
+  - name: employee_id
+    type: int
+  - name: review_date
+    type: date
+  - name: rating
+    type: int
+    note: 1-5
+  grain: one row per review
+requirement: For employees with at least 3 reviews, take their 3 most recent reviews by review_date. If ratings
+  strictly increase from oldest to newest of those three, report improvement_score = newest rating - oldest rating
+  of the three.
+output:
+  columns:
+  - employee_id
+  - name
+  - improvement_score
+  ordering: improvement_score DESC, name ASC
+  grain: one row per qualifying employee
+rules:
+  ties: same-date reviews not addressed
+  nulls: n/a
+  empty: empty -> empty
+  other: equal consecutive ratings disqualify
+confidence: high

@@ -1,0 +1,46 @@
+id: 25
+source: leetcode
+source_id: 626
+title: Exchange Seats
+url: https://leetcode.com/problems/exchange-seats/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: lag_lead
+pattern_secondary:
+- case_on_parity
+batch: B4
+trigger_phrases:
+- phrase: swap ... every two consecutive students
+  meaning: odd id takes LEAD(student), even id takes LAG(student)
+- phrase: If the number of students is odd
+  meaning: last odd id has no LEAD -> keep own name (COALESCE)
+schema:
+- table: Seat
+  columns:
+  - name: id
+    type: int
+    pk: true
+    note: starts at 1, contiguous
+  - name: student
+    type: varchar
+  grain: one row per seat
+requirement: Swap the student names of seats 1<->2, 3<->4, etc. If the count is odd, the last seat keeps its student.
+  Return all seats.
+output:
+  columns:
+  - id
+  - student
+  ordering: id ascending
+  grain: one row per seat
+rules:
+  ties: n/a
+  nulls: n/a
+  empty: empty -> empty
+  other: ids are contiguous from 1
+confidence: high
