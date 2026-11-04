@@ -1,0 +1,2655 @@
+# sql-pattern-lab problem list (curated 2026-11-04)
+# 45 problems, Medium/Hard only, ordered for study (id) and grouped into build batches B1-B6.
+# LeetCode statements are NOT reproduced; requirement/rules are own-words specs. Link-only license.
+# pgexercises items are adapted under CC BY-SA 3.0 (attribution field) - any repo files derived from them must stay CC BY-SA.
+# 'original' items were authored for this repo to fill gaps in the free LeetCode pool.
+# Batches:
+#   B1 existence / outer-join preservation + conditional aggregation
+#   B2 reshaping: pivot, scaffold fill, pairwise self-joins, relational division
+#   B3 ranking per group + first/latest record per key (+ first-event cohorts)
+#   B4 ordered windows: LAG/LEAD, running & moving windows, calendar spine, first islands
+#   B5 hard islands + event sequencing / sessionization
+#   B6 hierarchy & graph (recursive CTE) + percentile/median
+- id: 1
+  source: leetcode
+  source_id: 1158
+  title: Market Analysis I
+  url: https://leetcode.com/problems/market-analysis-i/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: anti_join
+  pattern_secondary:
+  - left_join_preserve
+  - filter_in_on_vs_where
+  batch: B1
+  trigger_phrases:
+  - phrase: for each user
+    meaning: every Users row must appear, even with zero orders -> drive from Users with LEFT JOIN
+  - phrase: orders made as a buyer in 2019
+    meaning: the 2019 filter belongs in the ON clause; putting it in WHERE silently turns the LEFT JOIN into an
+      INNER JOIN
+  - phrase: number of orders
+    meaning: COUNT(o.order_id) not COUNT(*) so unmatched users get 0
+  schema:
+  - table: Users
+    columns:
+    - name: user_id
+      type: int
+      pk: true
+    - name: join_date
+      type: date
+    - name: favorite_brand
+      type: varchar
+    grain: one row per user
+  - table: Orders
+    columns:
+    - name: order_id
+      type: int
+      pk: true
+    - name: order_date
+      type: date
+    - name: item_id
+      type: int
+    - name: buyer_id
+      type: int
+    - name: seller_id
+      type: int
+    grain: one row per order
+  - table: Items
+    columns:
+    - name: item_id
+      type: int
+      pk: true
+    - name: item_brand
+      type: varchar
+    grain: one row per item (not needed for the answer)
+  requirement: Return every user with their join date and how many orders they placed as the buyer with an order_date
+    in calendar year 2019. Users with no 2019 buyer orders must still appear with a count of 0. Seller role and
+    the Items table are irrelevant.
+  output:
+    columns:
+    - buyer_id
+    - join_date
+    - orders_in_2019
+    ordering: any order
+    grain: one row per user in Users
+  rules:
+    ties: n/a
+    nulls: count is 0, never NULL
+    empty: Users empty -> empty result
+    other: buyer_id column holds Users.user_id
+  confidence: high
+- id: 2
+  source: leetcode
+  source_id: 1934
+  title: Confirmation Rate
+  url: https://leetcode.com/problems/confirmation-rate/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: anti_join
+  pattern_secondary:
+  - left_join_preserve
+  - conditional_aggregation
+  batch: B1
+  trigger_phrases:
+  - phrase: each user
+    meaning: drive from Signups so users with no confirmation requests still appear
+  - phrase: did not request any ... is 0
+    meaning: unmatched LEFT JOIN rows must yield 0, not NULL -> IFNULL/COALESCE
+  - phrase: confirmed divided by total requests
+    meaning: AVG(action='confirmed') or SUM(CASE)/COUNT over the joined rows
+  schema:
+  - table: Signups
+    columns:
+    - name: user_id
+      type: int
+      pk: true
+    - name: time_stamp
+      type: datetime
+    grain: one row per user
+  - table: Confirmations
+    columns:
+    - name: user_id
+      type: int
+      note: FK Signups; PK is (user_id, time_stamp)
+    - name: time_stamp
+      type: datetime
+    - name: action
+      type: enum('confirmed','timeout')
+    grain: one row per confirmation request
+  requirement: For every signed-up user, compute confirmation rate = (number of their Confirmations rows with action
+    'confirmed') / (number of their Confirmations rows). Users with no Confirmations rows get rate 0. Round to 2
+    decimals.
+  output:
+    columns:
+    - user_id
+    - confirmation_rate
+    ordering: any order
+    grain: one row per Signups user
+  rules:
+    ties: n/a
+    nulls: no-request users -> 0.00
+    empty: no signups -> empty
+    other: ROUND(x, 2)
+  confidence: high
+- id: 3
+  source: leetcode
+  source_id: 585
+  title: Investments in 2016
+  url: https://leetcode.com/problems/investments-in-2016/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: anti_join
+  pattern_secondary:
+  - window_count_partition
+  - existence
+  batch: B1
+  trigger_phrases:
+  - phrase: same tiv_2015 as one or more others
+    meaning: EXISTS another row with equal tiv_2015 (or COUNT OVER PARTITION BY tiv_2015 > 1)
+  - phrase: not in the same city as any other
+    meaning: NOT EXISTS another row with same (lat, lon) (or partition count = 1)
+  - phrase: sum ... rounded to two decimals
+    meaning: single scalar row
+  schema:
+  - table: Insurance
+    columns:
+    - name: pid
+      type: int
+      pk: true
+    - name: tiv_2015
+      type: float
+    - name: tiv_2016
+      type: float
+    - name: lat
+      type: float
+      note: not null
+    - name: lon
+      type: float
+      note: not null
+    grain: one row per policy
+  requirement: Sum tiv_2016 over policies that (a) share their tiv_2015 value with at least one other policy AND
+    (b) have a (lat, lon) pair that no other policy has. Round the sum to 2 decimals.
+  output:
+    columns:
+    - tiv_2016
+    ordering: single row
+    grain: one scalar row
+  rules:
+    ties: n/a
+    nulls: lat/lon never null
+    empty: no qualifying policies -> single row with NULL (SUM of nothing)
+    other: '''other'' means a different pid'
+  confidence: high
+- id: 4
+  source: leetcode
+  source_id: 1193
+  title: Monthly Transactions I
+  url: https://leetcode.com/problems/monthly-transactions-i/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: conditional_aggregation
+  pattern_secondary:
+  - date_bucketing
+  batch: B1
+  trigger_phrases:
+  - phrase: for each month and country
+    meaning: GROUP BY DATE_FORMAT(trans_date,'%Y-%m'), country
+  - phrase: number of approved transactions
+    meaning: SUM(state='approved') in the same pass as COUNT(*)
+  - phrase: their total amount
+    meaning: SUM(CASE WHEN approved THEN amount ELSE 0 END)
+  schema:
+  - table: Transactions
+    columns:
+    - name: id
+      type: int
+      pk: true
+    - name: country
+      type: varchar
+    - name: state
+      type: enum('approved','declined')
+    - name: amount
+      type: int
+    - name: trans_date
+      type: date
+    grain: one row per transaction
+  requirement: For each (month, country) group, report total transaction count, approved transaction count, total
+    amount over all transactions, and total amount over approved transactions. month is formatted 'YYYY-MM'.
+  output:
+    columns:
+    - month
+    - country
+    - trans_count
+    - approved_count
+    - trans_total_amount
+    - approved_total_amount
+    ordering: any order
+    grain: one row per (month, country) present in data
+  rules:
+    ties: n/a
+    nulls: approved_count / approved_total_amount are 0 (not NULL) when a group has no approved rows; hidden tests
+      are believed to include NULL country, which forms its own group
+    empty: empty table -> empty result
+    other: month string 'YYYY-MM'
+  confidence: medium
+  confidence_note: NULL-country behaviour recalled from community discussion, not visible in the statement text
+    available offline.
+- id: 5
+  source: leetcode
+  source_id: 3657
+  title: Find Loyal Customers
+  url: https://leetcode.com/problems/find-loyal-customers/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: conditional_aggregation
+  pattern_secondary:
+  - having_filters
+  batch: B1
+  trigger_phrases:
+  - phrase: ALL the following criteria
+    meaning: each criterion becomes one HAVING predicate on the same GROUP BY
+  - phrase: at least 3 purchase transactions
+    meaning: count only rows with transaction_type='purchase'
+  - phrase: active for at least 30 days
+    meaning: DATEDIFF(MAX(date), MIN(date)) >= 30
+  - phrase: refund rate is less than 20%
+    meaning: refunds / all transactions < 0.2, strict
+  schema:
+  - table: customer_transactions
+    columns:
+    - name: transaction_id
+      type: int
+      pk: true
+    - name: customer_id
+      type: int
+    - name: transaction_date
+      type: date
+    - name: amount
+      type: decimal
+    - name: transaction_type
+      type: varchar
+      note: '''purchase'' or ''refund'''
+    grain: one row per transaction
+  requirement: 'Return customers meeting all of: at least 3 transactions of type ''purchase''; the span between
+    their earliest and latest transaction dates (any type) is at least 30 days; refund count divided by their total
+    transaction count (purchases + refunds) is strictly below 0.20.'
+  output:
+    columns:
+    - customer_id
+    ordering: customer_id ascending
+    grain: one row per qualifying customer
+  rules:
+    ties: n/a
+    nulls: none expected
+    empty: empty -> empty
+    other: 'boundary: exactly 30 days qualifies; exactly 20% refund rate does NOT qualify'
+  confidence: medium
+  confidence_note: Statement says 'purchase transactions' but the doocs reference solution counts all rows (COUNT(1)
+    >= 3); also unclear whether the 30-day span uses all transactions or purchases only. Spec follows the statement
+    wording; verify on LeetCode.
+- id: 6
+  source: leetcode
+  source_id: 3705
+  title: Find Golden Hour Customers
+  url: https://leetcode.com/problems/find-golden-hour-customers/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: conditional_aggregation
+  pattern_secondary:
+  - having_filters
+  - time_of_day
+  batch: B1
+  trigger_phrases:
+  - phrase: at least 60% of their orders
+    meaning: SUM(is_peak)/COUNT(*) >= 0.6; avoid float issues with 5*peak >= 3*total
+  - phrase: 11:00-14:00 or 18:00-21:00
+    meaning: TIME(order_timestamp) range test, two windows OR'd
+  - phrase: average rating for rated orders
+    meaning: AVG ignores NULL ratings automatically
+  - phrase: rated at least 50% of their orders
+    meaning: COUNT(order_rating)/COUNT(*) >= 0.5
+  schema:
+  - table: restaurant_orders
+    columns:
+    - name: order_id
+      type: int
+      pk: true
+    - name: customer_id
+      type: int
+    - name: order_timestamp
+      type: datetime
+    - name: order_amount
+      type: decimal
+    - name: payment_method
+      type: varchar
+      note: cash|card|app
+    - name: order_rating
+      type: int
+      note: 1-5 or NULL
+    grain: one row per order
+  requirement: 'Find customers with: at least 3 orders; at least 60% of orders placed in peak hours (11:00-14:00
+    or 18:00-21:00); average rating over non-NULL ratings at least 4.0; and at least 50% of their orders rated.
+    Report total orders, peak-hour percentage (0-100) and average rating rounded to 2 decimals.'
+  output:
+    columns:
+    - customer_id
+    - total_orders
+    - peak_hour_percentage
+    - average_rating
+    ordering: average_rating DESC, customer_id DESC
+    grain: one row per qualifying customer
+  rules:
+    ties: ordering ties broken by customer_id desc
+    nulls: NULL ratings excluded from average but count toward total_orders
+    empty: empty -> empty
+    other: peak_hour_percentage appears to be rounded to an integer (doocs uses ROUND(x)); window ends inclusive
+      per doocs (BETWEEN '11:00:00' AND '14:00:00')
+  confidence: medium
+  confidence_note: Rounding of peak_hour_percentage and whether 14:00:00 / 21:00:00 exactly count as peak are inferred
+    from the reference solution, not stated explicitly.
+- id: 7
+  source: leetcode
+  source_id: 262
+  title: Trips and Users
+  url: https://leetcode.com/problems/trips-and-users/
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: conditional_aggregation
+  pattern_secondary:
+  - multi_join_same_table
+  - ratio
+  batch: B1
+  trigger_phrases:
+  - phrase: both client and driver must not be banned
+    meaning: join Users twice (as client and as driver), both banned='No'
+  - phrase: cancelled by client or driver
+    meaning: status <> 'completed' in the numerator
+  - phrase: each day ... with at least one trip
+    meaning: GROUP BY request_at; days with zero eligible trips simply do not appear
+  - phrase: round to two decimal points
+    meaning: ROUND(AVG(status<>'completed'),2)
+  schema:
+  - table: Trips
+    columns:
+    - name: id
+      type: int
+      pk: true
+    - name: client_id
+      type: int
+      note: FK Users.users_id
+    - name: driver_id
+      type: int
+      note: FK Users.users_id
+    - name: city_id
+      type: int
+    - name: status
+      type: enum('completed','cancelled_by_driver','cancelled_by_client')
+    - name: request_at
+      type: varchar
+      note: '''YYYY-MM-DD'' string'
+    grain: one row per trip request
+  - table: Users
+    columns:
+    - name: users_id
+      type: int
+      pk: true
+    - name: banned
+      type: enum('Yes','No')
+    - name: role
+      type: enum('client','driver','partner')
+    grain: one row per user
+  requirement: For each day from 2013-10-01 to 2013-10-03 inclusive, consider only trips where neither the client
+    nor the driver is banned. Cancellation rate = cancelled trips (either cancellation status) / all such trips
+    that day, rounded to 2 decimals. Output only days that have at least one such trip.
+  output:
+    columns:
+    - Day
+    - Cancellation Rate
+    ordering: any order
+    grain: one row per qualifying day
+  rules:
+    ties: n/a
+    nulls: n/a
+    empty: no eligible trips in range -> empty result
+    other: 'second output column name contains a space: alias as `Cancellation Rate`'
+  confidence: high
+- id: 8
+  source: leetcode
+  source_id: 3220
+  title: Odd and Even Transactions
+  url: https://leetcode.com/problems/odd-and-even-transactions/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: pivot
+  pattern_secondary:
+  - conditional_aggregation
+  batch: B2
+  trigger_phrases:
+  - phrase: odd and even transactions
+    meaning: parity of the AMOUNT, not of transaction_id
+  - phrase: for each day
+    meaning: GROUP BY transaction_date
+  - phrase: display as 0
+    meaning: SUM(CASE ... ELSE 0) so missing side is 0 not NULL
+  schema:
+  - table: transactions
+    columns:
+    - name: transaction_id
+      type: int
+      pk: true
+    - name: amount
+      type: int
+    - name: transaction_date
+      type: date
+    grain: one row per transaction
+  requirement: For each transaction_date, output the sum of amounts that are odd and the sum of amounts that are
+    even as two columns. A side with no matching transactions shows 0.
+  output:
+    columns:
+    - transaction_date
+    - odd_sum
+    - even_sum
+    ordering: transaction_date ascending
+    grain: one row per date present
+  rules:
+    ties: n/a
+    nulls: 0 not NULL
+    empty: empty -> empty
+    other: odd/even = amount % 2
+  confidence: high
+- id: 9
+  source: leetcode
+  source_id: 1907
+  title: Count Salary Categories
+  url: https://leetcode.com/problems/count-salary-categories/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: date_spine
+  pattern_secondary:
+  - scaffold_left_join
+  - unpivot
+  batch: B2
+  trigger_phrases:
+  - phrase: must contain all three categories
+    meaning: build a 3-row scaffold (UNION ALL of literals) and LEFT JOIN counts onto it
+  - phrase: return 0
+    meaning: empty category still appears with 0
+  - phrase: strictly less than / inclusive range
+    meaning: Low < 20000; Average 20000..50000 inclusive; High > 50000
+  schema:
+  - table: Accounts
+    columns:
+    - name: account_id
+      type: int
+      pk: true
+    - name: income
+      type: int
+    grain: one row per account
+  requirement: 'Count accounts per salary category: ''Low Salary'' (income < 20000), ''Average Salary'' (20000 <=
+    income <= 50000), ''High Salary'' (income > 50000). All three category rows must be present, with 0 when no
+    account falls in a category.'
+  output:
+    columns:
+    - category
+    - accounts_count
+    ordering: any order
+    grain: exactly three rows
+  rules:
+    ties: n/a
+    nulls: 0 not NULL
+    empty: empty Accounts -> three rows of 0
+    other: category strings exactly 'Low Salary', 'Average Salary', 'High Salary'
+  confidence: high
+- id: 10
+  source: leetcode
+  source_id: 3601
+  title: Find Drivers with Improved Fuel Efficiency
+  url: https://leetcode.com/problems/find-drivers-with-improved-fuel-efficiency/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: pivot
+  pattern_secondary:
+  - conditional_aggregation
+  - rounding_order
+  batch: B2
+  trigger_phrases:
+  - phrase: first half ... second half of the year
+    meaning: bucket by MONTH(trip_date) <= 6 vs >= 7, pivot into two columns
+  - phrase: trips in both halves
+    meaning: HAVING both bucket averages non-NULL
+  - phrase: efficiency improved
+    meaning: keep only second_half_avg > first_half_avg
+  - phrase: distance_km / fuel_consumed for each trip
+    meaning: average of per-trip ratios, NOT sum(distance)/sum(fuel)
+  schema:
+  - table: drivers
+    columns:
+    - name: driver_id
+      type: int
+      pk: true
+    - name: driver_name
+      type: varchar
+    grain: one row per driver
+  - table: trips
+    columns:
+    - name: trip_id
+      type: int
+      pk: true
+    - name: driver_id
+      type: int
+    - name: trip_date
+      type: date
+    - name: distance_km
+      type: decimal
+    - name: fuel_consumed
+      type: decimal
+    grain: one row per trip
+  requirement: Per trip, efficiency = distance_km / fuel_consumed. For each driver compute the mean efficiency of
+    trips in January-June and of trips in July-December (month only; years are not separated). Keep drivers with
+    trips in both halves whose second-half mean exceeds the first-half mean. improvement = second_half_avg - first_half_avg
+    computed from UNROUNDED averages, then rounded. All three numbers rounded to 2 decimals.
+  output:
+    columns:
+    - driver_id
+    - driver_name
+    - first_half_avg
+    - second_half_avg
+    - efficiency_improvement
+    ordering: efficiency_improvement DESC, driver_name ASC
+    grain: one row per qualifying driver
+  rules:
+    ties: ordering tie -> driver_name asc
+    nulls: n/a
+    empty: empty -> empty
+    other: 'rounding trap: example yields 2.10 from 13.33 and 11.24 because the difference is taken before rounding'
+  confidence: medium
+  confidence_note: Whether drivers with zero/negative improvement are excluded is inferred from the title and the
+    reference solution (filters avg1 < avg2); statement text only says 'find drivers whose efficiency has improved'.
+- id: 11
+  source: leetcode
+  source_id: 3497
+  title: Analyze Subscription Conversion
+  url: https://leetcode.com/problems/analyze-subscription-conversion/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: pivot
+  pattern_secondary:
+  - conditional_aggregation
+  batch: B2
+  trigger_phrases:
+  - phrase: converted from free trial to paid
+    meaning: user has at least one free_trial row AND at least one paid row
+  - phrase: average daily activity duration during
+    meaning: AVG(activity_duration) filtered by activity_type, pivoted to two columns
+  - phrase: rounded to 2 decimal places
+    meaning: ROUND each average
+  schema:
+  - table: UserActivity
+    columns:
+    - name: user_id
+      type: int
+    - name: activity_date
+      type: date
+    - name: activity_type
+      type: varchar
+      note: '''free_trial'' | ''paid'' | ''cancelled'''
+    - name: activity_duration
+      type: int
+      note: minutes that day
+    grain: one row per (user_id, activity_date, activity_type)
+  requirement: For users who have both free_trial and paid activity rows, report the average activity_duration over
+    their free_trial rows and the average over their paid rows, each rounded to 2 decimals. Cancelled rows are ignored.
+  output:
+    columns:
+    - user_id
+    - trial_avg_duration
+    - paid_avg_duration
+    ordering: user_id ascending
+    grain: one row per converted user
+  rules:
+    ties: n/a
+    nulls: n/a
+    empty: empty -> empty
+    other: average is per row of that type (each row is one day)
+  confidence: high
+- id: 12
+  source: leetcode
+  source_id: 3521
+  title: Find Product Recommendation Pairs
+  url: https://leetcode.com/problems/find-product-recommendation-pairs/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: self_join
+  pattern_secondary:
+  - pairwise_counting
+  batch: B2
+  trigger_phrases:
+  - phrase: product1_id < product2_id
+    meaning: self-join on user_id with a.product_id < b.product_id to avoid mirror duplicates
+  - phrase: how many customers purchased both
+    meaning: COUNT(DISTINCT user_id) per pair
+  - phrase: at least 3 different customers
+    meaning: HAVING count >= 3
+  schema:
+  - table: ProductPurchases
+    columns:
+    - name: user_id
+      type: int
+    - name: product_id
+      type: int
+    - name: quantity
+      type: int
+    grain: one row per (user_id, product_id)
+  - table: ProductInfo
+    columns:
+    - name: product_id
+      type: int
+      pk: true
+    - name: category
+      type: varchar
+    - name: price
+      type: decimal
+    grain: one row per product
+  requirement: Find every unordered pair of distinct products (reported with product1_id < product2_id) bought by
+    the same customer, count the distinct customers who bought both, keep pairs with at least 3 such customers,
+    and attach each product's category.
+  output:
+    columns:
+    - product1_id
+    - product2_id
+    - product1_category
+    - product2_category
+    - customer_count
+    ordering: customer_count DESC, product1_id ASC, product2_id ASC
+    grain: one row per qualifying product pair
+  rules:
+    ties: see ordering
+    nulls: n/a
+    empty: empty -> empty
+    other: quantity is irrelevant
+  confidence: high
+- id: 13
+  source: leetcode
+  source_id: 3554
+  title: Find Category Recommendation Pairs
+  url: https://leetcode.com/problems/find-category-recommendation-pairs/
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: self_join
+  pattern_secondary:
+  - pairwise_counting
+  - distinct_before_join
+  batch: B2
+  trigger_phrases:
+  - phrase: category1 < category2
+    meaning: self-join on user_id with string comparison a.category < b.category
+  - phrase: unique customers ... from both categories
+    meaning: dedup to (user, category) BEFORE the self-join, or COUNT(DISTINCT user_id)
+  - phrase: at least 3 different customers
+    meaning: HAVING count >= 3
+  schema:
+  - table: ProductPurchases
+    columns:
+    - name: user_id
+      type: int
+    - name: product_id
+      type: int
+    - name: quantity
+      type: int
+    grain: one row per (user_id, product_id)
+  - table: ProductInfo
+    columns:
+    - name: product_id
+      type: int
+      pk: true
+    - name: category
+      type: varchar
+    - name: price
+      type: decimal
+    grain: one row per product
+  requirement: Map each purchase to its product category. For every pair of distinct categories (category1 < category2
+    lexicographically) count the distinct customers who bought at least one product in each. Report pairs with at
+    least 3 such customers.
+  output:
+    columns:
+    - category1
+    - category2
+    - customer_count
+    ordering: customer_count DESC, category1 ASC, category2 ASC
+    grain: one row per qualifying category pair
+  rules:
+    ties: see ordering
+    nulls: n/a
+    empty: empty -> empty
+    other: a customer buying several products in one category counts once for that category
+  confidence: high
+- id: 14
+  source: leetcode
+  source_id: 1045
+  title: Customers Who Bought All Products
+  url: https://leetcode.com/problems/customers-who-bought-all-products/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: relational_division
+  pattern_secondary:
+  - count_distinct_equals_total
+  batch: B2
+  trigger_phrases:
+  - phrase: bought all the products
+    meaning: 'relational division: COUNT(DISTINCT product_key) = (SELECT COUNT(*) FROM Product)'
+  - phrase: may contain duplicate rows
+    meaning: must use DISTINCT in the count
+  schema:
+  - table: Customer
+    columns:
+    - name: customer_id
+      type: int
+      note: not null
+    - name: product_key
+      type: int
+      note: FK Product
+    grain: purchase rows; duplicates allowed
+  - table: Product
+    columns:
+    - name: product_key
+      type: int
+      pk: true
+    grain: one row per product
+  requirement: Return customer_ids from Customer who have bought every product listed in Product.
+  output:
+    columns:
+    - customer_id
+    ordering: any order
+    grain: one row per qualifying customer
+  rules:
+    ties: n/a
+    nulls: customer_id not null
+    empty: empty Product not tested
+    other: product_key in Customer always exists in Product
+  confidence: high
+- id: 15
+  source: original
+  source_id: SPL-DIV-01
+  title: Employees Qualified for Every Required Skill of a Role
+  url: null
+  difficulty: hard
+  free_verified: null
+  free_evidence:
+  - authored for sql-pattern-lab; no third-party content
+  license: original-work (sql-pattern-lab; no third-party text)
+  license_evidence: null
+  postgres_on_leetcode: n/a
+  pattern_primary: relational_division
+  pattern_secondary:
+  - per_group_division
+  - not_exists_double_negation
+  batch: B2
+  trigger_phrases:
+  - phrase: has every skill required
+    meaning: 'division: no required skill is missing (double NOT EXISTS) or matched-count = required-count'
+  - phrase: for each role
+    meaning: 'division is per group: compare against that role''s requirement count, not a global count'
+  - phrase: skills table may repeat
+    meaning: COUNT(DISTINCT skill) on the employee side
+  schema:
+  - table: EmployeeSkills
+    columns:
+    - name: employee_id
+      type: int
+    - name: skill
+      type: varchar
+    grain: one row per (employee, skill) claim; exact duplicates possible
+  - table: RoleRequirements
+    columns:
+    - name: role
+      type: varchar
+    - name: skill
+      type: varchar
+    grain: one row per (role, required skill), unique
+  requirement: For each role, list every employee who holds ALL skills that the role requires (extra skills are
+    fine). Roles with no rows in RoleRequirements are not reported. An employee may qualify for several roles.
+  output:
+    columns:
+    - role
+    - employee_id
+    ordering: role ASC, employee_id ASC
+    grain: one row per (role, qualifying employee)
+  rules:
+    ties: n/a
+    nulls: no NULLs in either table
+    empty: a role that nobody fully satisfies produces no rows
+    other: skill matching is exact string equality
+  confidence: high
+  difficulty_source: curator judgement
+  confidence_note: 'Original problem authored to fill the relational-division gap (LeetCode free pool has only #1045).
+    Spec is authoritative as written; build session must create its own fixtures.'
+- id: 16
+  source: leetcode
+  source_id: 184
+  title: Department Highest Salary
+  url: https://leetcode.com/problems/department-highest-salary/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: ranking_per_group
+  pattern_secondary:
+  - ties
+  - max_per_group_join_back
+  batch: B3
+  trigger_phrases:
+  - phrase: highest salary in each of the departments
+    meaning: MAX per department then join back, or RANK()=1
+  - phrase: (example shows two tied employees)
+    meaning: 'ties: return every employee sharing the max -> RANK/DENSE_RANK, not ROW_NUMBER'
+  schema:
+  - table: Employee
+    columns:
+    - name: id
+      type: int
+      pk: true
+    - name: name
+      type: varchar
+    - name: salary
+      type: int
+    - name: departmentId
+      type: int
+      note: FK Department.id
+    grain: one row per employee
+  - table: Department
+    columns:
+    - name: id
+      type: int
+      pk: true
+    - name: name
+      type: varchar
+      note: not null
+    grain: one row per department
+  requirement: For each department, return the employee(s) whose salary equals the department's maximum salary,
+    with the department name.
+  output:
+    columns:
+    - Department
+    - Employee
+    - Salary
+    ordering: any order
+    grain: one row per top-paid employee per department
+  rules:
+    ties: all employees tied at the max are returned
+    nulls: n/a
+    empty: departments with no employees do not appear
+    other: Department = Department.name, Employee = Employee.name
+  confidence: high
+- id: 17
+  source: leetcode
+  source_id: 3564
+  title: Seasonal Sales Analysis
+  url: https://leetcode.com/problems/seasonal-sales-analysis/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: ranking_per_group
+  pattern_secondary:
+  - multi_key_tiebreak
+  - case_bucketing
+  batch: B3
+  trigger_phrases:
+  - phrase: most popular product category for each season
+    meaning: aggregate to (season, category) then rank within season, keep rank 1
+  - phrase: If there is still a tie
+    meaning: ORDER BY total_quantity DESC, total_revenue DESC, category ASC inside the window
+  - phrase: 'Winter: December, January, February'
+    meaning: CASE on MONTH(); December of one year and Jan/Feb of the next are the same bucket - years are ignored
+  schema:
+  - table: sales
+    columns:
+    - name: sale_id
+      type: int
+      pk: true
+    - name: product_id
+      type: int
+    - name: sale_date
+      type: date
+    - name: quantity
+      type: int
+    - name: price
+      type: decimal
+      note: per unit
+    grain: one row per sale
+  - table: products
+    columns:
+    - name: product_id
+      type: int
+      pk: true
+    - name: product_name
+      type: varchar
+    - name: category
+      type: varchar
+    grain: one row per product
+  requirement: 'Map each sale''s month to a season (Winter=Dec/Jan/Feb, Spring=Mar-May, Summer=Jun-Aug, Fall=Sep-Nov;
+    year ignored). For each season, compute per category total quantity and total revenue (sum of quantity*price)
+    and return the single best category: highest quantity, then highest revenue, then alphabetically smallest category.'
+  output:
+    columns:
+    - season
+    - category
+    - total_quantity
+    - total_revenue
+    ordering: 'season ascending (string order: Fall, Spring, Summer, Winter)'
+    grain: one row per season that has sales
+  rules:
+    ties: fully broken by the three-level rule; exactly one row per season
+    nulls: n/a
+    empty: seasons with no sales are omitted
+    other: season strings exactly 'Winter','Spring','Summer','Fall'
+  confidence: high
+- id: 18
+  source: leetcode
+  source_id: 3626
+  title: Find Stores with Inventory Imbalance
+  url: https://leetcode.com/problems/find-stores-with-inventory-imbalance/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: ranking_per_group
+  pattern_secondary:
+  - first_last_per_group
+  - self_join
+  batch: B3
+  trigger_phrases:
+  - phrase: most expensive product ... cheapest product
+    meaning: two rankings per store (price DESC and price ASC), pick rank 1 of each, join them
+  - phrase: at least 3 different products
+    meaning: COUNT per store >= 3 (window COUNT or pre-aggregate)
+  - phrase: quantity is less than
+    meaning: 'strict: expensive_qty < cheap_qty'
+  - phrase: imbalance ratio
+    meaning: cheapest_quantity / most_expensive_quantity rounded 2
+  schema:
+  - table: stores
+    columns:
+    - name: store_id
+      type: int
+      pk: true
+    - name: store_name
+      type: varchar
+    - name: location
+      type: varchar
+    grain: one row per store
+  - table: inventory
+    columns:
+    - name: inventory_id
+      type: int
+      pk: true
+    - name: store_id
+      type: int
+    - name: product_name
+      type: varchar
+    - name: quantity
+      type: int
+    - name: price
+      type: decimal
+    grain: one row per product stocked at a store
+  requirement: For stores stocking at least 3 products, identify the highest-priced product and the lowest-priced
+    product. Keep stores where the highest-priced product's quantity is strictly less than the lowest-priced product's
+    quantity. Report both product names and ratio = cheapest quantity / most expensive quantity rounded to 2 decimals.
+  output:
+    columns:
+    - store_id
+    - store_name
+    - location
+    - most_exp_product
+    - cheapest_product
+    - imbalance_ratio
+    ordering: imbalance_ratio DESC, store_name ASC
+    grain: one row per qualifying store
+  rules:
+    ties: price ties within a store are not addressed in the statement; doocs breaks them by quantity DESC for both
+      ends
+    nulls: n/a
+    empty: empty -> empty
+    other: '''different products'' = inventory rows for that store'
+  confidence: medium
+  confidence_note: Price-tie handling is unspecified in the statement; spec follows the doocs reference tiebreak.
+- id: 19
+  source: leetcode
+  source_id: 185
+  title: Department Top Three Salaries
+  url: https://leetcode.com/problems/department-top-three-salaries/
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: ranking_per_group
+  pattern_secondary:
+  - ties
+  - dense_rank
+  batch: B3
+  trigger_phrases:
+  - phrase: top three unique salaries
+    meaning: DENSE_RANK() <= 3 per department; ties share a rank and do not consume slots
+  - phrase: in each of the departments
+    meaning: PARTITION BY departmentId
+  schema:
+  - table: Employee
+    columns:
+    - name: id
+      type: int
+      pk: true
+    - name: name
+      type: varchar
+    - name: salary
+      type: int
+    - name: departmentId
+      type: int
+      note: FK Department.id
+    grain: one row per employee
+  - table: Department
+    columns:
+    - name: id
+      type: int
+      pk: true
+    - name: name
+      type: varchar
+    grain: one row per department
+  requirement: Within each department, take the three highest DISTINCT salary values; return every employee whose
+    salary is one of those values, with department name. Departments with fewer than three distinct salaries return
+    all their employees.
+  output:
+    columns:
+    - Department
+    - Employee
+    - Salary
+    ordering: any order
+    grain: one row per qualifying employee
+  rules:
+    ties: all employees at a qualifying salary are returned (can exceed 3 rows per department)
+    nulls: n/a
+    empty: departments without employees omitted
+    other: no two employees share the same name, salary and department
+  confidence: high
+- id: 20
+  source: leetcode
+  source_id: 1070
+  title: Product Sales Analysis III
+  url: https://leetcode.com/problems/product-sales-analysis-iii/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: dedup_latest
+  pattern_secondary:
+  - first_per_key_keep_ties
+  batch: B3
+  trigger_phrases:
+  - phrase: first year each product was sold
+    meaning: MIN(year) per product_id
+  - phrase: all sales entries for that product
+    meaning: keep EVERY row in the min year, so join back / RANK, not ROW_NUMBER
+  schema:
+  - table: Sales
+    columns:
+    - name: sale_id
+      type: int
+    - name: product_id
+      type: int
+    - name: year
+      type: int
+    - name: quantity
+      type: int
+    - name: price
+      type: int
+      note: per unit
+    grain: PK (sale_id, year); a product may have several rows per year
+  requirement: For each product, find the earliest year it appears in Sales and return all of that product's Sales
+    rows from that year.
+  output:
+    columns:
+    - product_id
+    - first_year
+    - quantity
+    - price
+    ordering: any order
+    grain: one row per Sales row in the product's first year
+  rules:
+    ties: multiple rows in the first year are all returned
+    nulls: n/a
+    empty: empty -> empty
+    other: spec follows the current doocs mirror text (single Sales table); older copies of this problem online
+      show a different schema
+  confidence: high
+- id: 21
+  source: leetcode
+  source_id: 1164
+  title: Product Price at a Given Date
+  url: https://leetcode.com/problems/product-price-at-a-given-date/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: dedup_latest
+  pattern_secondary:
+  - as_of_lookup
+  - default_value
+  batch: B3
+  trigger_phrases:
+  - phrase: Initially, all products have price 10
+    meaning: products with no change on/before the date fall back to 10 -> LEFT JOIN + COALESCE
+  - phrase: prices ... on the date 2019-08-16
+    meaning: latest change_date <= '2019-08-16' per product (inclusive)
+  schema:
+  - table: Products
+    columns:
+    - name: product_id
+      type: int
+    - name: new_price
+      type: int
+    - name: change_date
+      type: date
+    grain: PK (product_id, change_date); one row per price change
+  requirement: 'For every distinct product_id in Products, report its price as of 2019-08-16: the new_price of its
+    most recent change on or before that date, or 10 if it has no change on or before that date.'
+  output:
+    columns:
+    - product_id
+    - price
+    ordering: any order
+    grain: one row per distinct product
+  rules:
+    ties: impossible (PK)
+    nulls: never NULL; default 10
+    empty: empty -> empty
+    other: a change dated exactly 2019-08-16 is in effect
+  confidence: high
+- id: 22
+  source: leetcode
+  source_id: 3421
+  title: Find Students Who Improved
+  url: https://leetcode.com/problems/find-students-who-improved/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: dedup_latest
+  pattern_secondary:
+  - first_and_last_per_group
+  batch: B3
+  trigger_phrases:
+  - phrase: at least two different dates
+    meaning: per (student, subject) need >= 2 exams
+  - phrase: latest score ... higher than their first score
+    meaning: FIRST_VALUE / ROW_NUMBER both directions, compare strictly
+  schema:
+  - table: Scores
+    columns:
+    - name: student_id
+      type: int
+    - name: subject
+      type: varchar
+    - name: score
+      type: int
+      note: 0-100
+    - name: exam_date
+      type: varchar
+      note: ISO 'YYYY-MM-DD' string
+    grain: PK (student_id, subject, exam_date)
+  requirement: For each (student, subject) with exams on at least two different dates, compare the score on the
+    earliest exam_date with the score on the latest exam_date; return pairs where latest > first.
+  output:
+    columns:
+    - student_id
+    - subject
+    - first_score
+    - latest_score
+    ordering: student_id ASC, subject ASC
+    grain: one row per improving (student, subject)
+  rules:
+    ties: impossible (PK)
+    nulls: n/a
+    empty: empty -> empty
+    other: exam_date is varchar but ISO formatted so string order = date order
+  confidence: high
+- id: 23
+  source: leetcode
+  source_id: 550
+  title: Game Play Analysis IV
+  url: https://leetcode.com/problems/game-play-analysis-iv/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: retention_cohort
+  pattern_secondary:
+  - first_per_key
+  - day_n_retention
+  batch: B3
+  trigger_phrases:
+  - phrase: logged in again on the day after
+    meaning: 'day-1 retention: exists row at first_login + 1 day'
+  - phrase: the day they first logged in
+    meaning: MIN(event_date) per player is the cohort anchor
+  - phrase: divide it by the number of total players
+    meaning: denominator = all distinct players
+  schema:
+  - table: Activity
+    columns:
+    - name: player_id
+      type: int
+    - name: device_id
+      type: int
+    - name: event_date
+      type: date
+    - name: games_played
+      type: int
+    grain: PK (player_id, event_date)
+  requirement: Compute the fraction of all players who have an activity row exactly one day after their first-ever
+    activity date. Round to 2 decimals.
+  output:
+    columns:
+    - fraction
+    ordering: single row
+    grain: one scalar row
+  rules:
+    ties: n/a
+    nulls: n/a
+    empty: not tested
+    other: only the day immediately after the FIRST login counts, not any consecutive pair
+  confidence: high
+- id: 24
+  source: leetcode
+  source_id: 1174
+  title: Immediate Food Delivery II
+  url: https://leetcode.com/problems/immediate-food-delivery-ii/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: retention_cohort
+  pattern_secondary:
+  - first_per_key
+  - conditional_aggregation
+  batch: B3
+  trigger_phrases:
+  - phrase: first order of a customer
+    meaning: earliest order_date per customer (guaranteed unique)
+  - phrase: percentage of immediate orders
+    meaning: AVG(order_date = pref_date) * 100 over first orders only
+  - phrase: rounded to 2 decimal places
+    meaning: ROUND(...,2), value is a percent like 50.00
+  schema:
+  - table: Delivery
+    columns:
+    - name: delivery_id
+      type: int
+      pk: true
+    - name: customer_id
+      type: int
+    - name: order_date
+      type: date
+    - name: customer_pref_delivery_date
+      type: date
+      note: '>= order_date'
+    grain: one row per order
+  requirement: An order is immediate if customer_pref_delivery_date equals order_date. Take each customer's first
+    order (earliest order_date; exactly one exists) and report the percentage of those first orders that are immediate,
+    rounded to 2 decimals.
+  output:
+    columns:
+    - immediate_percentage
+    ordering: single row
+    grain: one scalar row
+  rules:
+    ties: first order is guaranteed unique
+    nulls: n/a
+    empty: not tested
+    other: percentage scale 0-100
+  confidence: high
+- id: 25
+  source: leetcode
+  source_id: 626
+  title: Exchange Seats
+  url: https://leetcode.com/problems/exchange-seats/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: lag_lead
+  pattern_secondary:
+  - case_on_parity
+  batch: B4
+  trigger_phrases:
+  - phrase: swap ... every two consecutive students
+    meaning: odd id takes LEAD(student), even id takes LAG(student)
+  - phrase: If the number of students is odd
+    meaning: last odd id has no LEAD -> keep own name (COALESCE)
+  schema:
+  - table: Seat
+    columns:
+    - name: id
+      type: int
+      pk: true
+      note: starts at 1, contiguous
+    - name: student
+      type: varchar
+    grain: one row per seat
+  requirement: Swap the student names of seats 1<->2, 3<->4, etc. If the count is odd, the last seat keeps its student.
+    Return all seats.
+  output:
+    columns:
+    - id
+    - student
+    ordering: id ascending
+    grain: one row per seat
+  rules:
+    ties: n/a
+    nulls: n/a
+    empty: empty -> empty
+    other: ids are contiguous from 1
+  confidence: high
+- id: 26
+  source: leetcode
+  source_id: 3580
+  title: Find Consistently Improving Employees
+  url: https://leetcode.com/problems/find-consistently-improving-employees/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: lag_lead
+  pattern_secondary:
+  - top_n_per_group
+  - strictly_increasing
+  batch: B4
+  trigger_phrases:
+  - phrase: last three reviews
+    meaning: ROW_NUMBER() by review_date DESC <= 3
+  - phrase: strictly increasing ratings
+    meaning: 'LAG over the 3 rows: every step > 0'
+  - phrase: at least 3 review
+    meaning: employees with fewer than 3 reviews excluded
+  - phrase: latest rating and the earliest rating among
+    meaning: improvement_score = rating(rn=1) - rating(rn=3)
+  schema:
+  - table: employees
+    columns:
+    - name: employee_id
+      type: int
+      pk: true
+    - name: name
+      type: varchar
+    grain: one row per employee
+  - table: performance_reviews
+    columns:
+    - name: review_id
+      type: int
+      pk: true
+    - name: employee_id
+      type: int
+    - name: review_date
+      type: date
+    - name: rating
+      type: int
+      note: 1-5
+    grain: one row per review
+  requirement: For employees with at least 3 reviews, take their 3 most recent reviews by review_date. If ratings
+    strictly increase from oldest to newest of those three, report improvement_score = newest rating - oldest rating
+    of the three.
+  output:
+    columns:
+    - employee_id
+    - name
+    - improvement_score
+    ordering: improvement_score DESC, name ASC
+    grain: one row per qualifying employee
+  rules:
+    ties: same-date reviews not addressed
+    nulls: n/a
+    empty: empty -> empty
+    other: equal consecutive ratings disqualify
+  confidence: high
+- id: 27
+  source: leetcode
+  source_id: 3764
+  title: Most Common Course Pairs
+  url: https://leetcode.com/problems/most-common-course-pairs/
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: lag_lead
+  pattern_secondary:
+  - filter_cohort_first
+  - transition_counting
+  batch: B4
+  trigger_phrases:
+  - phrase: at least 5 courses
+    meaning: top performers = >=5 courses AND avg rating >= 4; pre-filter users via GROUP BY/HAVING before windowing
+  - phrase: consecutive course pairs
+    meaning: LEAD(course_name) OVER (PARTITION BY user ORDER BY completion_date)
+  - phrase: pair frequency
+    meaning: GROUP BY (first, second) COUNT(*) after dropping NULL leads
+  schema:
+  - table: course_completions
+    columns:
+    - name: user_id
+      type: int
+    - name: course_id
+      type: int
+    - name: course_name
+      type: varchar
+    - name: completion_date
+      type: date
+    - name: course_rating
+      type: int
+      note: 1-5
+    grain: PK (user_id, course_id)
+  requirement: Top performers are users with at least 5 completed courses and average course_rating >= 4. For each
+    top performer order their completions by completion_date and form each adjacent (course A -> course B) transition.
+    Count how many times each ordered transition occurs across all top performers.
+  output:
+    columns:
+    - first_course
+    - second_course
+    - transition_count
+    ordering: transition_count DESC, first_course ASC, second_course ASC
+    grain: one row per distinct ordered course-name pair
+  rules:
+    ties: same completion_date for one user not addressed
+    nulls: last course of each user has no successor -> excluded
+    empty: no top performers -> empty
+    other: pairs are ordered (A->B differs from B->A)
+  confidence: high
+- id: 28
+  source: leetcode
+  source_id: 1204
+  title: Last Person to Fit in the Bus
+  url: https://leetcode.com/problems/last-person-to-fit-in-the-bus/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: running_totals
+  pattern_secondary:
+  - cumulative_threshold
+  batch: B4
+  trigger_phrases:
+  - phrase: weight limit of 1000 kilograms
+    meaning: running SUM(weight) ORDER BY turn <= 1000
+  - phrase: last person that can fit
+    meaning: max turn whose cumulative weight <= 1000
+  - phrase: only one person can board
+    meaning: boarding is strictly in turn order; stop at the first overflow
+  schema:
+  - table: Queue
+    columns:
+    - name: person_id
+      type: int
+      pk: true
+    - name: person_name
+      type: varchar
+    - name: weight
+      type: int
+    - name: turn
+      type: int
+      note: 1..n, unique
+    grain: one row per person
+  requirement: People board in ascending turn order. Return the name of the last person for whom the cumulative
+    weight of everyone up to and including them is at most 1000.
+  output:
+    columns:
+    - person_name
+    ordering: single row
+    grain: one row
+  rules:
+    ties: turn is unique
+    nulls: n/a
+    empty: first person always fits
+    other: cumulative = exactly 1000 still fits
+  confidence: high
+- id: 29
+  source: leetcode
+  source_id: 1321
+  title: Restaurant Growth
+  url: https://leetcode.com/problems/restaurant-growth/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: running_totals
+  pattern_secondary:
+  - moving_window
+  - pre_aggregate_then_window
+  batch: B4
+  trigger_phrases:
+  - phrase: current day + 6 days before
+    meaning: SUM over ROWS/RANGE 6 PRECEDING on DAILY totals
+  - phrase: at least one customer every day
+    meaning: no date gaps, so ROWS window = calendar window
+  - phrase: rounded to two decimal places
+    meaning: average = 7-day sum / 7
+  schema:
+  - table: Customer
+    columns:
+    - name: customer_id
+      type: int
+    - name: name
+      type: varchar
+    - name: visited_on
+      type: date
+    - name: amount
+      type: int
+    grain: PK (customer_id, visited_on); many customers per day
+  requirement: First total amount per day across all customers. For each day that has six earlier days available
+    (i.e. from the 7th distinct day onward), output the 7-day total (that day plus previous 6) and that total /
+    7 rounded to 2 decimals.
+  output:
+    columns:
+    - visited_on
+    - amount
+    - average_amount
+    ordering: visited_on ascending
+    grain: one row per day starting at the 7th day
+  rules:
+    ties: n/a
+    nulls: n/a
+    empty: fewer than 7 days -> empty
+    other: amount column = 7-day window sum, not the day's own amount
+  confidence: high
+- id: 30
+  source: pgexercises
+  source_id: aggregates/rollingavg
+  title: Calculate a rolling average of total revenue
+  url: https://pgexercises.com/questions/aggregates/rollingavg.html
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - pgexercises.com is free with no account; content CC BY-SA 3.0
+  license: CC BY-SA 3.0 (pgexercises.com site footer; questions/LICENSE in github.com/AlisdairO/pgexercises)
+  license_evidence:
+  - 'https://pgexercises.com/ (footer: ''Site content licensed under CC BY-SA 3.0'')'
+  - https://github.com/AlisdairO/pgexercises/blob/master/questions/LICENSE
+  postgres_on_leetcode: n/a
+  pattern_primary: date_spine
+  pattern_secondary:
+  - moving_window
+  - zero_fill
+  batch: B4
+  trigger_phrases:
+  - phrase: for each day in August 2012
+    meaning: generate a calendar of all 31 dates; do not rely on dates present in bookings
+  - phrase: previous 15 days
+    meaning: window = the day and the 14 days before it
+  - phrase: a day having zero revenue
+    meaning: missing days count as 0 in the window -> divide by 15 always
+  schema:
+  - &id002
+    table: cd.bookings
+    columns:
+    - name: bookid
+      type: integer
+      pk: true
+    - name: facid
+      type: integer
+      note: FK facilities
+    - name: memid
+      type: integer
+      note: FK members; 0 = guest
+    - name: starttime
+      type: timestamp
+    - name: slots
+      type: integer
+      note: number of 30-minute slots booked
+    grain: one row per booking
+  - &id003
+    table: cd.facilities
+    columns:
+    - name: facid
+      type: integer
+      pk: true
+    - name: name
+      type: varchar(100)
+    - name: membercost
+      type: numeric
+      note: cost per half-hour slot for members
+    - name: guestcost
+      type: numeric
+      note: cost per half-hour slot for guests
+    - name: initialoutlay
+      type: numeric
+    - name: monthlymaintenance
+      type: numeric
+    grain: one row per facility
+  - &id001
+    table: cd.members
+    columns:
+    - name: memid
+      type: integer
+      pk: true
+    - name: surname
+      type: varchar(200)
+    - name: firstname
+      type: varchar(200)
+    - name: address
+      type: varchar(300)
+    - name: zipcode
+      type: integer
+    - name: telephone
+      type: varchar(20)
+    - name: recommendedby
+      type: integer
+      note: nullable; FK to members.memid
+    - name: joindate
+      type: timestamp
+    grain: one row per member; memid 0 is the shared GUEST account
+  requirement: Revenue of a booking = slots * guestcost when memid = 0 (guest), else slots * membercost. For each
+    calendar date in August 2012, output the average daily revenue over the 15-day window ending on that date (that
+    date and the 14 days before it, including days in July), where days without bookings contribute 0 - i.e. window
+    total revenue / 15.
+  output:
+    columns:
+    - date
+    - revenue
+    ordering: date ascending
+    grain: exactly 31 rows, one per August 2012 date
+  rules:
+    ties: n/a
+    nulls: days with no bookings contribute 0
+    empty: still 31 rows
+    other: 'site does not round; MySQL port: build calendar via recursive CTE since there is no generate_series'
+  confidence: high
+  difficulty_source: curator judgement (pgexercises has no difficulty labels)
+  attribution: Adapted from PostgreSQL Exercises by Alisdair Owens (pgexercises.com), CC BY-SA 3.0. Spec reworded.
+  dataset: pgexercises 'clubdata' (cd schema). Data dump is at github.com/AlisdairO/pgexercises/database/clubdata.sql
+    (CC BY-SA). Build sessions without internet must synthesise fixtures matching this schema.
+  dialect_note: Original is PostgreSQL; MySQL 8.0 equivalent is fine (drop the cd. schema prefix or create schema
+    cd).
+- id: 31
+  source: leetcode
+  source_id: 180
+  title: Consecutive Numbers
+  url: https://leetcode.com/problems/consecutive-numbers/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: gaps_and_islands
+  pattern_secondary:
+  - lag_lead
+  batch: B4
+  trigger_phrases:
+  - phrase: at least three times consecutively
+    meaning: same num on ids i, i+1, i+2 -> LAG/LEAD or island length >= 3
+  - phrase: (result is a set of numbers)
+    meaning: SELECT DISTINCT - a run of 5 or two runs must not duplicate
+  schema:
+  - table: Logs
+    columns:
+    - name: id
+      type: int
+      pk: true
+      note: autoincrement from 1
+    - name: num
+      type: varchar
+    grain: one row per log entry
+  requirement: Return every distinct num value that appears in at least three consecutive rows when ordered by id.
+  output:
+    columns:
+    - ConsecutiveNums
+    ordering: any order
+    grain: one row per distinct qualifying num
+  rules:
+    ties: n/a
+    nulls: n/a
+    empty: none qualify -> empty
+    other: safer to treat consecutive as adjacent in id order; ids are described as autoincrement
+  confidence: high
+- id: 32
+  source: leetcode
+  source_id: 601
+  title: Human Traffic of Stadium
+  url: https://leetcode.com/problems/human-traffic-of-stadium/
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: gaps_and_islands
+  pattern_secondary:
+  - row_number_difference
+  batch: B5
+  trigger_phrases:
+  - phrase: three or more rows with consecutive id's
+    meaning: 'islands on id (not date): id - ROW_NUMBER() over filtered rows'
+  - phrase: people is greater than or equal to 100
+    meaning: filter BEFORE computing islands
+  - phrase: display the records
+    meaning: return every row of each qualifying island, not just the start
+  schema:
+  - table: Stadium
+    columns:
+    - name: id
+      type: int
+    - name: visit_date
+      type: date
+      note: unique; increases with id
+    - name: people
+      type: int
+    grain: one row per visit day
+  requirement: Among rows with people >= 100, find maximal runs of consecutive id values; return all rows belonging
+    to runs of length 3 or more.
+  output:
+    columns:
+    - id
+    - visit_date
+    - people
+    ordering: visit_date ascending
+    grain: one row per qualifying Stadium row
+  rules:
+    ties: n/a
+    nulls: n/a
+    empty: empty -> empty
+    other: consecutiveness is on id, even if dates skip
+  confidence: high
+- id: 33
+  source: leetcode
+  source_id: 3832
+  title: Find Users with Persistent Behavior Patterns
+  url: https://leetcode.com/problems/find-users-with-persistent-behavior-patterns/
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: gaps_and_islands
+  pattern_secondary:
+  - date_minus_row_number
+  - longest_per_group
+  batch: B5
+  trigger_phrases:
+  - phrase: at least 5 consecutive days
+    meaning: 'island on calendar dates: action_date - ROW_NUMBER() days'
+  - phrase: exactly one action per day
+    meaning: days where the user has 2+ rows are excluded and therefore break a streak
+  - phrase: same on all those consecutive days
+    meaning: partition the island by (user_id, action)
+  - phrase: only consider the sequence with the maximum length
+    meaning: rank islands per user, keep the longest
+  schema:
+  - table: activity
+    columns:
+    - name: user_id
+      type: int
+    - name: action_date
+      type: date
+    - name: action
+      type: varchar
+    grain: PK (user_id, action_date, action)
+  requirement: Drop every (user, date) that has more than one action. On the remaining rows, find maximal streaks
+    of consecutive calendar days where a user performed the same action. Keep users having a streak of length >=
+    5 and report only their longest such streak with its start and end dates.
+  output:
+    columns:
+    - user_id
+    - action
+    - streak_length
+    - start_date
+    - end_date
+    ordering: streak_length DESC, user_id ASC
+    grain: one row per qualifying user
+  rules:
+    ties: 'two equally long longest streaks for one user: not specified (doocs keeps one arbitrarily)'
+    nulls: n/a
+    empty: empty -> empty
+    other: a multi-action day both removes that day and splits the streak
+  confidence: medium
+  confidence_note: Tie between equal-length longest streaks for the same user is unspecified.
+- id: 34
+  source: leetcode
+  source_id: 3586
+  title: Find COVID Recovery Patients
+  url: https://leetcode.com/problems/find-covid-recovery-patients/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: sessionization
+  pattern_secondary:
+  - first_event_after_event
+  - existence
+  batch: B5
+  trigger_phrases:
+  - phrase: Positive test followed by ... Negative test
+    meaning: 'ordered event pair: negative strictly after a positive'
+  - phrase: first negative test after
+    meaning: anchor = MIN positive date; then MIN negative date > anchor
+  - phrase: Inconclusive
+    meaning: ignored; does not reset anything
+  schema:
+  - table: patients
+    columns:
+    - name: patient_id
+      type: int
+      pk: true
+    - name: patient_name
+      type: varchar
+    - name: age
+      type: int
+    grain: one row per patient
+  - table: covid_tests
+    columns:
+    - name: test_id
+      type: int
+      pk: true
+    - name: patient_id
+      type: int
+    - name: test_date
+      type: date
+    - name: result
+      type: varchar
+      note: '''Positive'' | ''Negative'' | ''Inconclusive'''
+    grain: one row per test
+  requirement: For each patient, take the date of their first Positive test; then find the earliest Negative test
+    strictly after that date. Patients with such a pair are recovered; recovery_time = days between the first positive
+    and that negative.
+  output:
+    columns:
+    - patient_id
+    - patient_name
+    - age
+    - recovery_time
+    ordering: recovery_time ASC, patient_name ASC
+    grain: one row per recovered patient
+  rules:
+    ties: n/a
+    nulls: n/a
+    empty: empty -> empty
+    other: negatives before the first positive are irrelevant
+  confidence: high
+- id: 35
+  source: leetcode
+  source_id: 3611
+  title: Find Overbooked Employees
+  url: https://leetcode.com/problems/find-overbooked-employees/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: sessionization
+  pattern_secondary:
+  - time_bucketing
+  - two_level_aggregation
+  batch: B5
+  trigger_phrases:
+  - phrase: per employee per week (Monday to Sunday)
+    meaning: 'bucket by ISO-style week: YEARWEEK(date, 1) or date minus WEEKDAY()'
+  - phrase: more than 50% ... 40 hours
+    meaning: weekly meeting hours > 20
+  - phrase: meeting-heavy for at least 2 weeks
+    meaning: 'aggregate twice: hours per week, then count heavy weeks per employee'
+  schema:
+  - table: employees
+    columns:
+    - name: employee_id
+      type: int
+      pk: true
+    - name: employee_name
+      type: varchar
+    - name: department
+      type: varchar
+    grain: one row per employee
+  - table: meetings
+    columns:
+    - name: meeting_id
+      type: int
+      pk: true
+    - name: employee_id
+      type: int
+    - name: meeting_date
+      type: date
+    - name: meeting_type
+      type: varchar
+      note: Team|Client|Training
+    - name: duration_hours
+      type: decimal
+    grain: one row per meeting
+  requirement: Sum meeting hours per employee per Monday-to-Sunday week. A week is heavy if the sum exceeds 20 hours.
+    Report employees with at least 2 heavy weeks and the count of heavy weeks.
+  output:
+    columns:
+    - employee_id
+    - employee_name
+    - department
+    - meeting_heavy_weeks
+    ordering: meeting_heavy_weeks DESC, employee_name ASC
+    grain: one row per qualifying employee
+  rules:
+    ties: n/a
+    nulls: n/a
+    empty: empty -> empty
+    other: statement says > 20 but doocs reference uses >= 20; week must start Monday (MySQL WEEK mode 1 / YEARWEEK(d,1))
+  confidence: medium
+  confidence_note: Boundary at exactly 20 hours differs between statement (>) and reference solution (>=).
+- id: 36
+  source: leetcode
+  source_id: 3716
+  title: Find Churn Risk Customers
+  url: https://leetcode.com/problems/find-churn-risk-customers/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: dedup_latest
+  pattern_secondary:
+  - retention_cohort
+  - latest_vs_historical
+  batch: B5
+  trigger_phrases:
+  - phrase: their last event is not cancel
+    meaning: latest row per user via ROW_NUMBER() ORDER BY event_date DESC
+  - phrase: at least one downgrade
+    meaning: SUM(event_type='downgrade') >= 1 over full history
+  - phrase: less than 50% of ... historical maximum
+    meaning: current monthly_amount < 0.5 * MAX(monthly_amount)
+  - phrase: subscriber for at least 60 days
+    meaning: DATEDIFF(last event date, first event date) >= 60
+  schema:
+  - table: subscription_events
+    columns:
+    - name: event_id
+      type: int
+      pk: true
+    - name: user_id
+      type: int
+    - name: event_date
+      type: date
+    - name: event_type
+      type: varchar
+      note: start|upgrade|downgrade|cancel
+    - name: plan_name
+      type: varchar
+      note: basic|standard|premium|NULL on cancel
+    - name: monthly_amount
+      type: decimal
+      note: 0 on cancel
+    grain: one row per subscription event
+  requirement: 'A user is churn-risk if: their most recent event is not ''cancel''; they have at least one ''downgrade''
+    event; the monthly_amount of their most recent event is below half of the maximum monthly_amount across all
+    their events; and the days between their first and last event dates are at least 60. Report the current plan
+    and amount, the historical max, and that day span.'
+  output:
+    columns:
+    - user_id
+    - current_plan
+    - current_monthly_amount
+    - max_historical_amount
+    - days_as_subscriber
+    ordering: days_as_subscriber DESC, user_id ASC
+    grain: one row per churn-risk user
+  rules:
+    ties: 'same-day events: doocs tiebreaks latest by event_id DESC'
+    nulls: plan_name NULL only on cancel rows (never the current row of a qualifying user)
+    empty: empty -> empty
+    other: days_as_subscriber = DATEDIFF(max date, min date), not 'today'
+  confidence: high
+- id: 37
+  source: leetcode
+  source_id: 3673
+  title: Find Zombie Sessions
+  url: https://leetcode.com/problems/find-zombie-sessions/
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: sessionization
+  pattern_secondary:
+  - conditional_aggregation
+  - session_metrics
+  batch: B5
+  trigger_phrases:
+  - phrase: session duration is more than 30 minutes
+    meaning: TIMESTAMPDIFF(MINUTE, MIN(ts), MAX(ts)) > 30 per session_id
+  - phrase: at least 5 scroll events
+    meaning: SUM(event_type='scroll') >= 5
+  - phrase: click-to-scroll ratio is less than 0.20
+    meaning: clicks / scrolls < 0.2, strict
+  - phrase: No purchases
+    meaning: SUM(event_type='purchase') = 0
+  schema:
+  - table: app_events
+    columns:
+    - name: event_id
+      type: int
+      pk: true
+    - name: user_id
+      type: int
+    - name: event_timestamp
+      type: datetime
+    - name: event_type
+      type: varchar
+      note: app_open|click|scroll|purchase|app_close
+    - name: session_id
+      type: varchar
+    - name: event_value
+      type: int
+      note: purchase $ / scroll px / NULL
+    grain: one row per event
+  requirement: Per session_id, compute duration in whole minutes between the first and last event, scroll count,
+    click count, purchase count. A session is a zombie if duration > 30 minutes, scrolls >= 5, clicks/scrolls <
+    0.20, and no purchases. Report zombie sessions.
+  output:
+    columns:
+    - session_id
+    - user_id
+    - session_duration_minutes
+    - scroll_count
+    ordering: scroll_count DESC, session_id ASC
+    grain: one row per zombie session
+  rules:
+    ties: n/a
+    nulls: event_value irrelevant
+    empty: empty -> empty
+    other: ratio exactly 0.20 does not qualify; doocs reference uses duration >= 30 although the statement says
+      'more than 30'
+  confidence: medium
+  confidence_note: Duration boundary (> vs >= 30) differs between statement and reference solution.
+- id: 38
+  source: leetcode
+  source_id: 3617
+  title: Find Students with Study Spiral Pattern
+  url: https://leetcode.com/problems/find-students-with-study-spiral-pattern/
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: sessionization
+  pattern_secondary:
+  - cyclic_sequence_check
+  - lag_lead
+  - not_exists
+  batch: B5
+  trigger_phrases:
+  - phrase: repeating sequence
+    meaning: session i's subject must equal session ((i-1) mod k)+1's subject
+  - phrase: at least 2 complete cycles
+    meaning: session count >= 2k and divisible by k
+  - phrase: no gaps longer than 2 days
+    meaning: LAG(session_date) diff <= 2 for every consecutive pair
+  - phrase: cycle length of at least 3
+    meaning: k = COUNT(DISTINCT subject) >= 3
+  schema:
+  - table: students
+    columns:
+    - name: student_id
+      type: int
+      pk: true
+    - name: student_name
+      type: varchar
+    - name: major
+      type: varchar
+    grain: one row per student
+  - table: study_sessions
+    columns:
+    - name: session_id
+      type: int
+      pk: true
+    - name: student_id
+      type: int
+    - name: subject
+      type: varchar
+    - name: session_date
+      type: date
+    - name: hours_studied
+      type: decimal
+    grain: one row per study session
+  requirement: 'Order each student''s sessions by (session_date, session_id). Let k = number of distinct subjects
+    the student studied. The student qualifies if: k >= 3; every gap between consecutive sessions is at most 2 days;
+    the number of sessions is a multiple of k and at least 2k; and the subject sequence is the first k subjects
+    repeated exactly (session n has the same subject as session ((n-1) mod k)+1). Report k and the sum of hours
+    across all their sessions.'
+  output:
+    columns:
+    - student_id
+    - student_name
+    - major
+    - cycle_length
+    - total_study_hours
+    ordering: cycle_length DESC, total_study_hours DESC
+    grain: one row per qualifying student
+  rules:
+    ties: ordering ties beyond the two keys unspecified
+    nulls: n/a
+    empty: students without sessions excluded
+    other: interpretation treats the whole session history as the pattern (no sub-window search)
+  confidence: low
+  confidence_note: Statement is vague (does the pattern have to cover all sessions? can a qualifying sub-window
+    exist inside noisy history? partial trailing cycle?). Spec mirrors the doocs reference interpretation; verify
+    against LeetCode before building tests.
+- id: 39
+  source: leetcode
+  source_id: 608
+  title: Tree Node
+  url: https://leetcode.com/problems/tree-node/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: recursive_cte
+  pattern_secondary:
+  - existence
+  - hierarchy_classification
+  batch: B6
+  trigger_phrases:
+  - phrase: Root ... Inner ... Leaf
+    meaning: 'CASE: p_id IS NULL -> Root; has a child (EXISTS row with p_id = id) -> Inner; else Leaf'
+  - phrase: valid tree
+    meaning: exactly one root; a lone root with no children is still 'Root'
+  schema:
+  - table: Tree
+    columns:
+    - name: id
+      type: int
+      pk: true
+    - name: p_id
+      type: int
+      note: parent id; NULL for root
+    grain: one row per node
+  requirement: Label each node 'Root' if it has no parent, 'Inner' if it has a parent and at least one child, otherwise
+    'Leaf'.
+  output:
+    columns:
+    - id
+    - type
+    ordering: any order
+    grain: one row per node
+  rules:
+    ties: n/a
+    nulls: beware NOT IN (SELECT p_id ...) when p_id contains NULL - returns nothing; use NOT EXISTS or filter NULLs
+    empty: n/a
+    other: Root check must come first in CASE
+  confidence: high
+- id: 40
+  source: leetcode
+  source_id: 602
+  title: 'Friend Requests II: Who Has the Most Friends'
+  url: https://leetcode.com/problems/friend-requests-ii-who-has-the-most-friends/
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: self_join
+  pattern_secondary:
+  - unpivot_edges
+  - union_all
+  batch: B6
+  trigger_phrases:
+  - phrase: people who have the most friends
+    meaning: 'friendship is symmetric: UNION ALL (requester, accepter) with (accepter, requester), then count per
+      person'
+  - phrase: only one person has the most friends
+    meaning: ORDER BY count DESC LIMIT 1 is acceptable
+  schema:
+  - table: RequestAccepted
+    columns:
+    - name: requester_id
+      type: int
+    - name: accepter_id
+      type: int
+    - name: accept_date
+      type: date
+    grain: PK (requester_id, accepter_id); one row per accepted friendship
+  requirement: Each row is a friendship between two users. Find the user with the most friends (counting both roles)
+    and that count.
+  output:
+    columns:
+    - id
+    - num
+    ordering: single row
+    grain: one row
+  rules:
+    ties: 'test data guarantees a single winner (follow-up: return all tied)'
+    nulls: n/a
+    empty: n/a
+    other: use UNION ALL, not UNION
+  confidence: high
+- id: 41
+  source: pgexercises
+  source_id: recursive/getdownward
+  title: Find the downward recommendation chain for member ID 1
+  url: https://pgexercises.com/questions/recursive/getdownward.html
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - pgexercises.com is free with no account; content CC BY-SA 3.0
+  license: CC BY-SA 3.0 (pgexercises.com site footer; questions/LICENSE in github.com/AlisdairO/pgexercises)
+  license_evidence:
+  - 'https://pgexercises.com/ (footer: ''Site content licensed under CC BY-SA 3.0'')'
+  - https://github.com/AlisdairO/pgexercises/blob/master/questions/LICENSE
+  postgres_on_leetcode: n/a
+  pattern_primary: recursive_cte
+  pattern_secondary:
+  - hierarchy_traversal_down
+  batch: B6
+  trigger_phrases:
+  - phrase: recommended, and so on
+    meaning: unbounded depth -> WITH RECURSIVE
+  - phrase: downward
+    meaning: anchor = members whose recommendedby = 1; recursive step joins recommendedby = previous memid
+  schema:
+  - *id001
+  requirement: Return every member directly or indirectly recommended by member 1 (members they recommended, members
+    those recommended, etc.), excluding member 1 itself.
+  output:
+    columns:
+    - memid
+    - firstname
+    - surname
+    ordering: memid ascending
+    grain: one row per descendant member
+  rules:
+    ties: n/a
+    nulls: recommendedby NULL = top of chain
+    empty: member with no recommendees -> empty
+    other: MySQL 8 supports WITH RECURSIVE
+  confidence: high
+  difficulty_source: curator judgement (pgexercises has no difficulty labels)
+  attribution: Adapted from PostgreSQL Exercises by Alisdair Owens (pgexercises.com), CC BY-SA 3.0. Spec reworded.
+  dataset: pgexercises 'clubdata' (cd schema). Data dump is at github.com/AlisdairO/pgexercises/database/clubdata.sql
+    (CC BY-SA). Build sessions without internet must synthesise fixtures matching this schema.
+  dialect_note: Original is PostgreSQL; MySQL 8.0 equivalent is fine (drop the cd. schema prefix or create schema
+    cd).
+- id: 42
+  source: pgexercises
+  source_id: recursive/getupwardall
+  title: Produce a CTE that can return the upward recommendation chain for any member
+  url: https://pgexercises.com/questions/recursive/getupwardall.html
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - pgexercises.com is free with no account; content CC BY-SA 3.0
+  license: CC BY-SA 3.0 (pgexercises.com site footer; questions/LICENSE in github.com/AlisdairO/pgexercises)
+  license_evidence:
+  - 'https://pgexercises.com/ (footer: ''Site content licensed under CC BY-SA 3.0'')'
+  - https://github.com/AlisdairO/pgexercises/blob/master/questions/LICENSE
+  postgres_on_leetcode: n/a
+  pattern_primary: recursive_cte
+  pattern_secondary:
+  - closure_table
+  - carry_anchor_column
+  batch: B6
+  trigger_phrases:
+  - phrase: for any member
+    meaning: anchor must be ALL members, carrying the starting member through recursion
+  - phrase: upward recommendation chain
+    meaning: recursive step follows recommendedby upward
+  - phrase: chains for members 12 and 22
+    meaning: filter only at the end, after building the full closure
+  schema:
+  - *id001
+  requirement: Build a recursive CTE mapping every member to each of their ancestors in the recommendation chain
+    (recommender, recommender's recommender, ...). Use it to output, for members 12 and 22, each ancestor's memid
+    and that ancestor's first name and surname.
+  output:
+    columns:
+    - member
+    - recommender
+    - firstname
+    - surname
+    ordering: member ASC, recommender DESC
+    grain: one row per (member, ancestor) for members 12 and 22
+  rules:
+    ties: n/a
+    nulls: chain stops when recommendedby is NULL; do not emit a NULL recommender row
+    empty: member with no recommender -> no rows for that member
+    other: firstname/surname belong to the recommender, not the member
+  confidence: high
+  difficulty_source: curator judgement (pgexercises has no difficulty labels)
+  attribution: Adapted from PostgreSQL Exercises by Alisdair Owens (pgexercises.com), CC BY-SA 3.0. Spec reworded.
+  dataset: pgexercises 'clubdata' (cd schema). Data dump is at github.com/AlisdairO/pgexercises/database/clubdata.sql
+    (CC BY-SA). Build sessions without internet must synthesise fixtures matching this schema.
+  dialect_note: Original is PostgreSQL; MySQL 8.0 equivalent is fine (drop the cd. schema prefix or create schema
+    cd).
+- id: 43
+  source: leetcode
+  source_id: 3482
+  title: Analyze Organization Hierarchy
+  url: https://leetcode.com/problems/analyze-organization-hierarchy/
+  difficulty: hard
+  free_verified: true
+  free_evidence:
+  - doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+  - Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+  - kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+  license: leetcode-proprietary-link-only
+  postgres_on_leetcode: unknown
+  pattern_primary: recursive_cte
+  pattern_secondary:
+  - closure_table
+  - subtree_aggregation
+  batch: B6
+  trigger_phrases:
+  - phrase: CEO is level 1
+    meaning: recursive depth from manager_id IS NULL
+  - phrase: direct and indirect reports
+    meaning: need every (ancestor, descendant) pair - a closure table - not just direct children
+  - phrase: plus their own salary
+    meaning: budget = own salary + sum of all descendants' salaries
+  - phrase: ordered by level ... budget ... employee_name
+    meaning: level ASC, budget DESC, employee_name ASC
+  schema:
+  - table: Employees
+    columns:
+    - name: employee_id
+      type: int
+      pk: true
+    - name: employee_name
+      type: varchar
+    - name: manager_id
+      type: int
+      note: NULL for CEO
+    - name: salary
+      type: int
+    - name: department
+      type: varchar
+    grain: one row per employee
+  requirement: 'For every employee compute: level (CEO = 1, each step down +1); team_size = number of direct plus
+    indirect reports (0 for non-managers); budget = own salary + total salary of all direct and indirect reports.'
+  output:
+    columns:
+    - employee_id
+    - employee_name
+    - level
+    - team_size
+    - budget
+    ordering: level ASC, budget DESC, employee_name ASC
+    grain: one row per employee (including non-managers)
+  rules:
+    ties: see ordering
+    nulls: team_size 0, budget = own salary for leaves
+    empty: n/a
+    other: single CEO assumed
+  confidence: high
+- id: 44
+  source: pgexercises
+  source_id: aggregates/classify
+  title: Classify facilities by value
+  url: https://pgexercises.com/questions/aggregates/classify.html
+  difficulty: medium
+  free_verified: true
+  free_evidence:
+  - pgexercises.com is free with no account; content CC BY-SA 3.0
+  license: CC BY-SA 3.0 (pgexercises.com site footer; questions/LICENSE in github.com/AlisdairO/pgexercises)
+  license_evidence:
+  - 'https://pgexercises.com/ (footer: ''Site content licensed under CC BY-SA 3.0'')'
+  - https://github.com/AlisdairO/pgexercises/blob/master/questions/LICENSE
+  postgres_on_leetcode: n/a
+  pattern_primary: median_percentile
+  pattern_secondary:
+  - ntile_buckets
+  - window_over_aggregate
+  batch: B6
+  trigger_phrases:
+  - phrase: equally sized groups
+    meaning: NTILE(3) over revenue DESC = tercile buckets
+  - phrase: high, average, and low
+    meaning: map bucket 1/2/3 to labels with CASE
+  - phrase: based on their revenue
+    meaning: aggregate revenue per facility first, then window
+  schema:
+  - *id002
+  - *id003
+  requirement: 'Revenue per booking = slots * guestcost if memid = 0 else slots * membercost. Total revenue per
+    facility (facilities with bookings), split facilities into 3 groups of as-equal-as-possible size by revenue
+    descending (NTILE semantics: earlier buckets get the extra rows), and label bucket 1 ''high'', 2 ''average'',
+    3 ''low''.'
+  output:
+    columns:
+    - name
+    - revenue
+    ordering: bucket number ascending (high, average, low), then name ascending
+    grain: one row per facility with bookings
+  rules:
+    ties: equal revenues may land in different buckets (NTILE is positional)
+    nulls: n/a
+    empty: n/a
+    other: '''revenue'' output column holds the LABEL, not the number'
+  confidence: high
+  difficulty_source: curator judgement (pgexercises has no difficulty labels)
+  attribution: Adapted from PostgreSQL Exercises by Alisdair Owens (pgexercises.com), CC BY-SA 3.0. Spec reworded.
+  dataset: pgexercises 'clubdata' (cd schema). Data dump is at github.com/AlisdairO/pgexercises/database/clubdata.sql
+    (CC BY-SA). Build sessions without internet must synthesise fixtures matching this schema.
+  dialect_note: Original is PostgreSQL; MySQL 8.0 equivalent is fine (drop the cd. schema prefix or create schema
+    cd).
+- id: 45
+  source: original
+  source_id: SPL-MED-01
+  title: Median Order Amount per Store
+  url: null
+  difficulty: hard
+  free_verified: null
+  free_evidence:
+  - authored for sql-pattern-lab; no third-party content
+  license: original-work (sql-pattern-lab; no third-party text)
+  license_evidence: null
+  postgres_on_leetcode: n/a
+  pattern_primary: median_percentile
+  pattern_secondary:
+  - row_number_and_count
+  - even_odd_middle
+  batch: B6
+  trigger_phrases:
+  - phrase: median order amount per store
+    meaning: 'no MEDIAN()/PERCENTILE_CONT in MySQL 8: ROW_NUMBER + COUNT per partition'
+  - phrase: even number of orders
+    meaning: average the two middle values
+  - phrase: duplicate amounts
+    meaning: ties must not break positional logic -> ROW_NUMBER with a tiebreak column, not RANK
+  schema:
+  - table: StoreOrders
+    columns:
+    - name: order_id
+      type: int
+      pk: true
+    - name: store_id
+      type: int
+    - name: amount
+      type: decimal(10,2)
+    grain: one row per order
+  requirement: 'For each store, report the median of its order amounts: with n orders sorted by amount (ties broken
+    by order_id), the median is the middle value when n is odd and the mean of the two middle values when n is even.
+    Round to 2 decimals. Stores with no orders do not appear.'
+  output:
+    columns:
+    - store_id
+    - median_amount
+    ordering: store_id ascending
+    grain: one row per store with orders
+  rules:
+    ties: duplicate amounts are fine; positions use (amount, order_id)
+    nulls: amount is never NULL
+    empty: empty table -> empty result
+    other: rows with ROW_NUMBER IN (FLOOR((n+1)/2), FLOOR(n/2)+1) are the middle rows
+  confidence: high
+  difficulty_source: curator judgement
+  confidence_note: 'Original problem authored to fill the median gap (LeetCode #569 and #571 are Premium). Build
+    session must create its own fixtures.'
