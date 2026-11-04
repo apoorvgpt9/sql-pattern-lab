@@ -1,0 +1,55 @@
+id: 3
+source: leetcode
+source_id: 585
+title: Investments in 2016
+url: https://leetcode.com/problems/investments-in-2016/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: anti_join
+pattern_secondary:
+- window_count_partition
+- existence
+batch: B1
+trigger_phrases:
+- phrase: same tiv_2015 as one or more others
+  meaning: EXISTS another row with equal tiv_2015 (or COUNT OVER PARTITION BY tiv_2015 > 1)
+- phrase: not in the same city as any other
+  meaning: NOT EXISTS another row with same (lat, lon) (or partition count = 1)
+- phrase: sum ... rounded to two decimals
+  meaning: single scalar row
+schema:
+- table: Insurance
+  columns:
+  - name: pid
+    type: int
+    pk: true
+  - name: tiv_2015
+    type: float
+  - name: tiv_2016
+    type: float
+  - name: lat
+    type: float
+    note: not null
+  - name: lon
+    type: float
+    note: not null
+  grain: one row per policy
+requirement: Sum tiv_2016 over policies that (a) share their tiv_2015 value with at least one other policy AND (b)
+  have a (lat, lon) pair that no other policy has. Round the sum to 2 decimals.
+output:
+  columns:
+  - tiv_2016
+  ordering: single row
+  grain: one scalar row
+rules:
+  ties: n/a
+  nulls: lat/lon never null
+  empty: no qualifying policies -> single row with NULL (SUM of nothing)
+  other: '''other'' means a different pid'
+confidence: high

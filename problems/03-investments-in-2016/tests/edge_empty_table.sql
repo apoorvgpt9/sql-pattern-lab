@@ -1,0 +1,2 @@
+-- No policies at all.
+-- expect: NULL | an aggregate without GROUP BY returns exactly one row even on an empty table; SUM of no rows is NULL
