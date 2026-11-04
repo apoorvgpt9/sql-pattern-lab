@@ -1,0 +1,50 @@
+id: 32
+source: leetcode
+source_id: 601
+title: Human Traffic of Stadium
+url: https://leetcode.com/problems/human-traffic-of-stadium/
+difficulty: hard
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: gaps_and_islands
+pattern_secondary:
+- row_number_difference
+batch: B5
+trigger_phrases:
+- phrase: three or more rows with consecutive id's
+  meaning: 'islands on id (not date): id - ROW_NUMBER() over filtered rows'
+- phrase: people is greater than or equal to 100
+  meaning: filter BEFORE computing islands
+- phrase: display the records
+  meaning: return every row of each qualifying island, not just the start
+schema:
+- table: Stadium
+  columns:
+  - name: id
+    type: int
+  - name: visit_date
+    type: date
+    note: unique; increases with id
+  - name: people
+    type: int
+  grain: one row per visit day
+requirement: Among rows with people >= 100, find maximal runs of consecutive id values; return all rows belonging
+  to runs of length 3 or more.
+output:
+  columns:
+  - id
+  - visit_date
+  - people
+  ordering: visit_date ascending
+  grain: one row per qualifying Stadium row
+rules:
+  ties: n/a
+  nulls: n/a
+  empty: empty -> empty
+  other: consecutiveness is on id, even if dates skip
+confidence: high
