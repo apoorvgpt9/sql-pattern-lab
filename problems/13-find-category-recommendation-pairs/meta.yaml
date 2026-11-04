@@ -1,0 +1,61 @@
+id: 13
+source: leetcode
+source_id: 3554
+title: Find Category Recommendation Pairs
+url: https://leetcode.com/problems/find-category-recommendation-pairs/
+difficulty: hard
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: self_join
+pattern_secondary:
+- pairwise_counting
+- distinct_before_join
+batch: B2
+trigger_phrases:
+- phrase: category1 < category2
+  meaning: self-join on user_id with string comparison a.category < b.category
+- phrase: unique customers ... from both categories
+  meaning: dedup to (user, category) BEFORE the self-join, or COUNT(DISTINCT user_id)
+- phrase: at least 3 different customers
+  meaning: HAVING count >= 3
+schema:
+- table: ProductPurchases
+  columns:
+  - name: user_id
+    type: int
+  - name: product_id
+    type: int
+  - name: quantity
+    type: int
+  grain: one row per (user_id, product_id)
+- table: ProductInfo
+  columns:
+  - name: product_id
+    type: int
+    pk: true
+  - name: category
+    type: varchar
+  - name: price
+    type: decimal
+  grain: one row per product
+requirement: Map each purchase to its product category. For every pair of distinct categories (category1 < category2
+  lexicographically) count the distinct customers who bought at least one product in each. Report pairs with at
+  least 3 such customers.
+output:
+  columns:
+  - category1
+  - category2
+  - customer_count
+  ordering: customer_count DESC, category1 ASC, category2 ASC
+  grain: one row per qualifying category pair
+rules:
+  ties: see ordering
+  nulls: n/a
+  empty: empty -> empty
+  other: a customer buying several products in one category counts once for that category
+confidence: high

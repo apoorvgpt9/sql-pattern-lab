@@ -1,0 +1,3 @@
+-- Your answer for Find Category Recommendation Pairs. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 13-find-category-recommendation-pairs --mine
+-- Output columns: category1, category2, customer_count
