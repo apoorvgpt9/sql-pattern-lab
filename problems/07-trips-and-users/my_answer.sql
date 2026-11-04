@@ -1,0 +1,3 @@
+-- Your answer for Trips and Users. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 07-trips-and-users --mine
+-- Output columns: Day, Cancellation Rate

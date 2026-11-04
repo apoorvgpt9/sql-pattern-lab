@@ -1,0 +1,72 @@
+id: 7
+source: leetcode
+source_id: 262
+title: Trips and Users
+url: https://leetcode.com/problems/trips-and-users/
+difficulty: hard
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: conditional_aggregation
+pattern_secondary:
+- multi_join_same_table
+- ratio
+batch: B1
+trigger_phrases:
+- phrase: both client and driver must not be banned
+  meaning: join Users twice (as client and as driver), both banned='No'
+- phrase: cancelled by client or driver
+  meaning: status <> 'completed' in the numerator
+- phrase: each day ... with at least one trip
+  meaning: GROUP BY request_at; days with zero eligible trips simply do not appear
+- phrase: round to two decimal points
+  meaning: ROUND(AVG(status<>'completed'),2)
+schema:
+- table: Trips
+  columns:
+  - name: id
+    type: int
+    pk: true
+  - name: client_id
+    type: int
+    note: FK Users.users_id
+  - name: driver_id
+    type: int
+    note: FK Users.users_id
+  - name: city_id
+    type: int
+  - name: status
+    type: enum('completed','cancelled_by_driver','cancelled_by_client')
+  - name: request_at
+    type: varchar
+    note: '''YYYY-MM-DD'' string'
+  grain: one row per trip request
+- table: Users
+  columns:
+  - name: users_id
+    type: int
+    pk: true
+  - name: banned
+    type: enum('Yes','No')
+  - name: role
+    type: enum('client','driver','partner')
+  grain: one row per user
+requirement: For each day from 2013-10-01 to 2013-10-03 inclusive, consider only trips where neither the client
+  nor the driver is banned. Cancellation rate = cancelled trips (either cancellation status) / all such trips that
+  day, rounded to 2 decimals. Output only days that have at least one such trip.
+output:
+  columns:
+  - Day
+  - Cancellation Rate
+  ordering: any order
+  grain: one row per qualifying day
+rules:
+  ties: n/a
+  nulls: n/a
+  empty: no eligible trips in range -> empty result
+  other: 'second output column name contains a space: alias as `Cancellation Rate`'
+confidence: high
