@@ -1,12 +1,12 @@
--- Product Sales Analysis III: tables for MySQL 8.0. Names mirror the original.
--- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
--- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+-- Product Sales Analysis III (LeetCode 1070): tables for MySQL 8.0. Names mirror the original.
+-- The key is (sale_id, year), as on LeetCode: the same sale_id may appear in different years,
+-- and a product may have several rows in the same year. `year` is a non-reserved keyword in MySQL.
 
--- grain: PK (sale_id, year); a product may have several rows per year
--- CREATE TABLE Sales (
---   sale_id INT,
---   product_id INT,
---   year INT,
---   quantity INT,
---   price INT  -- per unit
--- );
+CREATE TABLE Sales (
+  sale_id    INT NOT NULL,
+  product_id INT NOT NULL,
+  year       INT NOT NULL,
+  quantity   INT NOT NULL,
+  price      INT NOT NULL,        -- per unit
+  PRIMARY KEY (sale_id, year)     -- grain: one row per sale entry
+);
