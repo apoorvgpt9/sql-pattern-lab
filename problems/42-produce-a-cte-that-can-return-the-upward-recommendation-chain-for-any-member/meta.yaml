@@ -1,0 +1,71 @@
+id: 42
+source: pgexercises
+source_id: recursive/getupwardall
+title: Produce a CTE that can return the upward recommendation chain for any member
+url: https://pgexercises.com/questions/recursive/getupwardall.html
+difficulty: hard
+free_verified: true
+free_evidence:
+- pgexercises.com is free with no account; content CC BY-SA 3.0
+license: CC BY-SA 3.0 (pgexercises.com site footer; questions/LICENSE in github.com/AlisdairO/pgexercises)
+license_evidence:
+- 'https://pgexercises.com/ (footer: ''Site content licensed under CC BY-SA 3.0'')'
+- https://github.com/AlisdairO/pgexercises/blob/master/questions/LICENSE
+postgres_on_leetcode: n/a
+pattern_primary: recursive_cte
+pattern_secondary:
+- closure_table
+- carry_anchor_column
+batch: B6
+trigger_phrases:
+- phrase: for any member
+  meaning: anchor must be ALL members, carrying the starting member through recursion
+- phrase: upward recommendation chain
+  meaning: recursive step follows recommendedby upward
+- phrase: chains for members 12 and 22
+  meaning: filter only at the end, after building the full closure
+schema:
+- table: cd.members
+  columns:
+  - name: memid
+    type: integer
+    pk: true
+  - name: surname
+    type: varchar(200)
+  - name: firstname
+    type: varchar(200)
+  - name: address
+    type: varchar(300)
+  - name: zipcode
+    type: integer
+  - name: telephone
+    type: varchar(20)
+  - name: recommendedby
+    type: integer
+    note: nullable; FK to members.memid
+  - name: joindate
+    type: timestamp
+  grain: one row per member; memid 0 is the shared GUEST account
+requirement: Build a recursive CTE mapping every member to each of their ancestors in the recommendation chain (recommender,
+  recommender's recommender, ...). Use it to output, for members 12 and 22, each ancestor's memid and that ancestor's
+  first name and surname.
+output:
+  columns:
+  - member
+  - recommender
+  - firstname
+  - surname
+  ordering: member ASC, recommender DESC
+  grain: one row per (member, ancestor) for members 12 and 22
+rules:
+  ties: n/a
+  nulls: chain stops when recommendedby is NULL; do not emit a NULL recommender row
+  empty: member with no recommender -> no rows for that member
+  other: firstname/surname belong to the recommender, not the member
+confidence: high
+difficulty_source: curator judgement (pgexercises has no difficulty labels)
+attribution: Adapted from PostgreSQL Exercises by Alisdair Owens (pgexercises.com), CC BY-SA 3.0. Spec reworded.
+dataset: pgexercises 'clubdata' (cd schema). Data dump is at github.com/AlisdairO/pgexercises/database/clubdata.sql
+  (CC BY-SA). Build sessions without internet must synthesise fixtures matching this schema.
+dialect_note: Original is PostgreSQL; MySQL 8.0 equivalent is fine (drop the cd. schema prefix or create schema
+  cd).
