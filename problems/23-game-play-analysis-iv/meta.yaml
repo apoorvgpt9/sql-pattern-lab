@@ -1,0 +1,50 @@
+id: 23
+source: leetcode
+source_id: 550
+title: Game Play Analysis IV
+url: https://leetcode.com/problems/game-play-analysis-iv/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: retention_cohort
+pattern_secondary:
+- first_per_key
+- day_n_retention
+batch: B3
+trigger_phrases:
+- phrase: logged in again on the day after
+  meaning: 'day-1 retention: exists row at first_login + 1 day'
+- phrase: the day they first logged in
+  meaning: MIN(event_date) per player is the cohort anchor
+- phrase: divide it by the number of total players
+  meaning: denominator = all distinct players
+schema:
+- table: Activity
+  columns:
+  - name: player_id
+    type: int
+  - name: device_id
+    type: int
+  - name: event_date
+    type: date
+  - name: games_played
+    type: int
+  grain: PK (player_id, event_date)
+requirement: Compute the fraction of all players who have an activity row exactly one day after their first-ever
+  activity date. Round to 2 decimals.
+output:
+  columns:
+  - fraction
+  ordering: single row
+  grain: one scalar row
+rules:
+  ties: n/a
+  nulls: n/a
+  empty: not tested
+  other: only the day immediately after the FIRST login counts, not any consecutive pair
+confidence: high

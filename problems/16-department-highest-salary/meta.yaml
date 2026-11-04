@@ -1,0 +1,61 @@
+id: 16
+source: leetcode
+source_id: 184
+title: Department Highest Salary
+url: https://leetcode.com/problems/department-highest-salary/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: ranking_per_group
+pattern_secondary:
+- ties
+- max_per_group_join_back
+batch: B3
+trigger_phrases:
+- phrase: highest salary in each of the departments
+  meaning: MAX per department then join back, or RANK()=1
+- phrase: (example shows two tied employees)
+  meaning: 'ties: return every employee sharing the max -> RANK/DENSE_RANK, not ROW_NUMBER'
+schema:
+- table: Employee
+  columns:
+  - name: id
+    type: int
+    pk: true
+  - name: name
+    type: varchar
+  - name: salary
+    type: int
+  - name: departmentId
+    type: int
+    note: FK Department.id
+  grain: one row per employee
+- table: Department
+  columns:
+  - name: id
+    type: int
+    pk: true
+  - name: name
+    type: varchar
+    note: not null
+  grain: one row per department
+requirement: For each department, return the employee(s) whose salary equals the department's maximum salary, with
+  the department name.
+output:
+  columns:
+  - Department
+  - Employee
+  - Salary
+  ordering: any order
+  grain: one row per top-paid employee per department
+rules:
+  ties: all employees tied at the max are returned
+  nulls: n/a
+  empty: departments with no employees do not appear
+  other: Department = Department.name, Employee = Employee.name
+confidence: high

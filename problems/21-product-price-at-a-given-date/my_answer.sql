@@ -1,0 +1,3 @@
+-- Your answer for Product Price at a Given Date. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 21-product-price-at-a-given-date --mine
+-- Output columns: product_id, price

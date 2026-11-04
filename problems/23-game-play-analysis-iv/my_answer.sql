@@ -1,0 +1,3 @@
+-- Your answer for Game Play Analysis IV. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 23-game-play-analysis-iv --mine
+-- Output columns: fraction

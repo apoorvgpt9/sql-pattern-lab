@@ -1,0 +1,61 @@
+id: 19
+source: leetcode
+source_id: 185
+title: Department Top Three Salaries
+url: https://leetcode.com/problems/department-top-three-salaries/
+difficulty: hard
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: ranking_per_group
+pattern_secondary:
+- ties
+- dense_rank
+batch: B3
+trigger_phrases:
+- phrase: top three unique salaries
+  meaning: DENSE_RANK() <= 3 per department; ties share a rank and do not consume slots
+- phrase: in each of the departments
+  meaning: PARTITION BY departmentId
+schema:
+- table: Employee
+  columns:
+  - name: id
+    type: int
+    pk: true
+  - name: name
+    type: varchar
+  - name: salary
+    type: int
+  - name: departmentId
+    type: int
+    note: FK Department.id
+  grain: one row per employee
+- table: Department
+  columns:
+  - name: id
+    type: int
+    pk: true
+  - name: name
+    type: varchar
+  grain: one row per department
+requirement: Within each department, take the three highest DISTINCT salary values; return every employee whose
+  salary is one of those values, with department name. Departments with fewer than three distinct salaries return
+  all their employees.
+output:
+  columns:
+  - Department
+  - Employee
+  - Salary
+  ordering: any order
+  grain: one row per qualifying employee
+rules:
+  ties: all employees at a qualifying salary are returned (can exceed 3 rows per department)
+  nulls: n/a
+  empty: departments without employees omitted
+  other: no two employees share the same name, salary and department
+confidence: high

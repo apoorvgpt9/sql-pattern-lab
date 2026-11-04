@@ -1,0 +1,2 @@
+-- Activity is empty. The spec says this is not tested; we document what MySQL does (see README "Assumptions").
+-- expect: NULL | no players: 0 / 0 is undefined, and MySQL evaluates it to NULL in a SELECT

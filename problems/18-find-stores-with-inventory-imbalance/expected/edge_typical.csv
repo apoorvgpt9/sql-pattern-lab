@@ -1,0 +1,3 @@
+store_id,store_name,location,most_exp_product,cheapest_product,imbalance_ratio
+1,Downtown,NYC,laptop,cable,15.00
+5,Mall,DAL,watch,box,2.33

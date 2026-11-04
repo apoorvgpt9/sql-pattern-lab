@@ -1,0 +1,2 @@
+-- Sales is empty.
+-- expect-empty: no sales, so no product has a first year

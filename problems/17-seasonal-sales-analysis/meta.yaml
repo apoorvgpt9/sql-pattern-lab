@@ -1,0 +1,68 @@
+id: 17
+source: leetcode
+source_id: 3564
+title: Seasonal Sales Analysis
+url: https://leetcode.com/problems/seasonal-sales-analysis/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: ranking_per_group
+pattern_secondary:
+- multi_key_tiebreak
+- case_bucketing
+batch: B3
+trigger_phrases:
+- phrase: most popular product category for each season
+  meaning: aggregate to (season, category) then rank within season, keep rank 1
+- phrase: If there is still a tie
+  meaning: ORDER BY total_quantity DESC, total_revenue DESC, category ASC inside the window
+- phrase: 'Winter: December, January, February'
+  meaning: CASE on MONTH(); December of one year and Jan/Feb of the next are the same bucket - years are ignored
+schema:
+- table: sales
+  columns:
+  - name: sale_id
+    type: int
+    pk: true
+  - name: product_id
+    type: int
+  - name: sale_date
+    type: date
+  - name: quantity
+    type: int
+  - name: price
+    type: decimal
+    note: per unit
+  grain: one row per sale
+- table: products
+  columns:
+  - name: product_id
+    type: int
+    pk: true
+  - name: product_name
+    type: varchar
+  - name: category
+    type: varchar
+  grain: one row per product
+requirement: 'Map each sale''s month to a season (Winter=Dec/Jan/Feb, Spring=Mar-May, Summer=Jun-Aug, Fall=Sep-Nov;
+  year ignored). For each season, compute per category total quantity and total revenue (sum of quantity*price)
+  and return the single best category: highest quantity, then highest revenue, then alphabetically smallest category.'
+output:
+  columns:
+  - season
+  - category
+  - total_quantity
+  - total_revenue
+  ordering: 'season ascending (string order: Fall, Spring, Summer, Winter)'
+  grain: one row per season that has sales
+rules:
+  ties: fully broken by the three-level rule; exactly one row per season
+  nulls: n/a
+  empty: seasons with no sales are omitted
+  other: season strings exactly 'Winter','Spring','Summer','Fall'
+confidence: high

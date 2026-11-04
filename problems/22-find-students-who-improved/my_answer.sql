@@ -1,0 +1,3 @@
+-- Your answer for Find Students Who Improved. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 22-find-students-who-improved --mine
+-- Output columns: student_id, subject, first_score, latest_score

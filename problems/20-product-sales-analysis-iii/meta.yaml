@@ -1,0 +1,54 @@
+id: 20
+source: leetcode
+source_id: 1070
+title: Product Sales Analysis III
+url: https://leetcode.com/problems/product-sales-analysis-iii/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: dedup_latest
+pattern_secondary:
+- first_per_key_keep_ties
+batch: B3
+trigger_phrases:
+- phrase: first year each product was sold
+  meaning: MIN(year) per product_id
+- phrase: all sales entries for that product
+  meaning: keep EVERY row in the min year, so join back / RANK, not ROW_NUMBER
+schema:
+- table: Sales
+  columns:
+  - name: sale_id
+    type: int
+  - name: product_id
+    type: int
+  - name: year
+    type: int
+  - name: quantity
+    type: int
+  - name: price
+    type: int
+    note: per unit
+  grain: PK (sale_id, year); a product may have several rows per year
+requirement: For each product, find the earliest year it appears in Sales and return all of that product's Sales
+  rows from that year.
+output:
+  columns:
+  - product_id
+  - first_year
+  - quantity
+  - price
+  ordering: any order
+  grain: one row per Sales row in the product's first year
+rules:
+  ties: multiple rows in the first year are all returned
+  nulls: n/a
+  empty: empty -> empty
+  other: spec follows the current doocs mirror text (single Sales table); older copies of this problem online show
+    a different schema
+confidence: high

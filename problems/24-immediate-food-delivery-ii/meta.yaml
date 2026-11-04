@@ -1,0 +1,53 @@
+id: 24
+source: leetcode
+source_id: 1174
+title: Immediate Food Delivery II
+url: https://leetcode.com/problems/immediate-food-delivery-ii/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: retention_cohort
+pattern_secondary:
+- first_per_key
+- conditional_aggregation
+batch: B3
+trigger_phrases:
+- phrase: first order of a customer
+  meaning: earliest order_date per customer (guaranteed unique)
+- phrase: percentage of immediate orders
+  meaning: AVG(order_date = pref_date) * 100 over first orders only
+- phrase: rounded to 2 decimal places
+  meaning: ROUND(...,2), value is a percent like 50.00
+schema:
+- table: Delivery
+  columns:
+  - name: delivery_id
+    type: int
+    pk: true
+  - name: customer_id
+    type: int
+  - name: order_date
+    type: date
+  - name: customer_pref_delivery_date
+    type: date
+    note: '>= order_date'
+  grain: one row per order
+requirement: An order is immediate if customer_pref_delivery_date equals order_date. Take each customer's first
+  order (earliest order_date; exactly one exists) and report the percentage of those first orders that are immediate,
+  rounded to 2 decimals.
+output:
+  columns:
+  - immediate_percentage
+  ordering: single row
+  grain: one scalar row
+rules:
+  ties: first order is guaranteed unique
+  nulls: n/a
+  empty: not tested
+  other: percentage scale 0-100
+confidence: high
