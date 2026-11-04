@@ -1,0 +1,3 @@
+-- Your answer for Restaurant Growth. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 29-restaurant-growth --mine
+-- Output columns: visited_on, amount, average_amount
