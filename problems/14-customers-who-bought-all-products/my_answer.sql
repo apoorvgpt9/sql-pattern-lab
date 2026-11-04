@@ -1,0 +1,3 @@
+-- Your answer for Customers Who Bought All Products. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 14-customers-who-bought-all-products --mine
+-- Output columns: customer_id
