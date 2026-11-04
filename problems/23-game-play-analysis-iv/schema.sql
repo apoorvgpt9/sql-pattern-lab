@@ -1,11 +1,10 @@
--- Game Play Analysis IV: tables for MySQL 8.0. Names mirror the original.
--- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
--- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+-- Game Play Analysis IV (LeetCode 550): tables for MySQL 8.0. Names mirror the original.
+-- The key is (player_id, event_date): a player has at most one row per day, whatever device they used.
 
--- grain: PK (player_id, event_date)
--- CREATE TABLE Activity (
---   player_id INT,
---   device_id INT,
---   event_date DATE,
---   games_played INT
--- );
+CREATE TABLE Activity (
+  player_id    INT NOT NULL,
+  device_id    INT NOT NULL,
+  event_date   DATE NOT NULL,
+  games_played INT NOT NULL,
+  PRIMARY KEY (player_id, event_date)   -- grain: one row per player per active day
+);
