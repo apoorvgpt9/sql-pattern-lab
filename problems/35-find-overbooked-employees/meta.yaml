@@ -1,0 +1,68 @@
+id: 35
+source: leetcode
+source_id: 3611
+title: Find Overbooked Employees
+url: https://leetcode.com/problems/find-overbooked-employees/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: sessionization
+pattern_secondary:
+- time_bucketing
+- two_level_aggregation
+batch: B5
+trigger_phrases:
+- phrase: per employee per week (Monday to Sunday)
+  meaning: 'bucket by ISO-style week: YEARWEEK(date, 1) or date minus WEEKDAY()'
+- phrase: more than 50% ... 40 hours
+  meaning: weekly meeting hours > 20
+- phrase: meeting-heavy for at least 2 weeks
+  meaning: 'aggregate twice: hours per week, then count heavy weeks per employee'
+schema:
+- table: employees
+  columns:
+  - name: employee_id
+    type: int
+    pk: true
+  - name: employee_name
+    type: varchar
+  - name: department
+    type: varchar
+  grain: one row per employee
+- table: meetings
+  columns:
+  - name: meeting_id
+    type: int
+    pk: true
+  - name: employee_id
+    type: int
+  - name: meeting_date
+    type: date
+  - name: meeting_type
+    type: varchar
+    note: Team|Client|Training
+  - name: duration_hours
+    type: decimal
+  grain: one row per meeting
+requirement: Sum meeting hours per employee per Monday-to-Sunday week. A week is heavy if the sum exceeds 20 hours.
+  Report employees with at least 2 heavy weeks and the count of heavy weeks.
+output:
+  columns:
+  - employee_id
+  - employee_name
+  - department
+  - meeting_heavy_weeks
+  ordering: meeting_heavy_weeks DESC, employee_name ASC
+  grain: one row per qualifying employee
+rules:
+  ties: n/a
+  nulls: n/a
+  empty: empty -> empty
+  other: statement says > 20 but doocs reference uses >= 20; week must start Monday (MySQL WEEK mode 1 / YEARWEEK(d,1))
+confidence: medium
+confidence_note: Boundary at exactly 20 hours differs between statement (>) and reference solution (>=).
