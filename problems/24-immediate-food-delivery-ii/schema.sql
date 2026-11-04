@@ -1,12 +1,10 @@
--- Immediate Food Delivery II: tables for MySQL 8.0. Names mirror the original.
--- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
--- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+-- Immediate Food Delivery II (LeetCode 1174): tables for MySQL 8.0. Names mirror the original.
+-- Spec guarantees: customer_pref_delivery_date >= order_date, and each customer's FIRST order date
+-- is unique (their earliest order_date appears once). Later orders may share a date.
 
--- grain: one row per order
--- CREATE TABLE Delivery (
---   delivery_id INT,
---   customer_id INT,
---   order_date DATE,
---   customer_pref_delivery_date DATE,  -- >= order_date
---   PRIMARY KEY (delivery_id)
--- );
+CREATE TABLE Delivery (
+  delivery_id                 INT PRIMARY KEY,   -- grain: one row per order
+  customer_id                 INT NOT NULL,
+  order_date                  DATE NOT NULL,
+  customer_pref_delivery_date DATE NOT NULL
+);

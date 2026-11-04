@@ -1,0 +1,2 @@
+-- Delivery is empty. The spec says this is not tested; we document what MySQL does (README "Assumptions").
+-- expect: NULL | no customers: 0 / 0 is undefined, and MySQL evaluates it to NULL in a SELECT
