@@ -124,6 +124,10 @@ For each problem, check and fix:
 4. Hint ladder: hint 1 must not give away hint 3. Each hint must reveal strictly more.
 5. Brute force is a natural first attempt, not a strawman.
 6. Performance claims: every claim points to the bench table or is labelled reasoned. Remove anything else.
+   Batch sessions chose which approach is "optimal" from informal local timings. Read each problem's rendered bench
+   table: where it contradicts "Why the optimal one wins" or the At-scale ranking, rewrite the text to match the
+   measurements (or reorder solutions if the "optimal" one is clearly beaten without indexes).
+   Remove any mistakes/*.sql whose failure depends on unspecified row order (e.g. relying on GROUP BY output order).
 7. No reproduced problem text beyond the trigger phrases in problems.yaml.
 
 Write REVIEW.md: one row per problem with score 1–5 on correctness, decomposition, hints, at-scale; and what you changed.
