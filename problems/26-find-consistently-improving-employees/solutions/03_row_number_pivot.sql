@@ -1,6 +1,7 @@
--- Approach 2: ROW_NUMBER keeps the 3 most recent reviews per employee, conditional aggregation turns
+-- Approach 3 (optimal): ROW_NUMBER keeps the 3 most recent reviews per employee, conditional aggregation turns
 -- those 3 rows into one row (newest / middle / oldest), and the comparison runs on that row.
 -- COUNT(*) = 3 is the "at least 3 reviews" rule: fewer than 3 rows can never fill all three slots.
+-- ROW_NUMBER is evaluated as a stream (no look-ahead buffer), and rn <= 3 cuts the rows before the GROUP BY.
 WITH ranked AS (
   SELECT employee_id, rating,
          ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY review_date DESC, review_id DESC) AS rn

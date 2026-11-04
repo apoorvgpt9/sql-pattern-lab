@@ -1,4 +1,5 @@
--- Approach 2: number each top performer's completions in order, then join row n to row n + 1.
+-- Approach 3 (optimal): number each top performer's completions in order, then join row n to row n + 1.
+-- ROW_NUMBER streams (no look-ahead buffer); the join on (user_id, rn + 1) is 1:1 per position.
 -- The cohort is filtered first (GROUP BY / HAVING), so the window only sees top performers' rows.
 WITH top_users AS (
   SELECT user_id

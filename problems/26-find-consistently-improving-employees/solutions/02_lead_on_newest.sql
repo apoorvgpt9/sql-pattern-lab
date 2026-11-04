@@ -1,6 +1,8 @@
--- Approach 3 (optimal): one window pass, newest review first. On each review, LEAD(1) and LEAD(2) read
+-- Approach 2: one window pass, newest review first. On each review, LEAD(1) and LEAD(2) read
 -- the next-older and the second-next-older ratings, so the newest row of each employee already holds all three
 -- ratings. Keep only that row (rn = 1). If the employee has fewer than 3 reviews, LEAD(2) is NULL and the row is dropped.
+-- The clearest single-pass form, but MySQL must buffer rows to look ahead (EXPLAIN: "Window aggregate with buffering")
+-- and evaluates the window for every review, including the ones that will be discarded.
 WITH latest AS (
   SELECT employee_id,
          rating                  AS newest,

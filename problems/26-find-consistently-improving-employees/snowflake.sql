@@ -1,4 +1,6 @@
--- UNVERIFIED: Snowflake version of the optimal approach (03). CI cannot run Snowflake.
+-- UNVERIFIED: Snowflake version. CI cannot run Snowflake.
+-- This is the single-pass LEAD form (MySQL approach 02), not MySQL's optimal ROW_NUMBER pivot (03): MySQL's
+-- slowness with LEAD comes from its window buffering, which is not known to apply here (README section 9).
 -- QUALIFY filters on a window function directly, and Snowflake has no named WINDOW clause,
 -- so the window spec is repeated. Differences are noted in README section 9.
 WITH latest AS (

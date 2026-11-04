@@ -1,5 +1,6 @@
--- Approach 3 (optimal): filter to the cohort first, then LEAD gives each completion its successor in one
+-- Approach 2: filter to the cohort first, then LEAD gives each completion its successor in one
 -- ordered pass per user. The last course of each user gets a NULL successor and is dropped, then pairs are counted.
+-- The clearest form; MySQL has to buffer rows to look ahead (EXPLAIN: "Window aggregate with buffering").
 WITH top_users AS (
   SELECT user_id
   FROM course_completions

@@ -1,4 +1,6 @@
--- UNVERIFIED: Snowflake version of the optimal approach (03). CI cannot run Snowflake.
+-- UNVERIFIED: Snowflake version. CI cannot run Snowflake.
+-- This is the LEAD form (MySQL approach 02), not MySQL's optimal ROW_NUMBER join (03): LEAD avoids a self-join
+-- and its shuffle, and MySQL's window buffering cost is not known to apply here (README section 9).
 -- Same shape as MySQL; the one behavioural difference is string ordering (README section 9).
 WITH top_users AS (
   SELECT user_id

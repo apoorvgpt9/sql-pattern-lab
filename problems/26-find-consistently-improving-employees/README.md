@@ -50,7 +50,7 @@ Shape: (1) order each employee's reviews newest first. (2) For the newest review
 
 <details><summary>Hint 3</summary>
 
-Key trick: put `LEAD(rating, 1)` and `LEAD(rating, 2)` on the same window (`PARTITION BY employee_id ORDER BY review_date DESC`) and keep only the newest row (`ROW_NUMBER() = 1`). That row now holds all three ratings, a missing third review shows up as `LEAD(.., 2) IS NULL`, and the score is `rating − LEAD(rating, 2)`. Add `review_id DESC` to the window order so same-day reviews have a defined order.
+Key trick: put `LEAD(rating, 1)` and `LEAD(rating, 2)` on the same window (`PARTITION BY employee_id ORDER BY review_date DESC`) and keep only the newest row (`ROW_NUMBER() = 1`). That row now holds all three ratings, a missing third review shows up as `LEAD(.., 2) IS NULL`, and the score is `rating − LEAD(rating, 2)`. Add `review_id DESC` to the window order so same-day reviews have a defined order. An equivalent route without look-ahead: rank with `ROW_NUMBER`, keep `rn <= 3`, and pivot the three rows with conditional aggregation (approach 3).
 
 </details>
 
@@ -89,6 +89,8 @@ WHERE l.rn = 1                                                        -- step 2
 ORDER BY improvement_score DESC, e.name ASC;                          -- step 5
 ```
 
+This assembled query is approach 2 in section 5. It is the clearest decomposition. Approach 3 keeps the same logic but swaps steps 1 and 2: it ranks with `ROW_NUMBER`, keeps `rn <= 3`, and pivots those three rows into one with conditional aggregation, which is faster in MySQL 8.0 for a reason explained there.
+
 Self-check before you submit: pick an employee with five reviews and confirm by hand that you looked at the newest three, not the first three. Then pick one with exactly two reviews and confirm they are absent.
 
 ## 5. Approaches: brute force → optimal
@@ -117,7 +119,15 @@ ORDER BY improvement_score DESC, e.name ASC;
 
 **Cost model (reasoned):** the rank subquery runs once per review and scans that employee's reviews, so without an index it is reviews × reviews. That is quadratic overall, and it is the part that blows up first. The three joins on the materialised `ranked` result are cheap in comparison. With `indexes.sql` each count becomes a covering index range read of one employee's newer reviews (confirmed in `EXPLAIN` on generated data).
 
-### Approach 2: `ROW_NUMBER`, keep three, pivot with conditional aggregation (`solutions/02_row_number_pivot.sql`)
+### Approach 2: `LEAD` on the newest review (`solutions/02_lead_on_newest.sql`)
+
+The SQL is the assembled query in section 4.
+
+**Why it is correct:** with the window ordered newest first, `LEAD(rating, 1)` is the next-older review and `LEAD(rating, 2)` is the one before that. On each employee's newest review (`rn = 1`) these are exactly the middle and oldest of the last three. `LEAD(.., 2)` is NULL when there are fewer than three reviews, so the "at least 3" rule falls out of the same expression.
+
+**Cost model (reasoned; the plan was checked with `EXPLAIN`):** one window pass over the table, with no self-joins and no aggregation. But to look ahead, MySQL has to buffer rows: the plan shows `Window aggregate with buffering`, and all three window functions are evaluated for every review, including the ones that are then thrown away by `rn = 1`. The derived table holding those results is materialised before the filter. It is the clearest query and the right shape in an engine where look-ahead is cheap; in MySQL 8.0 the buffering is its cost.
+
+### Approach 3 (optimal): `ROW_NUMBER`, keep three, pivot (`solutions/03_row_number_pivot.sql`)
 
 ```sql
 WITH ranked AS (
@@ -138,17 +148,9 @@ WHERE l.n = 3 AND l.newest > l.middle AND l.middle > l.oldest
 ORDER BY improvement_score DESC, e.name ASC;
 ```
 
-**Why it is correct:** the window ranks each employee's reviews. `rn <= 3` keeps the most recent three. Conditional aggregation collapses them into one row, and `n = 3` is the "at least 3 reviews" rule.
+**Why it is correct:** the window ranks each employee's reviews newest first. `rn <= 3` keeps the most recent three. Conditional aggregation collapses those rows into one (newest / middle / oldest), and `n = 3` is the "at least 3 reviews" rule. Compared with approach 2, the neighbour access is replaced by position: instead of asking "what is the next-older rating?", the query asks "which rating has rank 2?".
 
-**Cost model (reasoned):** one sort of all reviews by (employee, date) for the window, then a second, small step: a `GROUP BY` over at most three rows per employee. The rows that survive `rn <= 3` are few, so the aggregation is cheap, but the window still ranks every review, including the ones that are about to be thrown away.
-
-### Approach 3 (optimal): `LEAD` on the newest review (`solutions/03_lead_on_newest.sql`)
-
-The SQL is the assembled query in section 4.
-
-**Why it is correct:** with the window ordered newest first, `LEAD(rating, 1)` is the next-older review and `LEAD(rating, 2)` is the one before that. On each employee's newest review (`rn = 1`) these are exactly the middle and oldest of the last three. `LEAD(.., 2)` is NULL when there are fewer than three reviews, so the "at least 3" rule falls out of the same expression.
-
-**Cost model (reasoned):** one window pass over the table. The sort is the same one approach 2 pays, but there is no second aggregation and no pivot: the three values are already on one row. The join to `employees` runs on one row per employee. `indexes.sql` lets the window scan a narrow covering index instead of the table; MySQL still planned a sort for the window in the `EXPLAIN` checks done while writing this guide, so the bench's `EXPLAIN ANALYZE` text is the place to see what it actually does.
+**Cost model (reasoned; the plan was checked with `EXPLAIN`):** one sort of all reviews by (employee, date) for the window, then a `GROUP BY` over at most three rows per employee. `ROW_NUMBER` is evaluated as a stream: the plan shows a plain `Window aggregate`, without the look-ahead buffer of approach 2. The rows surviving `rn <= 3` are few, so the aggregation and the join to `employees` are small. The window still ranks every review, including the ones about to be discarded; that is the shared cost of 2 and 3.
 
 **Measured** (`gen.py` data, generated by the bench workflow; the table is filled in automatically, so never type numbers here):
 
@@ -157,11 +159,11 @@ The SQL is the assembled query in section 4.
 
 ### Why the optimal one wins
 
-Approach 3 does the work of approach 2 in one step, because the neighbour access (`LEAD`) replaces both the "keep three" filter and the pivot. It also encodes both rules (three reviews exist, ratings strictly rise) as plain predicates on one row, so there is nothing to forget. Approach 1 shows what `ROW_NUMBER` replaces: a correlated count that rescans the table per row. The shared cost of approaches 2 and 3 is one sort or an index scan; the bench table shows how much of the difference comes from the second aggregation and how much from the sort.
+Approach 3 turns the problem into "rank, cut, pivot": a streaming `ROW_NUMBER`, a filter that leaves three rows per employee, and a tiny aggregation. Approach 2 expresses the same thing with neighbour access, which is shorter, but in MySQL 8.0 it needs a buffered window. Approach 1 shows what `ROW_NUMBER` replaces: a correlated count that rescans the table per row. This ranking is a statement about MySQL's window implementation: the bench table is the evidence, and in an engine without that buffering cost approach 2 may well be as fast, so the choice depends on the engine.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 breaks first, because its rank subquery rescans an employee's reviews once per review, which without an index means a scan of the whole table per row. Approaches 2 and 3 are dominated by sorting all reviews by (employee, date), which is *n log n* and spills to disk when the table does not fit in memory.
+**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 breaks first, because its rank subquery rescans an employee's reviews once per review, which without an index means a scan of the whole table per row. Approaches 2 and 3 are dominated by sorting all reviews by (employee, date), which is *n log n* and spills to disk when the table does not fit in memory; approach 2 additionally pays for the look-ahead buffer of its `LEAD` windows.
 
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql` adds `performance_reviews (employee_id, review_date, rating)`. It is *covering* (`review_id` is the InnoDB primary key and is stored in every secondary index entry), so no query touches the table rows. It makes approach 1's counts covering index range reads, and gives the windows in 2 and 3 a narrow index to scan instead of the table. It did not remove the window's sort in the `EXPLAIN` checks run while writing this guide (ascending or descending index), so don't promise a sort-free plan. The bench runs every approach with and without it.
@@ -171,7 +173,7 @@ Approach 3 does the work of approach 2 in one step, because the neighbour access
 **(c) Distributed engines, billions of rows. *Reasoned, not measured.***
 - *Shuffle:* `PARTITION BY employee_id` is a hash shuffle on `employee_id`, followed by a local sort within each partition. All reviews of one employee land on one task. That is the cost of any per-group window, and the skew risk is an employee with millions of reviews (a service account or test user). Few real employees have that many.
 - *Early reduction:* in a Spark-style engine, a rank filter (`rn <= 3`) cannot be pushed below the shuffle, so every review is shuffled even though only three per employee survive. The engine can partially reduce first with a per-partition top-3 before the shuffle (a "top-N per key" combiner) if the plan is written as `groupBy` + `sort_array(collect_list(struct(date, rating)))[0:3]` or equivalent. SQL-only plans often miss this.
-- *Snowflake:* `QUALIFY ROW_NUMBER() ... = 1` avoids an extra subquery layer. Micro-partition pruning does not help because there is no date predicate, and the whole table is read once.
+- *Snowflake:* `QUALIFY ROW_NUMBER() ... = 1` (the form in `snowflake.sql`) avoids an extra subquery layer. Micro-partition pruning does not help because there is no date predicate, and the whole table is read once.
 - *Things to avoid:* `COUNT(DISTINCT ...)` is not needed here, and a global `ORDER BY` of the final result is on a small set (one row per qualifying employee), so it is cheap.
 
 **(d) The data-engineering answer.** An employee's status depends only on their last three reviews, which is tiny state. Keep that state and update it as reviews arrive instead of re-ranking all history:
@@ -227,7 +229,7 @@ No approach in `solutions/` is broken by any of these.
 
 ## 9. Snowflake notes (UNVERIFIED)
 
-`snowflake.sql` keeps the shape of approach 3. What changes, and why:
+`snowflake.sql` uses the single-pass `LEAD` form (approach 2), not the `ROW_NUMBER` pivot that is fastest in MySQL. The reason `LEAD` is slower in MySQL is a buffering detail of MySQL's window implementation; whether Snowflake has the same cost is not known here (reasoned, unverified), and `LEAD` with `QUALIFY` is the shorter query there. What changes, and why:
 
 - **`QUALIFY ROW_NUMBER() OVER (...) = 1`** replaces the extra subquery layer that filters on `rn`, so the query is one level flatter.
 - **No named `WINDOW` clause** (as far as we know): the window spec is repeated for each function. The optimizer should still treat identical specs as one window.
