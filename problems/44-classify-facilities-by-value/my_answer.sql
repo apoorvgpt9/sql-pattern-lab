@@ -1,0 +1,3 @@
+-- Your answer for Classify facilities by value. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 44-classify-facilities-by-value --mine
+-- Output columns: name, revenue

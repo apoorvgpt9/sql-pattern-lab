@@ -1,0 +1,83 @@
+id: 44
+source: pgexercises
+source_id: aggregates/classify
+title: Classify facilities by value
+url: https://pgexercises.com/questions/aggregates/classify.html
+difficulty: medium
+free_verified: true
+free_evidence:
+- pgexercises.com is free with no account; content CC BY-SA 3.0
+license: CC BY-SA 3.0 (pgexercises.com site footer; questions/LICENSE in github.com/AlisdairO/pgexercises)
+license_evidence:
+- 'https://pgexercises.com/ (footer: ''Site content licensed under CC BY-SA 3.0'')'
+- https://github.com/AlisdairO/pgexercises/blob/master/questions/LICENSE
+postgres_on_leetcode: n/a
+pattern_primary: median_percentile
+pattern_secondary:
+- ntile_buckets
+- window_over_aggregate
+batch: B6
+trigger_phrases:
+- phrase: equally sized groups
+  meaning: NTILE(3) over revenue DESC = tercile buckets
+- phrase: high, average, and low
+  meaning: map bucket 1/2/3 to labels with CASE
+- phrase: based on their revenue
+  meaning: aggregate revenue per facility first, then window
+schema:
+- table: cd.bookings
+  columns:
+  - name: bookid
+    type: integer
+    pk: true
+  - name: facid
+    type: integer
+    note: FK facilities
+  - name: memid
+    type: integer
+    note: FK members; 0 = guest
+  - name: starttime
+    type: timestamp
+  - name: slots
+    type: integer
+    note: number of 30-minute slots booked
+  grain: one row per booking
+- table: cd.facilities
+  columns:
+  - name: facid
+    type: integer
+    pk: true
+  - name: name
+    type: varchar(100)
+  - name: membercost
+    type: numeric
+    note: cost per half-hour slot for members
+  - name: guestcost
+    type: numeric
+    note: cost per half-hour slot for guests
+  - name: initialoutlay
+    type: numeric
+  - name: monthlymaintenance
+    type: numeric
+  grain: one row per facility
+requirement: 'Revenue per booking = slots * guestcost if memid = 0 else slots * membercost. Total revenue per facility
+  (facilities with bookings), split facilities into 3 groups of as-equal-as-possible size by revenue descending
+  (NTILE semantics: earlier buckets get the extra rows), and label bucket 1 ''high'', 2 ''average'', 3 ''low''.'
+output:
+  columns:
+  - name
+  - revenue
+  ordering: bucket number ascending (high, average, low), then name ascending
+  grain: one row per facility with bookings
+rules:
+  ties: equal revenues may land in different buckets (NTILE is positional)
+  nulls: n/a
+  empty: n/a
+  other: '''revenue'' output column holds the LABEL, not the number'
+confidence: high
+difficulty_source: curator judgement (pgexercises has no difficulty labels)
+attribution: Adapted from PostgreSQL Exercises by Alisdair Owens (pgexercises.com), CC BY-SA 3.0. Spec reworded.
+dataset: pgexercises 'clubdata' (cd schema). Data dump is at github.com/AlisdairO/pgexercises/database/clubdata.sql
+  (CC BY-SA). Build sessions without internet must synthesise fixtures matching this schema.
+dialect_note: Original is PostgreSQL; MySQL 8.0 equivalent is fine (drop the cd. schema prefix or create schema
+  cd).
