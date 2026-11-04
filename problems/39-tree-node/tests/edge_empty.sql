@@ -1,0 +1,3 @@
+-- Tree is empty. One output row per node means zero rows; a UNION of hard-coded labels must not
+-- invent a Root.
+-- expect-empty: no nodes, so nothing to label
