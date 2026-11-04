@@ -1,0 +1,3 @@
+-- Your answer for Find Consistently Improving Employees. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 26-find-consistently-improving-employees --mine
+-- Output columns: employee_id, name, improvement_score
