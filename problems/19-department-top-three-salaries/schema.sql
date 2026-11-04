@@ -1,19 +1,15 @@
--- Department Top Three Salaries: tables for MySQL 8.0. Names mirror the original.
--- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
--- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+-- Department Top Three Salaries (LeetCode 185): tables for MySQL 8.0. Names mirror the original.
+-- No foreign key, as on LeetCode: an employee may reference a department id that does not exist
+-- (or have no department at all), and the query must cope with both.
 
--- grain: one row per employee
--- CREATE TABLE Employee (
---   id INT,
---   name VARCHAR(100),
---   salary INT,
---   departmentId INT,  -- FK Department.id
---   PRIMARY KEY (id)
--- );
+CREATE TABLE Employee (
+  id           INT PRIMARY KEY,   -- grain: one row per employee
+  name         VARCHAR(100),
+  salary       INT NOT NULL,      -- spec: nulls n/a, so salary is never NULL
+  departmentId INT                -- logically FK Department.id; not enforced, may be NULL
+);
 
--- grain: one row per department
--- CREATE TABLE Department (
---   id INT,
---   name VARCHAR(100),
---   PRIMARY KEY (id)
--- );
+CREATE TABLE Department (
+  id   INT PRIMARY KEY,           -- grain: one row per department
+  name VARCHAR(100) NOT NULL
+);
