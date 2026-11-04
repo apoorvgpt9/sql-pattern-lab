@@ -1,0 +1,3 @@
+-- Your answer for Exchange Seats. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 25-exchange-seats --mine
+-- Output columns: id, student
