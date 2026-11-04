@@ -1,0 +1,66 @@
+id: 36
+source: leetcode
+source_id: 3716
+title: Find Churn Risk Customers
+url: https://leetcode.com/problems/find-churn-risk-customers/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: dedup_latest
+pattern_secondary:
+- retention_cohort
+- latest_vs_historical
+batch: B5
+trigger_phrases:
+- phrase: their last event is not cancel
+  meaning: latest row per user via ROW_NUMBER() ORDER BY event_date DESC
+- phrase: at least one downgrade
+  meaning: SUM(event_type='downgrade') >= 1 over full history
+- phrase: less than 50% of ... historical maximum
+  meaning: current monthly_amount < 0.5 * MAX(monthly_amount)
+- phrase: subscriber for at least 60 days
+  meaning: DATEDIFF(last event date, first event date) >= 60
+schema:
+- table: subscription_events
+  columns:
+  - name: event_id
+    type: int
+    pk: true
+  - name: user_id
+    type: int
+  - name: event_date
+    type: date
+  - name: event_type
+    type: varchar
+    note: start|upgrade|downgrade|cancel
+  - name: plan_name
+    type: varchar
+    note: basic|standard|premium|NULL on cancel
+  - name: monthly_amount
+    type: decimal
+    note: 0 on cancel
+  grain: one row per subscription event
+requirement: 'A user is churn-risk if: their most recent event is not ''cancel''; they have at least one ''downgrade''
+  event; the monthly_amount of their most recent event is below half of the maximum monthly_amount across all their
+  events; and the days between their first and last event dates are at least 60. Report the current plan and amount,
+  the historical max, and that day span.'
+output:
+  columns:
+  - user_id
+  - current_plan
+  - current_monthly_amount
+  - max_historical_amount
+  - days_as_subscriber
+  ordering: days_as_subscriber DESC, user_id ASC
+  grain: one row per churn-risk user
+rules:
+  ties: 'same-day events: doocs tiebreaks latest by event_id DESC'
+  nulls: plan_name NULL only on cancel rows (never the current row of a qualifying user)
+  empty: empty -> empty
+  other: days_as_subscriber = DATEDIFF(max date, min date), not 'today'
+confidence: high

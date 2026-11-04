@@ -1,0 +1,3 @@
+-- Your answer for Find COVID Recovery Patients. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 34-find-covid-recovery-patients --mine
+-- Output columns: patient_id, patient_name, age, recovery_time

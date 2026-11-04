@@ -1,0 +1,76 @@
+id: 38
+source: leetcode
+source_id: 3617
+title: Find Students with Study Spiral Pattern
+url: https://leetcode.com/problems/find-students-with-study-spiral-pattern/
+difficulty: hard
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: sessionization
+pattern_secondary:
+- cyclic_sequence_check
+- lag_lead
+- not_exists
+batch: B5
+trigger_phrases:
+- phrase: repeating sequence
+  meaning: session i's subject must equal session ((i-1) mod k)+1's subject
+- phrase: at least 2 complete cycles
+  meaning: session count >= 2k and divisible by k
+- phrase: no gaps longer than 2 days
+  meaning: LAG(session_date) diff <= 2 for every consecutive pair
+- phrase: cycle length of at least 3
+  meaning: k = COUNT(DISTINCT subject) >= 3
+schema:
+- table: students
+  columns:
+  - name: student_id
+    type: int
+    pk: true
+  - name: student_name
+    type: varchar
+  - name: major
+    type: varchar
+  grain: one row per student
+- table: study_sessions
+  columns:
+  - name: session_id
+    type: int
+    pk: true
+  - name: student_id
+    type: int
+  - name: subject
+    type: varchar
+  - name: session_date
+    type: date
+  - name: hours_studied
+    type: decimal
+  grain: one row per study session
+requirement: 'Order each student''s sessions by (session_date, session_id). Let k = number of distinct subjects
+  the student studied. The student qualifies if: k >= 3; every gap between consecutive sessions is at most 2 days;
+  the number of sessions is a multiple of k and at least 2k; and the subject sequence is the first k subjects repeated
+  exactly (session n has the same subject as session ((n-1) mod k)+1). Report k and the sum of hours across all
+  their sessions.'
+output:
+  columns:
+  - student_id
+  - student_name
+  - major
+  - cycle_length
+  - total_study_hours
+  ordering: cycle_length DESC, total_study_hours DESC
+  grain: one row per qualifying student
+rules:
+  ties: ordering ties beyond the two keys unspecified
+  nulls: n/a
+  empty: students without sessions excluded
+  other: interpretation treats the whole session history as the pattern (no sub-window search)
+confidence: low
+confidence_note: Statement is vague (does the pattern have to cover all sessions? can a qualifying sub-window exist
+  inside noisy history? partial trailing cycle?). Spec mirrors the doocs reference interpretation; verify against
+  LeetCode before building tests.

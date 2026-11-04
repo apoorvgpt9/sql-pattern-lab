@@ -1,0 +1,3 @@
+-- Your answer for Find Overbooked Employees. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 35-find-overbooked-employees --mine
+-- Output columns: employee_id, employee_name, department, meeting_heavy_weeks

@@ -1,0 +1,4 @@
+user_id,current_plan,current_monthly_amount,max_historical_amount,days_as_subscriber
+2,basic,10.00,30.00,90
+1,basic,10.00,30.00,70
+3,basic,10.00,30.00,70

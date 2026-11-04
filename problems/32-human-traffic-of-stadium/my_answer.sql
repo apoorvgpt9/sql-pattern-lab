@@ -1,0 +1,3 @@
+-- Your answer for Human Traffic of Stadium. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 32-human-traffic-of-stadium --mine
+-- Output columns: id, visit_date, people

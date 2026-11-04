@@ -1,0 +1,56 @@
+id: 33
+source: leetcode
+source_id: 3832
+title: Find Users with Persistent Behavior Patterns
+url: https://leetcode.com/problems/find-users-with-persistent-behavior-patterns/
+difficulty: hard
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: gaps_and_islands
+pattern_secondary:
+- date_minus_row_number
+- longest_per_group
+batch: B5
+trigger_phrases:
+- phrase: at least 5 consecutive days
+  meaning: 'island on calendar dates: action_date - ROW_NUMBER() days'
+- phrase: exactly one action per day
+  meaning: days where the user has 2+ rows are excluded and therefore break a streak
+- phrase: same on all those consecutive days
+  meaning: partition the island by (user_id, action)
+- phrase: only consider the sequence with the maximum length
+  meaning: rank islands per user, keep the longest
+schema:
+- table: activity
+  columns:
+  - name: user_id
+    type: int
+  - name: action_date
+    type: date
+  - name: action
+    type: varchar
+  grain: PK (user_id, action_date, action)
+requirement: Drop every (user, date) that has more than one action. On the remaining rows, find maximal streaks
+  of consecutive calendar days where a user performed the same action. Keep users having a streak of length >= 5
+  and report only their longest such streak with its start and end dates.
+output:
+  columns:
+  - user_id
+  - action
+  - streak_length
+  - start_date
+  - end_date
+  ordering: streak_length DESC, user_id ASC
+  grain: one row per qualifying user
+rules:
+  ties: 'two equally long longest streaks for one user: not specified (doocs keeps one arbitrarily)'
+  nulls: n/a
+  empty: empty -> empty
+  other: a multi-action day both removes that day and splits the streak
+confidence: medium
+confidence_note: Tie between equal-length longest streaks for the same user is unspecified.

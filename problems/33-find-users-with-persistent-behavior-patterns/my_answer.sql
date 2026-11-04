@@ -1,0 +1,3 @@
+-- Your answer for Find Users with Persistent Behavior Patterns. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 33-find-users-with-persistent-behavior-patterns --mine
+-- Output columns: user_id, action, streak_length, start_date, end_date

@@ -1,0 +1,3 @@
+-- Your answer for Find Churn Risk Customers. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 36-find-churn-risk-customers --mine
+-- Output columns: user_id, current_plan, current_monthly_amount, max_historical_amount, days_as_subscriber
