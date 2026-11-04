@@ -1,0 +1,66 @@
+id: 41
+source: pgexercises
+source_id: recursive/getdownward
+title: Find the downward recommendation chain for member ID 1
+url: https://pgexercises.com/questions/recursive/getdownward.html
+difficulty: medium
+free_verified: true
+free_evidence:
+- pgexercises.com is free with no account; content CC BY-SA 3.0
+license: CC BY-SA 3.0 (pgexercises.com site footer; questions/LICENSE in github.com/AlisdairO/pgexercises)
+license_evidence:
+- 'https://pgexercises.com/ (footer: ''Site content licensed under CC BY-SA 3.0'')'
+- https://github.com/AlisdairO/pgexercises/blob/master/questions/LICENSE
+postgres_on_leetcode: n/a
+pattern_primary: recursive_cte
+pattern_secondary:
+- hierarchy_traversal_down
+batch: B6
+trigger_phrases:
+- phrase: recommended, and so on
+  meaning: unbounded depth -> WITH RECURSIVE
+- phrase: downward
+  meaning: anchor = members whose recommendedby = 1; recursive step joins recommendedby = previous memid
+schema:
+- table: cd.members
+  columns:
+  - name: memid
+    type: integer
+    pk: true
+  - name: surname
+    type: varchar(200)
+  - name: firstname
+    type: varchar(200)
+  - name: address
+    type: varchar(300)
+  - name: zipcode
+    type: integer
+  - name: telephone
+    type: varchar(20)
+  - name: recommendedby
+    type: integer
+    note: nullable; FK to members.memid
+  - name: joindate
+    type: timestamp
+  grain: one row per member; memid 0 is the shared GUEST account
+requirement: Return every member directly or indirectly recommended by member 1 (members they recommended, members
+  those recommended, etc.), excluding member 1 itself.
+output:
+  columns:
+  - memid
+  - firstname
+  - surname
+  ordering: memid ascending
+  grain: one row per descendant member
+rules:
+  ties: n/a
+  nulls: recommendedby NULL = top of chain
+  empty: member with no recommendees -> empty
+  other: MySQL 8 supports WITH RECURSIVE
+confidence: high
+difficulty_source: curator judgement (pgexercises has no difficulty labels)
+attribution: Adapted from PostgreSQL Exercises by Alisdair Owens (pgexercises.com), CC BY-SA 3.0. Spec reworded.
+dataset: pgexercises 'clubdata' (cd schema). Data dump is at github.com/AlisdairO/pgexercises/database/clubdata.sql
+  (CC BY-SA). Build sessions without internet must synthesise fixtures matching this schema.
+dialect_note: Original is PostgreSQL; MySQL 8.0 equivalent is fine (drop the cd. schema prefix or create schema
+  cd).
