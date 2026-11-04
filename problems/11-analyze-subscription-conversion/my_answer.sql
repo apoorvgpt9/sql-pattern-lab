@@ -1,0 +1,3 @@
+-- Your answer for Analyze Subscription Conversion. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 11-analyze-subscription-conversion --mine
+-- Output columns: user_id, trial_avg_duration, paid_avg_duration
