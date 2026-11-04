@@ -111,8 +111,10 @@ Takes roughly 1–2 hours; uses private-repo Actions minutes.
 ## Step 3 — Independent review (fresh session, no prior context)
 
 ```
-You are an independent reviewer. You did not write any of this content. Read CLAUDE.md, then review every problem
-folder under problems/. Work on branch review-1.
+You are an independent reviewer. You did not write any of this content. Read CLAUDE.md, then review the problem
+folders in your scope: SCOPE (run as two parallel sessions: "problems 01–24" on branch review-a, "problems 25–45" on
+branch review-b). Do not touch folders outside your scope. Commit and push after each problem.
+Spend the most effort on hard problems and on those whose meta.yaml confidence is not high.
 
 For each problem, check and fix:
 1. Spec fidelity: does the solution answer the requirement in meta.yaml exactly (output columns, grain, ties, NULLs)?
@@ -130,8 +132,8 @@ For each problem, check and fix:
    Remove any mistakes/*.sql whose failure depends on unspecified row order (e.g. relying on GROUP BY output order).
 7. No reproduced problem text beyond the trigger phrases in problems.yaml.
 
-Write REVIEW.md: one row per problem with score 1–5 on correctness, decomposition, hints, at-scale; and what you changed.
-Open PR "review: independent pass" and make CI green.
+Write REVIEW-<a|b>.md: one row per problem with score 1–5 on correctness, decomposition, hints, at-scale; and what
+you changed. Open PR "review <a|b>: independent pass" and make CI green.
 ```
 
 ---
