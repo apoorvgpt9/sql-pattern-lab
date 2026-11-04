@@ -8,7 +8,7 @@ The learner is a data engineer with ~11 years' experience. Assume SQL fluency; t
 ## Non-negotiable rules
 1. **Never reproduce problem statements, examples, or editorials** from LeetCode or any other platform. Link to the original. The only quoted text allowed is the short trigger phrases already listed in `problems.yaml` (≤ 8 words each). Everything else is in our own words.
 2. **Main dialect: MySQL 8.0.** Every approach must run on MySQL 8.0. Snowflake versions go in `snowflake.sql` and are labelled **UNVERIFIED** (CI cannot run them).
-3. **No fabricated numbers.** Performance figures come only from `bench/results.json` written by the benchmark workflow. Before results exist, use the placeholder `<!-- BENCH:<problem_dir> -->` exactly; `scripts/render_bench.py` replaces it. Statements about billions of rows are *reasoned*, and must say so.
+3. **No fabricated numbers.** Performance figures come only from `bench/results/<problem_dir>.json` written by the benchmark workflow. Before results exist, use the placeholder `<!-- BENCH:<problem_dir> -->` exactly (followed by `<!-- /BENCH -->`); `scripts/render_bench.py` fills the region between them. Statements about billions of rows are *reasoned*, and must say so.
 4. **Correctness is proven by execution**, not by review:
    - Every approach must pass every edge-case dataset (`tests/edge_*.sql` + `expected/edge_*.csv`).
    - All approaches for a problem must return identical results on randomly generated data (differential test).
@@ -34,6 +34,7 @@ problems/<NN>-<slug>/
   solutions/03_<name>.sql     # optimal
   gen.py                      # generate(n_rows:int, seed:int) -> dict[table, list[tuple]] for random + bench data
   indexes.sql                 # optional: indexes the "At scale" section recommends (bench runs with and without)
+  mistakes/<name>.sql         # optional: tempting wrong queries; header `-- breaks: edge_a, edge_b` (harness proves it)
   snowflake.sql               # UNVERIFIED Snowflake version of the optimal approach
   my_answer.sql               # empty template for the learner
 harness/                      # python test + bench harness (pytest, PyMySQL)
@@ -41,7 +42,7 @@ scripts/render_bench.py       # injects bench tables into READMEs
 scripts/build_app.py          # compiles problems/* into app/data.json
 app/index.html                # static study app
 .github/workflows/ci.yml      # correctness tests on MySQL 8.0 service container
-.github/workflows/bench.yml   # benchmarks; commits bench/results.json + rendered READMEs
+.github/workflows/bench.yml   # benchmarks; commits bench/results/<problem_dir>.json + rendered READMEs
 ```
 
 ## Study guide template (`README.md`) — all 10 sections, in this order

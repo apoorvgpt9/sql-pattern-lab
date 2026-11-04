@@ -1,0 +1,130 @@
+name: bench
+
+on:
+  workflow_dispatch:
+    inputs:
+      sizes:
+        description: "Comma-separated gen.py n_rows values"
+        default: "1000,100000,1000000"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bench
+  cancel-in-progress: false
+
+jobs:
+  batches:
+    runs-on: ubuntu-latest
+    outputs:
+      batches: ${{ steps.list.outputs.batches }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install PyYAML==6.0.2
+      - id: list
+        name: Read batches from problems.yaml
+        run: |
+          python - >> "$GITHUB_OUTPUT" <<'PY'
+          import json, yaml
+          entries = yaml.safe_load(open("problems.yaml", encoding="utf-8"))
+          batches = sorted({e["batch"] for e in entries})
+          print("batches=" + json.dumps(batches))
+          PY
+
+  bench:
+    needs: batches
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: ${{ fromJson(needs.batches.outputs.batches) }}
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        # Service containers cannot take command args; local_infile is enabled at runtime below.
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Wait for MySQL and enable local_infile
+        run: |
+          python - <<'PY'
+          from harness import db
+          print("MySQL", db.wait_for_server(timeout_s=180))
+          c = db.connect()
+          with c.cursor() as cur:
+              cur.execute("SET GLOBAL local_infile = 1")
+          PY
+      - name: Benchmark ${{ matrix.batch }}
+        run: |
+          mkdir -p bench/results
+          echo "batch ${{ matrix.batch }} run ${{ github.run_id }}" > "bench/results/_batch_${{ matrix.batch }}.txt"
+          python -m harness.bench --batch "${{ matrix.batch }}" --sizes "${{ inputs.sizes }}"
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ matrix.batch }}
+          path: bench/results/
+          if-no-files-found: ignore
+
+  publish:
+    needs: bench
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Download all batch results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: bench-*
+          path: bench/results
+          merge-multiple: true
+      - name: Render tables into READMEs
+        run: |
+          rm -f bench/results/_batch_*.txt
+          ls -la bench/results
+          python scripts/render_bench.py
+      - name: Commit to main
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bench/results problems/*/README.md
+          if git diff --cached --quiet; then
+            echo "no changes"
+            exit 0
+          fi
+          git commit -m "bench: update results [skip ci]"
+          git push origin HEAD:main

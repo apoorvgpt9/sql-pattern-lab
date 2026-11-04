@@ -1,0 +1,3 @@
+-- Your answer for Market Analysis I. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 01-market-analysis-i --mine
+-- Output columns: buyer_id, join_date, orders_in_2019

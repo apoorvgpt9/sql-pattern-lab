@@ -1,0 +1,75 @@
+id: 1
+source: leetcode
+source_id: 1158
+title: Market Analysis I
+url: https://leetcode.com/problems/market-analysis-i/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: anti_join
+pattern_secondary:
+- left_join_preserve
+- filter_in_on_vs_where
+batch: B1
+trigger_phrases:
+- phrase: for each user
+  meaning: every Users row must appear, even with zero orders -> drive from Users with LEFT JOIN
+- phrase: orders made as a buyer in 2019
+  meaning: the 2019 filter belongs in the ON clause; putting it in WHERE silently turns the LEFT JOIN into an INNER
+    JOIN
+- phrase: number of orders
+  meaning: COUNT(o.order_id) not COUNT(*) so unmatched users get 0
+schema:
+- table: Users
+  columns:
+  - name: user_id
+    type: int
+    pk: true
+  - name: join_date
+    type: date
+  - name: favorite_brand
+    type: varchar
+  grain: one row per user
+- table: Orders
+  columns:
+  - name: order_id
+    type: int
+    pk: true
+  - name: order_date
+    type: date
+  - name: item_id
+    type: int
+  - name: buyer_id
+    type: int
+  - name: seller_id
+    type: int
+  grain: one row per order
+- table: Items
+  columns:
+  - name: item_id
+    type: int
+    pk: true
+  - name: item_brand
+    type: varchar
+  grain: one row per item (not needed for the answer)
+requirement: Return every user with their join date and how many orders they placed as the buyer with an order_date
+  in calendar year 2019. Users with no 2019 buyer orders must still appear with a count of 0. Seller role and the
+  Items table are irrelevant.
+output:
+  columns:
+  - buyer_id
+  - join_date
+  - orders_in_2019
+  ordering: any order
+  grain: one row per user in Users
+rules:
+  ties: n/a
+  nulls: count is 0, never NULL
+  empty: Users empty -> empty result
+  other: buyer_id column holds Users.user_id
+confidence: high

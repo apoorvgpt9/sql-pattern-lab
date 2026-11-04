@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# sql-pattern-lab
+# Local bench runs: only the bench workflow may commit bench/results/*.json (CLAUDE.md rule 3).
+bench/local/
+*.tsv
