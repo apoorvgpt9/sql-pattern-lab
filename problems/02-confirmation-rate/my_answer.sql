@@ -1,0 +1,3 @@
+-- Your answer for Confirmation Rate. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 02-confirmation-rate --mine
+-- Output columns: user_id, confirmation_rate
