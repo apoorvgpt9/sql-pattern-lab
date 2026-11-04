@@ -1,6 +1,7 @@
--- Approach 2: the standard answer. Self-join purchases on the customer, keep each unordered pair once with
+-- Approach 3 (optimal): the standard answer. Self-join purchases on the customer, keep each unordered pair once with
 -- a.product_id < b.product_id, count distinct customers per pair, keep pairs with >= 3, THEN attach categories
 -- (joining the dimension after HAVING touches only the surviving pairs, not every joined row).
+-- The self-join reads each customer's products straight from the primary key (user_id, product_id), range-scanning b.product_id > a.product_id.
 WITH pairs AS (
   SELECT
     a.product_id         AS product1_id,

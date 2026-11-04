@@ -65,32 +65,31 @@ Read the output: `(role, employee_id)`. Two things have to be established for a 
 
 1. **`req`: per role, `COUNT(*)` of its required skills.**
    *Why a GROUP BY here:* "for each role" says the target differs per group. This is the divisor, one row per role, so that it can be joined back 1:1.
-2. **`claims`: `SELECT DISTINCT employee_id, skill`.**
-   *Why a DISTINCT here:* "skills table may repeat". The claim `(employee, skill)` is a fact that is either true or not; counting a fact twice is a bug. Doing it before the join keeps repeats out of the join.
-3. **`hits`: `RoleRequirements JOIN claims ON skill`, `GROUP BY role, employee_id`, `COUNT(*)`.**
-   *Why a JOIN on skill:* a required skill and a claimed skill are related only by being the same string. *Why a GROUP BY on (role, employee):* the pair is the thing being qualified, and the count is how many of the role's skills it matched. Employees with no matching skill do not appear at all, which is fine: they cannot qualify for a role that requires at least one skill.
-4. **Compare: `hits JOIN req ON role`, keep `n_hit = n_required`.**
-   *Why equality is exact:* matched skills are distinct, belong to the role, and cannot exceed the role's total, so equal means "all of them". Extra skills of the employee never enter the join (they match nothing in the role), so "extra skills are fine" is automatic.
+2. **Join `RoleRequirements` to `EmployeeSkills` on `skill`.**
+   *Why a JOIN on skill:* a required skill and a claimed skill are related only by being the same string. The result has one row per `(role, required skill, claim)`: the grain goes **up**, and an employee's claims for skills the role does not require simply find no partner. Extra skills are fine for that reason.
+3. **`GROUP BY role, employee_id`, `COUNT(DISTINCT rr.skill)`.**
+   *Why a GROUP BY on the pair, and why DISTINCT:* the pair is the thing being qualified, and the count is how many of the role's skills the employee matched. "Skills table may repeat" means the same claim can reach the join several times; counting distinct *required skills* makes a repeat count once.
+4. **Compare in `HAVING`: matched skills = `req.n_required`.**
+   *Why equality is exact:* the counted skills are distinct and belong to the role, so they cannot exceed the role's total; equal means "all of them". Employees with no match never form a group, which is right: they cannot qualify for a role that requires something.
 5. **`ORDER BY role, employee_id`.**
    *Why explicit:* the order is part of the spec, and `(role, employee_id)` is unique, so it is total.
 
-Assembled (this is `solutions/03_dedupe_then_count.sql`):
+Assembled (this is `solutions/03_join_count_distinct.sql`):
 
 ```sql
-WITH claims AS (SELECT DISTINCT employee_id, skill FROM EmployeeSkills),            -- step 2
-req AS (SELECT role, COUNT(*) AS n_required FROM RoleRequirements GROUP BY role),   -- step 1
-hits AS (                                                                           -- step 3
-  SELECT rr.role, c.employee_id, COUNT(*) AS n_hit
-  FROM RoleRequirements rr
-  JOIN claims c ON c.skill = rr.skill
-  GROUP BY rr.role, c.employee_id
+WITH req AS (                                                   -- step 1: the per-role divisor
+  SELECT role, COUNT(*) AS n_required FROM RoleRequirements GROUP BY role
 )
-SELECT h.role, h.employee_id                                                        -- step 4
-FROM hits h
-JOIN req ON req.role = h.role
-WHERE h.n_hit = req.n_required
-ORDER BY h.role, h.employee_id;                                                     -- step 5
+SELECT rr.role, es.employee_id
+FROM RoleRequirements rr
+JOIN EmployeeSkills es ON es.skill = rr.skill                    -- step 2: grain up, matches only
+JOIN req ON req.role = rr.role
+GROUP BY rr.role, es.employee_id, req.n_required                 -- step 3: grain down to (role, employee)
+HAVING COUNT(DISTINCT rr.skill) = req.n_required                 -- step 4: all of the role's skills
+ORDER BY rr.role, es.employee_id;                                -- step 5
 ```
+
+Where to put the deduplication is a design choice: `COUNT(DISTINCT …)` after the join (above), or `SELECT DISTINCT employee_id, skill` before it (approach 2). Both are correct.
 
 Self-check: take one reported pair and check that every required skill appears in the employee's claims. Take a role you know has a pair "one skill short" and confirm it is absent. Add a duplicate claim for an employee who is short, and confirm they are still absent.
 
@@ -114,30 +113,31 @@ ORDER BY r.role, e.employee_id;
 
 **Cost model (reasoned):** it starts from the full grid roles × employees, and for each pair loops over the role's required skills and probes the claims. Work is roughly roles × employees × skills-per-role probes, independent of how many pairs qualify. The probe is a scan of `EmployeeSkills` without an index, a point lookup with `(employee_id, skill)`.
 
-### Approach 2: join, then `COUNT(DISTINCT)` against the role's own count (`solutions/02_join_count_distinct.sql`)
+### Approach 2: deduplicate the claims first, then count (`solutions/02_dedupe_then_count.sql`)
 
 ```sql
-WITH req AS (SELECT role, COUNT(*) AS n_required FROM RoleRequirements GROUP BY role)
-SELECT rr.role, es.employee_id
-FROM RoleRequirements rr
-JOIN EmployeeSkills es ON es.skill = rr.skill
-JOIN req ON req.role = rr.role
-GROUP BY rr.role, es.employee_id, req.n_required
-HAVING COUNT(DISTINCT rr.skill) = req.n_required
-ORDER BY rr.role, es.employee_id;
+WITH claims AS (SELECT DISTINCT employee_id, skill FROM EmployeeSkills),
+req AS (SELECT role, COUNT(*) AS n_required FROM RoleRequirements GROUP BY role),
+hits AS (SELECT rr.role, c.employee_id, COUNT(*) AS n_hit
+         FROM RoleRequirements rr JOIN claims c ON c.skill = rr.skill
+         GROUP BY rr.role, c.employee_id)
+SELECT h.role, h.employee_id
+FROM hits h JOIN req ON req.role = h.role
+WHERE h.n_hit = req.n_required
+ORDER BY h.role, h.employee_id;
 ```
 
-**Why it is correct:** the join yields one row per `(role, required skill, claim)`, so the grouped rows of a pair hold every claim that matched a required skill of that role. `COUNT(DISTINCT rr.skill)` counts the role's skills covered, ignoring repeated claims. The HAVING compares with this role's count, joined 1:1. Remove the `DISTINCT` and duplicate claims distort the count in both directions (`mistakes/count_star_on_join.sql`); replace `req.n_required` by a global count and the typical dataset breaks (`mistakes/global_requirement_count.sql`).
+**Why it is correct:** after `DISTINCT`, each `(employee, skill)` occurs once, so each requirement matches at most one claim per employee and the plain `COUNT(*)` in `hits` equals the number of covered skills. The comparison with the role's own requirement count then decides.
 
-**Cost model (reasoned):** the join output has Σ over skills of (roles requiring the skill × claim rows holding it) rows, **including duplicate claims**, which the group-by then collapses with a per-group distinct set. The cost grows with how popular the required skills are and how many duplicates exist. It starts from the pairs that have at least one match, so it never builds the full roles × employees grid.
+**Cost model (reasoned):** one extra pass to deduplicate (a temporary table with deduplication), then a join whose output contains no repeated claims, then a `COUNT(*)` that needs no per-group set. The idea is to put the deduplication where it is cheapest, before the multiplying join. It pays when duplicates are the main source of join rows (as in problem 13, where several products map to one category). Here duplicates are exact repeats of a single row, so the join has far fewer rows to lose, while the deduplication has to materialise and index the whole claims table, and `hits` then materialises one row per (role, employee) pair that shares *any* skill before the comparison filters them. That is more work than the filter-while-grouping in approach 3, and it is the form MySQL handles worse: treat this as an optimisation to be tested, not assumed (the bench table is the arbiter).
 
-### Approach 3 (optimal): deduplicate first, then count (`solutions/03_dedupe_then_count.sql`)
+### Approach 3 (optimal): join, then `COUNT(DISTINCT)` in `HAVING` (`solutions/03_join_count_distinct.sql`)
 
 The SQL is the assembled query in section 4.
 
-**Why it is correct:** after `DISTINCT`, each `(employee, skill)` occurs once, so each requirement matches at most one claim per employee and `COUNT(*)` in `hits` equals the number of covered skills. Everything else is as in approach 2.
+**Why it is correct:** the join yields one row per `(role, required skill, claim)`, so the grouped rows of a pair hold every claim that matched a required skill of that role. `COUNT(DISTINCT rr.skill)` counts the role's skills covered, ignoring repeated claims. The `HAVING` compares with this role's count, joined 1:1. Remove the `DISTINCT` and duplicate claims distort the count in both directions (`mistakes/count_star_on_join.sql`); replace `req.n_required` by a global count and the typical dataset breaks (`mistakes/global_requirement_count.sql`).
 
-**Cost model (reasoned):** one pass to deduplicate the claims, then a join whose output no longer contains duplicate claims, then a plain `COUNT(*)`, which unlike `COUNT(DISTINCT)` needs no per-group set and can be partially aggregated. The saving over approach 2 is the duplicates removed from the join; if the table has none, the two are close and the `DISTINCT` is the extra work. The bench shows which side of that trade-off `gen.py` data lands on (about 10% repeated rows).
+**Cost model (reasoned):** the join starts from the pairs that have at least one match, so it never builds the full roles × employees grid. Its output is Σ over skills of (roles requiring the skill × claim rows holding it), duplicates included, which can be large for popular skills. The group-by collapses it and discards the short groups in `HAVING` as they complete, so only qualifying pairs reach the sort. No intermediate table is materialised and indexed.
 
 **Measured** (`gen.py` data, generated by the bench workflow; the table is filled in automatically, so never type numbers here):
 
@@ -146,11 +146,11 @@ The SQL is the assembled query in section 4.
 
 ### Why the optimal one wins
 
-Approaches 2 and 3 only touch pairs that share at least one skill, whereas approach 1 pays for every pair. Between 2 and 3, approach 3 puts the deduplication where it is cheapest, before the multiplying join, and turns a distinct-count into a plain count. The principle is the one from `13-find-category-recommendation-pairs`: make the table the grain the question is asked at, then join. The counting form is only less general than approach 1 in that it needs every required skill to be countable once (unique requirements, which the primary key guarantees).
+Approaches 2 and 3 touch only pairs that share at least one skill, whereas approach 1 pays for every role × employee pair, most of which are hopeless. Between 2 and 3, approach 3 is one join and one aggregation that filters in `HAVING`, with no intermediate result materialised, while approach 2 adds a deduplication pass and an intermediate table. The tempting rule "deduplicate before a multiplying join" (problem 13) is a heuristic, not a law: it helps when duplicates cause most of the join's rows, and costs a pass otherwise. When the heuristic and the measurement disagree, the measurement wins; that is why this guide's optimal approach is the one that does not apply it.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1, because roles × employees grows with both, and most pairs are hopeless. Approach 2 next, when popular skills make the join output huge and duplicates inflate it. Approach 3 is limited by the same join output, without the duplicates.
+**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1, because roles × employees grows with both, and most pairs are hopeless. Approaches 2 and 3 share the same limit, the size of the skill-matching join (popular skills); approach 2 adds the cost of deduplicating and materialising before it.
 
 **(b) One machine, ~1M–100M rows.**
 - `EmployeeSkills` is a heap. `indexes.sql` adds `(skill, employee_id)`, which lets the join from each required skill read the holders' ids from the index alone, and `(employee_id, skill)`, which turns approach 1's innermost probe into a point lookup. Both are covering for what they serve.
@@ -160,7 +160,7 @@ Approaches 2 and 3 only touch pairs that share at least one skill, whereas appro
 
 **(c) Distributed engines, billions of rows. *Reasoned, not measured.***
 - *Join strategy:* `RoleRequirements` is small, so it is broadcast to every worker and the big `EmployeeSkills` side is not shuffled for the join. The shuffle is the later `GROUP BY (role, employee_id)`; partial counts per task shrink it.
-- *Deduplicating claims:* a global `DISTINCT (employee_id, skill)` is a shuffle by both columns; if the source guarantees uniqueness (a key at load time) skip it, otherwise it is the price of approach 3. Approach 2 instead pays with a `COUNT(DISTINCT)`, which cannot pre-aggregate to one number per task.
+- *Deduplicating claims:* a global `DISTINCT (employee_id, skill)` is a shuffle by both columns; if the source guarantees uniqueness (a key at load time) skip it, otherwise it is the price of approach 2. Approach 3 instead pays with a `COUNT(DISTINCT)`, which cannot pre-aggregate to one number per task; which is cheaper depends on how many duplicates there are, so measure on the engine you use.
 - *Skew:* popular skills create popular join keys when the join is a shuffle join. With the small side broadcast, skew only matters for the group-by, where an employee with an enormous number of claims is one key.
 - *Output size:* the answer itself can be roles × employees if roles are lenient. For downstream use, store it as a table and maintain it, rather than recomputing.
 - *Approximate functions:* never. The comparison is an exact count equality; an HLL estimate would turn qualified employees into unqualified ones at random.
@@ -235,5 +235,5 @@ Same pattern (relational division):
 - `11-analyze-subscription-conversion`: "has both of two values", the smallest division.
 
 Related (deduplicate before a multiplying join, count at the right grain):
-- `13-find-category-recommendation-pairs`: dedupe to `(customer, category)` before the self-join.
+- `13-find-category-recommendation-pairs`: dedupe to `(customer, category)` before the self-join, where the heuristic does pay.
 - `12-find-product-recommendation-pairs`: the pair-counting version of "who shares what".

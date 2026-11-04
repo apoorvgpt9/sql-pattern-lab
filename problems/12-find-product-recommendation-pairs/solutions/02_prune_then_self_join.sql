@@ -1,4 +1,4 @@
--- Approach 3 (optimal): shrink the self-join's input first. A pair needs >= 3 customers, so each of its two
+-- Approach 2: shrink the self-join's input first. A pair needs >= 3 customers, so each of its two
 -- products must individually have >= 3 customers. Products below that can never appear in an output pair, so
 -- their rows are removed BEFORE the join, which is where the row explosion (k*(k-1)/2 pairs per basket) happens.
 -- (user_id, product_id) is the primary key, so each row is one customer and COUNT(*) equals the distinct customers.
@@ -32,3 +32,6 @@ FROM pairs p
 LEFT JOIN ProductInfo c1 ON c1.product_id = p.product1_id
 LEFT JOIN ProductInfo c2 ON c2.product_id = p.product2_id
 ORDER BY p.customer_count DESC, p.product1_id ASC, p.product2_id ASC;
+-- Whether the prune pays is an empirical question: the popular-product filter adds an aggregation pass, and the filtered
+-- 'basket' is a materialised derived table without the primary key, so the self-join loses its index range access to a
+-- customer's products. The bench table is the arbiter.

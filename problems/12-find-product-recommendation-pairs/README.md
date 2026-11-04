@@ -10,7 +10,7 @@ Original: [Find Product Recommendation Pairs](https://leetcode.com/problems/find
 |---|---|
 | "product1_id < product2_id" | The pair is made by joining the table **to itself**, and the `<` is both the "different products" test and the "report each pair once" test. `<>` finds every pair twice, no condition at all adds self-pairs `(p, p)`. |
 | "how many customers purchased both" | The pair's measure is a count of customers, so `GROUP BY (product1, product2)` with `COUNT(DISTINCT user_id)`. "Same customer" is the join key of the self-join: `b.user_id = a.user_id`. Leave that out and the join pairs strangers. |
-| "at least 3 different customers" | A condition on an aggregate, so `HAVING … >= 3` (not `>`, not `WHERE`). Because it is a threshold on a count, it can also be used *before* the join to throw away products that can never qualify (approach 3). |
+| "at least 3 different customers" | A condition on an aggregate, so `HAVING … >= 3` (not `>`, not `WHERE`). The same threshold also holds for each single product, which suggests pruning before the join (approach 2). |
 
 Not in the wording but forced by it: attaching categories needs `ProductInfo` **twice**, once for each product of the pair, each under its own alias.
 
@@ -55,7 +55,7 @@ Shape: (1) join the purchases table to itself on the customer, keeping only rows
 
 <details><summary>Hint 3</summary>
 
-Key clause: `JOIN ProductPurchases b ON b.user_id = a.user_id AND b.product_id > a.product_id`. Both conditions belong in the `ON`. Then `GROUP BY a.product_id, b.product_id HAVING COUNT(DISTINCT a.user_id) >= 3`. For speed: a product with fewer than 3 customers cannot be in any qualifying pair, so filter those products out **before** the self-join. Join `ProductInfo` last, once per side.
+Key clause: `JOIN ProductPurchases b ON b.user_id = a.user_id AND b.product_id > a.product_id`. Both conditions belong in the `ON`. Then `GROUP BY a.product_id, b.product_id HAVING COUNT(DISTINCT a.user_id) >= 3`. Join `ProductInfo` last, once per side. (A product with fewer than 3 customers can never be in a qualifying pair, so you could filter such products out before the join; approach 2 tries that, and it has to be measured, not assumed.)
 
 </details>
 
@@ -63,42 +63,37 @@ Key clause: `JOIN ProductPurchases b ON b.user_id = a.user_id AND b.product_id >
 
 Read the output left to right: two product ids, their categories, a customer count. The ids and the count come from the self-join; the categories are lookups that belong at the end.
 
-1. **`popular`: products with at least 3 customers.**
-   *Why a GROUP BY + HAVING here:* "at least 3 different customers" is a threshold on a count per product. If a pair is bought by 3 customers, each of its two products is bought by at least those 3, so the threshold applies to single products too. This is a pure optimisation (the answer is the same without it) that reduces how many rows enter the explosion in step 3.
-2. **`basket`: purchases restricted to popular products.**
-   *Why a JOIN here:* it filters the large table by membership in a small set, which a semi-join does without changing the grain.
-3. **`pairs`: self-join `basket` on `user_id` with `b.product_id > a.product_id`, then `GROUP BY` both ids, `HAVING COUNT(*) >= 3`.**
-   *Why a self-join:* the two products of a pair live in two different rows of the same table, and the only thing relating them is the customer. *Why `>`:* it makes each unordered pair appear once and never pairs a product with itself. *Why GROUP BY:* the answer is a count over customers per pair.
+1. **Self-join `ProductPurchases` on `user_id` with `b.product_id > a.product_id`.**
+   *Why a self-join:* the two products of a pair live in two different rows of the same table, and the only thing relating them is the customer. *Why `>`:* it makes each unordered pair appear once and never pairs a product with itself. This is where the grain goes **up**: a customer with `k` products yields `k(k−1)/2` rows.
+2. **`GROUP BY a.product_id, b.product_id`, `COUNT(DISTINCT a.user_id)`.**
+   *Why a GROUP BY here:* the answer is a count of customers per pair; the grain goes **down** to one row per pair. `DISTINCT` is protection that costs nothing here, because `(user_id, product_id)` is a key (follow-up 5).
+3. **`HAVING COUNT(DISTINCT a.user_id) >= 3`.**
+   *Why HAVING, not WHERE:* "at least 3 different customers" is a condition on an aggregate.
 4. **Final: `pairs LEFT JOIN ProductInfo` twice.**
    *Why two joins, and why after:* each pair has two products, so there are two lookups, one per role. Doing them after `HAVING` means they run on the few surviving pairs instead of on every exploded row. `LEFT` so that a qualifying pair is not lost for want of a category (Assumption 2).
 5. **`ORDER BY customer_count DESC, product1_id, product2_id`.**
    *Why explicit and complete:* the three keys make the order total, so there are no ties left to chance.
 
-Assembled (this is `solutions/03_prune_then_self_join.sql`):
+Assembled (this is `solutions/03_self_join_group_by.sql`):
 
 ```sql
-WITH popular AS (                                   -- step 1: products that can possibly qualify
-  SELECT product_id FROM ProductPurchases
-  GROUP BY product_id HAVING COUNT(*) >= 3
-),
-basket AS (                                         -- step 2: shrink the table before the explosion
-  SELECT pp.user_id, pp.product_id
-  FROM ProductPurchases pp JOIN popular p ON p.product_id = pp.product_id
-),
-pairs AS (                                          -- step 3: grain up (pairs per customer), then down (per pair)
-  SELECT a.product_id AS product1_id, b.product_id AS product2_id, COUNT(*) AS customer_count
-  FROM basket a
-  JOIN basket b ON b.user_id = a.user_id AND b.product_id > a.product_id
-  GROUP BY a.product_id, b.product_id
-  HAVING COUNT(*) >= 3
+WITH pairs AS (
+  SELECT a.product_id AS product1_id, b.product_id AS product2_id,
+         COUNT(DISTINCT a.user_id) AS customer_count
+  FROM ProductPurchases a
+  JOIN ProductPurchases b ON b.user_id = a.user_id AND b.product_id > a.product_id   -- step 1: grain up
+  GROUP BY a.product_id, b.product_id                                                -- step 2: grain down
+  HAVING COUNT(DISTINCT a.user_id) >= 3                                              -- step 3
 )
-SELECT p.product1_id, p.product2_id,                -- step 4: lookups on survivors only
+SELECT p.product1_id, p.product2_id,                                                 -- step 4: lookups on survivors only
        c1.category AS product1_category, c2.category AS product2_category, p.customer_count
 FROM pairs p
 LEFT JOIN ProductInfo c1 ON c1.product_id = p.product1_id
 LEFT JOIN ProductInfo c2 ON c2.product_id = p.product2_id
-ORDER BY p.customer_count DESC, p.product1_id ASC, p.product2_id ASC;   -- step 5
+ORDER BY p.customer_count DESC, p.product1_id ASC, p.product2_id ASC;                -- step 5
 ```
+
+An optional step 0 shortens the join's input: since a qualifying pair needs 3 customers, each of its products needs at least 3 customers on its own, so rows of rarer products can be dropped first (approach 2). It does not change the answer.
 
 Self-check: for one reported pair, list the customers who bought both by hand and confirm the count. For a product you know has only two buyers, confirm it appears in no row. Confirm there is no row with `product1_id >= product2_id`.
 
@@ -127,16 +122,15 @@ ORDER BY q.customer_count DESC, q.product1_id, q.product2_id;
 
 **Cost model (reasoned):** with `P` distinct purchased products there are `P(P−1)/2` candidate pairs and each runs a subquery that finds the buyers of `p1` and probes for `p2`. Most candidate pairs have no common customer at all, and the work is spent finding that out. The cost scales with `P²` and is independent of how many pairs really occur. Index `(product_id, user_id)` makes each probe a seek instead of a scan.
 
-### Approach 2: self-join, group, then lookup (`solutions/02_self_join_group_by.sql`)
+### Approach 2: prune rare products, then self-join (`solutions/02_prune_then_self_join.sql`)
 
 ```sql
-WITH pairs AS (
-  SELECT a.product_id AS product1_id, b.product_id AS product2_id, COUNT(DISTINCT a.user_id) AS customer_count
-  FROM ProductPurchases a
-  JOIN ProductPurchases b ON b.user_id = a.user_id AND b.product_id > a.product_id
-  GROUP BY a.product_id, b.product_id
-  HAVING COUNT(DISTINCT a.user_id) >= 3
-)
+WITH popular AS (SELECT product_id FROM ProductPurchases GROUP BY product_id HAVING COUNT(*) >= 3),
+basket AS (SELECT pp.user_id, pp.product_id FROM ProductPurchases pp JOIN popular p ON p.product_id = pp.product_id),
+pairs AS (
+  SELECT a.product_id AS product1_id, b.product_id AS product2_id, COUNT(*) AS customer_count
+  FROM basket a JOIN basket b ON b.user_id = a.user_id AND b.product_id > a.product_id
+  GROUP BY a.product_id, b.product_id HAVING COUNT(*) >= 3)
 SELECT p.product1_id, p.product2_id, c1.category AS product1_category, c2.category AS product2_category, p.customer_count
 FROM pairs p
 LEFT JOIN ProductInfo c1 ON c1.product_id = p.product1_id
@@ -144,17 +138,17 @@ LEFT JOIN ProductInfo c2 ON c2.product_id = p.product2_id
 ORDER BY p.customer_count DESC, p.product1_id, p.product2_id;
 ```
 
-**Why it is correct:** the join produces exactly one row per customer per unordered pair they both bought. Grouping by the pair and counting distinct customers gives the pair's audience. `HAVING` applies the threshold on the aggregate. Categories are looked up after the threshold, so the join to `ProductInfo` cannot multiply rows (it is 1:1 on `product_id`).
+**Why it is correct:** removing products with fewer than 3 customers cannot remove a qualifying pair, since such a pair would need both of its products to have at least 3 customers. So the surviving pairs and counts are identical to approach 3's. (This is the *a priori* principle from frequent-itemset mining: a set can only be frequent if all its subsets are.) `COUNT(*)` replaces `COUNT(DISTINCT user_id)` because `(user_id, product_id)` is unique.
 
-**Cost model (reasoned):** the work is the size of the self-join, `Σ over customers of k(k−1)/2`. That sum is dominated by the customers with big baskets, because it is quadratic in `k`. Every exploded row is then aggregated through a temporary table keyed on the two ids (and `COUNT(DISTINCT)` needs extra bookkeeping per group). The primary key `(user_id, product_id)` makes each customer's products adjacent, so the join itself is index-friendly; the volume of rows is the problem, not the lookup.
+**Cost model (reasoned):** the saving is in the self-join: rows of rare products no longer generate pair rows. The cost is an extra aggregation pass to find the popular products, plus the filtered `basket`, which is materialised as a temporary table. The self-join then reads that table instead of the base table, so it **loses the primary-key range access** to a customer's products that approach 3 enjoys, and falls back to a hash join over a derived table. Whether the rows saved outweigh those costs depends on how heavy the long tail is; in a column store or a distributed engine, where the join's shuffle volume dominates, the balance can be different. This is the optimisation that looks obviously right and has to be measured (the bench table decides; it is the reason this approach is 02 and not 03).
 
-### Approach 3 (optimal): prune rare products, then self-join (`solutions/03_prune_then_self_join.sql`)
+### Approach 3 (optimal): self-join, group, then lookup (`solutions/03_self_join_group_by.sql`)
 
 The SQL is the assembled query in section 4.
 
-**Why it is correct:** removing products with fewer than 3 customers cannot remove a qualifying pair: such a pair would need both products to have at least 3 customers. So the surviving pairs and their counts are identical to approach 2's. (This is the *a priori* principle from frequent-itemset mining: a set can only be frequent if all its subsets are.) `COUNT(*)` replaces `COUNT(DISTINCT user_id)` because `(user_id, product_id)` is unique; the file says so.
+**Why it is correct:** the join produces exactly one row per customer per unordered pair they both bought. Grouping by the pair and counting distinct customers gives the pair's audience. `HAVING` applies the threshold on the aggregate. Categories are looked up after the threshold, so the join to `ProductInfo` cannot multiply rows (it is 1:1 on `product_id`), and it runs only on survivors.
 
-**Cost model (reasoned):** one extra pass to find popular products (a `GROUP BY product_id`, a cheap aggregate over an index if present), then a self-join over a smaller table. The saving is largest when the catalogue has a long tail of rarely bought products: those rows would otherwise generate pair rows that can never reach 3. If nearly every product is popular the prune removes little and costs one extra scan, so the benefit depends on the data distribution (`gen.py` builds a Zipf-like tail so the bench shows the effect).
+**Cost model (reasoned):** the work is the size of the self-join, `Σ over customers of k(k−1)/2`, dominated by customers with big baskets because it is quadratic in `k`. The primary key `(user_id, product_id)` makes each customer's products adjacent, so for each row of `a` the matching rows of `b` (`product_id > a.product_id`) are one index range scan, with no hash table and no materialisation. Every joined row then goes into an aggregation keyed on the two ids. The volume of rows is the problem, not the lookup.
 
 **Measured** (`gen.py` data, generated by the bench workflow; the table is filled in automatically, so never type numbers here):
 
@@ -163,22 +157,22 @@ The SQL is the assembled query in section 4.
 
 ### Why the optimal one wins
 
-The expensive part of any solution here is the self-join's output. Approach 1 pays for every possible pair, approach 2 for every pair that some customer actually shares, approach 3 only for pairs between products that have a chance. The pruning rule is exact (no approximation) and mirrors how real co-purchase mining works. Where the prune does not pay (a dense catalogue) approach 3 degrades to approach 2 plus one cheap pass, so it is never much worse.
+The expensive part of any solution here is the self-join's output, and approach 3 produces it with the fewest moving parts: it runs straight over the base table's primary key, with no temporary table before the aggregation and no extra pass. Approach 1 pays for every possible pair rather than every shared pair. Approach 2 has a sound idea, fewer join rows, but buys it with an extra pass and a materialised intermediate; when its saving is smaller than that bill it loses, which is why it pays to measure before calling an optimisation an improvement. The comparison can come out the other way on a different engine or a heavier tail (section 6c).
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 breaks first, since `P²` grows with the catalogue even when few pairs co-occur. Approach 2 is next: the exploded join is quadratic in basket size, so a few customers with very large baskets can dominate it. Approach 3 survives longer on a long-tailed catalogue but still pays the quadratic basket cost for the popular products.
+**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 breaks first, since `P²` grows with the catalogue even when few pairs co-occur. Approaches 2 and 3 are then limited by the same thing: the exploded join is quadratic in basket size, so a few customers with very large baskets can dominate it.
 
 **(b) One machine, ~1M–100M rows.**
-- The primary key `(user_id, product_id)` is exactly the index the self-join wants. `indexes.sql` adds `(product_id, user_id)` for the other direction: "customers per product" (the prune) and approach 1's probes are then answered from the index alone.
-- The temporary table of the `GROUP BY` is keyed on two ids and holds one row per distinct pair seen so far. If the number of distinct pairs outgrows memory it spills to disk, and the aggregation becomes the bottleneck. Raising the threshold in the prune step (a higher minimum) shrinks it.
+- The primary key `(user_id, product_id)` is exactly the index the self-join wants. `indexes.sql` adds `(product_id, user_id)` for the other direction: "customers per product" (approach 2's prune) and approach 1's probes are then answered from the index alone.
+- The temporary table of the `GROUP BY` is keyed on two ids and holds one row per distinct pair seen so far. If the number of distinct pairs outgrows memory it spills to disk, and the aggregation becomes the bottleneck. A higher minimum count (for example a threshold of 10 instead of 3) shrinks the number of surviving pairs, but the temporary table is filled before the threshold is applied, so only reducing the join's input (approach 2's prune, a basket-size cap) reduces it.
 - **Cap the basket size** for exploratory runs: a customer with 2,000 products produces about two million pair rows by themselves. A bot or a wholesale account is rarely a "recommendation" signal anyway. This changes the answer, so it is a business decision (follow-up 4).
 - Do not add `DISTINCT` to `basket` "for safety" while the primary key guarantees uniqueness: it forces a sort or hash for nothing.
 
 **(c) Distributed engines, billions of rows. *Reasoned, not measured.***
 - *Shuffle:* the self-join shuffles `ProductPurchases` by `user_id` (both sides), which is balanced if customers have similar basket sizes. The pair rows are then re-shuffled by `(product1, product2)` for the count. Doing the pair counting with a **partial aggregate per task first** (count pairs within the task, then merge) cuts the second shuffle sharply for popular pairs.
 - *Skew:* two kinds. Customer skew (one huge basket) produces a huge amount of pair rows from one key; cap or sample the basket. Pair skew (a handful of very popular pairs) is handled by partial aggregation.
-- *Pruning by popularity* is even more valuable here: removing the long tail before the shuffle reduces the data that moves, not just the join output.
+- *Pruning by popularity* may be worth more here than on one machine (*reasoned, untested*): removing the long tail before the shuffle reduces the data that moves, not just the join output, and the primary-key range access that approach 3 enjoys in MySQL does not exist. Test it on your engine.
 - *`COUNT(DISTINCT)`* per pair does not pre-aggregate well (partials must carry sets of customers). If the table is unique per (customer, product), use `COUNT(*)`; otherwise dedupe `(user_id, product_id)` once up front and then count.
 - *Approximate answers:* for recommendations, an approximate distinct count (HyperLogLog) per pair, or counting pairs in a sample of customers, is usually acceptable, and a sketch error of a percent or two does not change a "top pairs" list much. It is **not** acceptable for a threshold at exactly 3, where one customer decides inclusion. Use it for ranking, not for the boundary.
 
@@ -228,17 +222,17 @@ No approach in `solutions/` is broken by any of these.
 ## 8. Interviewer follow-ups
 
 1. **"Now triples."** Add a third join `c.product_id > b.product_id`. The row explosion becomes `k³` per basket, so pruning matters a lot more: first find the frequent pairs (this query), then only extend those to triples (a priori again).
-2. **"Show how likely B is, given A."** That is *confidence*: `pair_count / customers_who_bought_A`, which is directional. Count customers per product (the `popular` CTE already has it, if you keep the count), and consider both directions, so the `<` condition changes to `<>`.
+2. **"Show how likely B is, given A."** That is *confidence*: `pair_count / customers_who_bought_A`, which is directional. Count customers per product (approach 2's `popular` CTE has it, if you keep the count), and consider both directions, so the `<` condition changes to `<>`.
 3. **"Rank by something better than raw counts."** Raw counts favour popular products. *Lift* divides by the product of the individual popularities: `pair_count × total_customers / (count_A × count_B)`. You need the total number of customers as a third scalar.
 4. **"One customer bought 5,000 products and is skewing the results."** Exclude or sample baskets over a size threshold *before* the self-join (a `HAVING COUNT(*) <= N` per customer). Say that it changes the semantic of the metric and ask whether wholesale buyers should count.
-5. **"What if `ProductPurchases` has duplicate rows for the same customer and product?"** Then `COUNT(*)` overcounts and the self-join multiplies duplicates (two copies × three copies = six pair rows). Dedupe first (`SELECT DISTINCT user_id, product_id`) or keep `COUNT(DISTINCT user_id)`. This is why approach 2 uses the distinct form: it is correct regardless of the key.
+5. **"What if `ProductPurchases` has duplicate rows for the same customer and product?"** Then `COUNT(*)` overcounts and the self-join multiplies duplicates (two copies × three copies = six pair rows). Dedupe first (`SELECT DISTINCT user_id, product_id`) or keep `COUNT(DISTINCT user_id)`. This is why approach 3 uses the distinct form: it is correct regardless of the key, and `COUNT(*)` in approach 2 is only right because of the key.
 6. **"Why join categories at the end?"** The lookup is 1:1 and cannot change the counts, so doing it before the aggregate only widens every exploded row and adds two joins on the largest intermediate result.
 
 ## 9. Snowflake notes (UNVERIFIED)
 
 `snowflake.sql` keeps the shape of approach 3.
 
-- The SQL is the same. Joins are hash joins distributed across the warehouse; the optimiser may or may not push the `popular` filter before the self-join, so keeping it as an explicit CTE states the intent, but check the query profile for *rows produced* by the self-join.
+- The SQL is the same. Joins are hash joins distributed across the warehouse. The popularity prune of approach 2 is not applied in `snowflake.sql` because it is untested there; if you try it, check the query profile for *rows produced* by the self-join before and after.
 - A different route to pairs: aggregate each customer's products with `ARRAY_AGG`, then expand the array pairs with a lateral flatten. It avoids a hash self-join but builds an array per customer, which is only attractive when baskets are small.
 - For ranking-only use, `APPROX_COUNT_DISTINCT` (HyperLogLog) per pair is available. Not for the exact "≥ 3" boundary.
 - There are no indexes (`indexes.sql` has no equivalent). Clustering `ProductPurchases` by `user_id` helps pruning for per-customer lookups, not the join itself.
