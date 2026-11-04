@@ -1,0 +1,321 @@
+{
+  "problem": "28-last-person-to-fit-in-the-bus",
+  "generated_at": "2026-11-04T15:23:00+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_self_join_prefix_sum",
+    "02_window_running_sum",
+    "03_recursive_boarding"
+  ],
+  "optimal": "03_recursive_boarding",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Queue": 1000
+      },
+      "load_seconds": 0.019,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_prefix_sum",
+          "status": "ok",
+          "median_s": 1.3674082079999152,
+          "times_s": [
+            1.3674082079999152,
+            1.365951768000059,
+            1.4105885049999642
+          ],
+          "result_rows": 1,
+          "result_digest": "355f9a477601af3dd9e92e24917f5a6020b40b68",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=1436..1436 rows=1 loops=1)\n    -> Sort: q1.turn DESC  (actual time=1436..1436 rows=1 loops=1)\n        -> Filter: (`sum(q2.weight)` <= 1000)  (actual time=1435..1436 rows=13 loops=1)\n            -> Table scan on <temporary>  (actual time=1435..1435 rows=1000 loops=1)\n                -> Aggregate using temporary table  (actual time=1435..1435 rows=1000 loops=1)\n                    -> Filter: (q2.turn <= q1.turn)  (cost=100104 rows=333300) (actual time=0.29..108 rows=500500 loops=1)\n                        -> Inner hash join (no condition)  (cost=100104 rows=333300) (actual time=0.289..49.5 rows=1e+6 loops=1)\n                            -> Table scan on q2  (cost=0.0365 rows=1000) (actual time=0.0167..0.493 rows=1000 loops=1)\n                            -> Hash\n                                -> Table scan on q1  (cost=101 rows=1000) (actual time=0.0332..0.208 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_window_running_sum",
+          "status": "ok",
+          "median_s": 0.0012487410000403543,
+          "times_s": [
+            0.0012071329999798763,
+            0.0012753110000858214,
+            0.0012487410000403543
+          ],
+          "result_rows": 1,
+          "result_digest": "355f9a477601af3dd9e92e24917f5a6020b40b68",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=2.6..2.6 rows=0) (actual time=1.05..1.05 rows=1 loops=1)\n    -> Sort: t.turn DESC, limit input to 1 row(s) per chunk  (cost=2.6..2.6 rows=0) (actual time=1.05..1.05 rows=1 loops=1)\n        -> Filter: (t.total_weight <= 1000)  (cost=2.5..2.5 rows=0) (actual time=0.852..1.04 rows=13 loops=1)\n            -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=0.851..0.976 rows=1000 loops=1)\n                -> Materialize  (cost=0..0 rows=0) (actual time=0.85..0.85 rows=1000 loops=1)\n                    -> Window aggregate: sum(Queue.weight) OVER (ORDER BY Queue.turn ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)   (actual time=0.403..0.684 rows=1000 loops=1)\n                        -> Sort: Queue.turn  (cost=101 rows=1000) (actual time=0.399..0.444 rows=1000 loops=1)\n                            -> Table scan on Queue  (cost=101 rows=1000) (actual time=0.0202..0.231 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_recursive_boarding",
+          "status": "ok",
+          "median_s": 0.003713002000040433,
+          "times_s": [
+            0.0037688660000867458,
+            0.0037049290000368273,
+            0.003713002000040433
+          ],
+          "result_rows": 1,
+          "result_digest": "355f9a477601af3dd9e92e24917f5a6020b40b68",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=4120..4120 rows=1) (actual time=3.81..3.81 rows=1 loops=1)\n    -> Sort: boarding.turn DESC, limit input to 1 row(s) per chunk  (cost=4120..4120 rows=1) (actual time=3.81..3.81 rows=1 loops=1)\n        -> Table scan on boarding  (cost=3742..3786 rows=3333) (actual time=3.8..3.8 rows=13 loops=1)\n            -> Materialize recursive CTE boarding  (cost=3742..3742 rows=3333) (actual time=3.8..3.8 rows=13 loops=1)\n                -> Filter: ((Queue.turn = (select #3)) and (Queue.weight <= 1000))  (cost=101 rows=33.3) (actual time=0.217..0.441 rows=1 loops=1)\n                    -> Table scan on Queue  (cost=101 rows=1000) (actual time=0.0185..0.186 rows=1000 loops=1)\n                    -> Select #3 (subquery in condition; run only once)\n                        -> Aggregate: min(Queue.turn)  (cost=201 rows=1) (actual time=0.194..0.194 rows=1 loops=1)\n                            -> Table scan on Queue  (cost=101 rows=1000) (actual time=0.00983..0.143 rows=1000 loops=1)\n                -> Repeat until convergence\n                    -> Filter: ((b.total_weight + q.weight) <= 1000)  (cost=3307 rows=3300) (actual time=0.0406..0.258 rows=0.923 loops=13)\n                        -> Inner hash join (q.turn = (b.turn + 1))  (cost=3307 rows=3300) (actual time=0.0243..0.257 rows=1 loops=13)\n                            -> Table scan on q  (cost=0.341 rows=1000) (actual time=0.012..0.183 rows=1000 loops=13)\n                            -> Hash\n                                -> Scan new records on b  (cost=6.21 rows=33) (actual time=200e-6..230e-6 rows=1 loops=13)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Queue": 1000
+      },
+      "load_seconds": 0.019,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_prefix_sum",
+          "status": "ok",
+          "median_s": 1.3134370950000402,
+          "times_s": [
+            1.3134370950000402,
+            1.3647068300000456,
+            1.312286206000067
+          ],
+          "result_rows": 1,
+          "result_digest": "355f9a477601af3dd9e92e24917f5a6020b40b68",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=1381..1381 rows=1 loops=1)\n    -> Sort: q1.turn DESC  (actual time=1381..1381 rows=1 loops=1)\n        -> Filter: (`sum(q2.weight)` <= 1000)  (actual time=1380..1381 rows=13 loops=1)\n            -> Table scan on <temporary>  (actual time=1380..1381 rows=1000 loops=1)\n                -> Aggregate using temporary table  (actual time=1380..1380 rows=1000 loops=1)\n                    -> Filter: (q2.turn <= q1.turn)  (cost=100103 rows=333300) (actual time=0.425..98.6 rows=500500 loops=1)\n                        -> Inner hash join (no condition)  (cost=100103 rows=333300) (actual time=0.336..41.8 rows=1e+6 loops=1)\n                            -> Covering index scan on q1 using idx_queue_turn_cover  (cost=0.0346 rows=1000) (actual time=0.0184..0.453 rows=1000 loops=1)\n                            -> Hash\n                                -> Covering index scan on q2 using idx_queue_turn_cover  (cost=101 rows=1000) (actual time=0.0395..0.234 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_window_running_sum",
+          "status": "ok",
+          "median_s": 0.0012026660000401534,
+          "times_s": [
+            0.0012026660000401534,
+            0.0011731810000128462,
+            0.0012199760000157767
+          ],
+          "result_rows": 1,
+          "result_digest": "355f9a477601af3dd9e92e24917f5a6020b40b68",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=2.6..2.6 rows=0) (actual time=0.934..0.934 rows=1 loops=1)\n    -> Sort: t.turn DESC, limit input to 1 row(s) per chunk  (cost=2.6..2.6 rows=0) (actual time=0.933..0.933 rows=1 loops=1)\n        -> Filter: (t.total_weight <= 1000)  (cost=2.5..2.5 rows=0) (actual time=0.758..0.928 rows=13 loops=1)\n            -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=0.757..0.858 rows=1000 loops=1)\n                -> Materialize  (cost=0..0 rows=0) (actual time=0.756..0.756 rows=1000 loops=1)\n                    -> Window aggregate: sum(Queue.weight) OVER (ORDER BY Queue.turn ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)   (actual time=0.305..0.571 rows=1000 loops=1)\n                        -> Sort: Queue.turn  (cost=101 rows=1000) (actual time=0.302..0.342 rows=1000 loops=1)\n                            -> Index scan on Queue using idx_queue_turn_cover  (cost=101 rows=1000) (actual time=0.0199..0.195 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_recursive_boarding",
+          "status": "ok",
+          "median_s": 0.0006543020000435718,
+          "times_s": [
+            0.0006935449999900811,
+            0.0006026269999210854,
+            0.0006543020000435718
+          ],
+          "result_rows": 1,
+          "result_digest": "355f9a477601af3dd9e92e24917f5a6020b40b68",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=8.25..8.25 rows=1) (actual time=0.0621..0.0622 rows=1 loops=1)\n    -> Sort: boarding.turn DESC, limit input to 1 row(s) per chunk  (cost=8.25..8.25 rows=1) (actual time=0.0618..0.0618 rows=1 loops=1)\n        -> Table scan on boarding  (cost=6.16..7.85 rows=3) (actual time=0.0543..0.0558 rows=13 loops=1)\n            -> Materialize recursive CTE boarding  (cost=5.31..5.31 rows=3) (actual time=0.0539..0.0539 rows=13 loops=1)\n                -> Filter: ((Queue.turn = (select #3)) and (Queue.weight <= 1000))  (cost=0.835 rows=1) (actual time=0.00923..0.011 rows=1 loops=1)\n                    -> Covering index range scan on Queue using idx_queue_turn_cover over (turn = 1 AND NULL < weight <= 1000)  (cost=0.835 rows=1) (actual time=0.00756..0.00925 rows=1 loops=1)\n                    -> Select #3 (subquery in condition; run only once)\n                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=70e-6..110e-6 rows=1 loops=1)\n                -> Repeat until convergence\n                    -> Nested loop inner join  (cost=4.17 rows=2) (actual time=0.0031..0.0166 rows=6 loops=2)\n                        -> Scan new records on b  (cost=2.73 rows=2) (actual time=466e-6..856e-6 rows=6.5 loops=2)\n                        -> Filter: (((b.total_weight + q.weight) <= 1000) and (q.turn = (b.turn + 1)))  (cost=0.675 rows=1) (actual time=0.00175..0.00215 rows=0.923 loops=13)\n                            -> Covering index lookup on q using idx_queue_turn_cover (turn=(b.turn + 1))  (cost=0.675 rows=1) (actual time=0.00148..0.00185 rows=1 loops=13)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Queue": 100000
+      },
+      "load_seconds": 0.805,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_prefix_sum",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_window_running_sum",
+          "status": "ok",
+          "median_s": 0.08179361999998491,
+          "times_s": [
+            0.08226727400005984,
+            0.08097646400005942,
+            0.08179361999998491
+          ],
+          "result_rows": 1,
+          "result_digest": "74733ce7939a27a4ce1457e2babed2b6d7f047b6",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=2.6..2.6 rows=0) (actual time=102..102 rows=1 loops=1)\n    -> Sort: t.turn DESC, limit input to 1 row(s) per chunk  (cost=2.6..2.6 rows=0) (actual time=102..102 rows=1 loops=1)\n        -> Filter: (t.total_weight <= 1000)  (cost=2.5..2.5 rows=0) (actual time=84.8..102 rows=13 loops=1)\n            -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=84.8..95.2 rows=100000 loops=1)\n                -> Materialize  (cost=0..0 rows=0) (actual time=84.7..84.7 rows=100000 loops=1)\n                    -> Window aggregate: sum(Queue.weight) OVER (ORDER BY Queue.turn ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)   (actual time=41.2..68.7 rows=100000 loops=1)\n                        -> Sort: Queue.turn  (cost=10309 rows=102043) (actual time=41.2..45.8 rows=100000 loops=1)\n                            -> Table scan on Queue  (cost=10309 rows=102043) (actual time=0.0851..20.1 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_recursive_boarding",
+          "status": "ok",
+          "median_s": 0.2978591979999692,
+          "times_s": [
+            0.29756767600008516,
+            0.2978591979999692,
+            0.3369869260000087
+          ],
+          "result_rows": 1,
+          "result_digest": "74733ce7939a27a4ce1457e2babed2b6d7f047b6",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=42.1e+6..42.1e+6 rows=1) (actual time=373..373 rows=1 loops=1)\n    -> Sort: boarding.turn DESC, limit input to 1 row(s) per chunk  (cost=42.1e+6..42.1e+6 rows=1) (actual time=373..373 rows=1 loops=1)\n        -> Table scan on boarding  (cost=38.2e+6..38.6e+6 rows=34.7e+6) (actual time=373..373 rows=13 loops=1)\n            -> Materialize recursive CTE boarding  (cost=38.2e+6..38.2e+6 rows=34.7e+6) (actual time=373..373 rows=13 loops=1)\n                -> Filter: ((Queue.turn = (select #3)) and (Queue.weight <= 1000))  (cost=10309 rows=3401) (actual time=19.1..42.6 rows=1 loops=1)\n                    -> Table scan on Queue  (cost=10309 rows=102043) (actual time=0.0521..17.9 rows=100000 loops=1)\n                    -> Select #3 (subquery in condition; run only once)\n                        -> Aggregate: min(Queue.turn)  (cost=20513 rows=1) (actual time=19.1..19.1 rows=1 loops=1)\n                            -> Table scan on Queue  (cost=10309 rows=102043) (actual time=0.0647..14.1 rows=100000 loops=1)\n                -> Repeat until convergence\n                    -> Filter: ((b.total_weight + q.weight) <= 1000)  (cost=34.7e+6 rows=34.7e+6) (actual time=1.98..25.4 rows=0.923 loops=13)\n                        -> Inner hash join (q.turn = (b.turn + 1))  (cost=34.7e+6 rows=34.7e+6) (actual time=0.0509..25.4 rows=1 loops=13)\n                            -> Table scan on q  (cost=0.334 rows=102043) (actual time=0.0401..18.1 rows=100000 loops=13)\n                            -> Hash\n                                -> Scan new records on b  (cost=385 rows=3401) (actual time=0.00116..0.00119 rows=1 loops=13)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Queue": 100000
+      },
+      "load_seconds": 0.805,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_prefix_sum",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_window_running_sum",
+          "status": "ok",
+          "median_s": 0.07845175800002835,
+          "times_s": [
+            0.07837033600003451,
+            0.07885433000001285,
+            0.07845175800002835
+          ],
+          "result_rows": 1,
+          "result_digest": "74733ce7939a27a4ce1457e2babed2b6d7f047b6",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=2.6..2.6 rows=0) (actual time=139..139 rows=1 loops=1)\n    -> Sort: t.turn DESC, limit input to 1 row(s) per chunk  (cost=2.6..2.6 rows=0) (actual time=139..139 rows=1 loops=1)\n        -> Filter: (t.total_weight <= 1000)  (cost=2.5..2.5 rows=0) (actual time=122..139 rows=13 loops=1)\n            -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=122..132 rows=100000 loops=1)\n                -> Materialize  (cost=0..0 rows=0) (actual time=122..122 rows=100000 loops=1)\n                    -> Window aggregate: sum(Queue.weight) OVER (ORDER BY Queue.turn ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)   (actual time=56..97.7 rows=100000 loops=1)\n                        -> Sort: Queue.turn  (cost=10213 rows=101083) (actual time=56..62.7 rows=100000 loops=1)\n                            -> Index scan on Queue using idx_queue_turn_cover  (cost=10213 rows=101083) (actual time=0.0715..27.9 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_recursive_boarding",
+          "status": "ok",
+          "median_s": 0.0006377910000310294,
+          "times_s": [
+            0.0006377910000310294,
+            0.0006019239999659476,
+            0.0006673660000160453
+          ],
+          "result_rows": 1,
+          "result_digest": "74733ce7939a27a4ce1457e2babed2b6d7f047b6",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=9.37..9.37 rows=1) (actual time=0.0593..0.0593 rows=1 loops=1)\n    -> Sort: boarding.turn DESC, limit input to 1 row(s) per chunk  (cost=9.37..9.37 rows=1) (actual time=0.059..0.059 rows=1 loops=1)\n        -> Table scan on boarding  (cost=7.27..8.96 rows=3.02) (actual time=0.0518..0.0533 rows=13 loops=1)\n            -> Materialize recursive CTE boarding  (cost=6.43..6.43 rows=3.02) (actual time=0.0513..0.0513 rows=13 loops=1)\n                -> Filter: ((Queue.turn = (select #3)) and (Queue.weight <= 1000))  (cost=1.21 rows=1) (actual time=0.00646..0.00818 rows=1 loops=1)\n                    -> Covering index range scan on Queue using idx_queue_turn_cover over (turn = 1 AND NULL < weight <= 1000)  (cost=1.21 rows=1) (actual time=0.00508..0.00671 rows=1 loops=1)\n                    -> Select #3 (subquery in condition; run only once)\n                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=70e-6..110e-6 rows=1 loops=1)\n                -> Repeat until convergence\n                    -> Nested loop inner join  (cost=4.92 rows=2.02) (actual time=0.00318..0.0173 rows=6 loops=2)\n                        -> Scan new records on b  (cost=2.73 rows=2) (actual time=471e-6..856e-6 rows=6.5 loops=2)\n                        -> Filter: (((b.total_weight + q.weight) <= 1000) and (q.turn = (b.turn + 1)))  (cost=1.05 rows=1.01) (actual time=0.00188..0.00226 rows=0.923 loops=13)\n                            -> Covering index lookup on q using idx_queue_turn_cover (turn=(b.turn + 1))  (cost=1.05 rows=1.01) (actual time=0.00161..0.00197 rows=1 loops=13)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Queue": 1000000
+      },
+      "load_seconds": 8.722,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_prefix_sum",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_window_running_sum",
+          "status": "ok",
+          "median_s": 1.239352308999969,
+          "times_s": [
+            1.292418886000064,
+            1.2251756739999564,
+            1.239352308999969
+          ],
+          "result_rows": 1,
+          "result_digest": "74733ce7939a27a4ce1457e2babed2b6d7f047b6",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=2.6..2.6 rows=0) (actual time=1519..1519 rows=1 loops=1)\n    -> Sort: t.turn DESC, limit input to 1 row(s) per chunk  (cost=2.6..2.6 rows=0) (actual time=1519..1519 rows=1 loops=1)\n        -> Filter: (t.total_weight <= 1000)  (cost=2.5..2.5 rows=0) (actual time=1203..1519 rows=13 loops=1)\n            -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=1203..1437 rows=1e+6 loops=1)\n                -> Materialize  (cost=0..0 rows=0) (actual time=1203..1203 rows=1e+6 loops=1)\n                    -> Window aggregate: sum(Queue.weight) OVER (ORDER BY Queue.turn ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)   (actual time=456..765 rows=1e+6 loops=1)\n                        -> Sort: Queue.turn  (cost=93801 rows=927993) (actual time=456..511 rows=1e+6 loops=1)\n                            -> Table scan on Queue  (cost=93801 rows=927993) (actual time=0.0794..207 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_recursive_boarding",
+          "status": "ok",
+          "median_s": 3.065330237000012,
+          "times_s": [
+            3.065330237000012,
+            3.0658766489999607,
+            3.044926386000043
+          ],
+          "result_rows": 1,
+          "result_digest": "74733ce7939a27a4ce1457e2babed2b6d7f047b6",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=3.8e+9..3.8e+9 rows=1) (actual time=3771..3771 rows=1 loops=1)\n    -> Sort: boarding.turn DESC, limit input to 1 row(s) per chunk  (cost=3.8e+9..3.8e+9 rows=1) (actual time=3771..3771 rows=1 loops=1)\n        -> Table scan on boarding  (cost=3.45e+9..3.49e+9 rows=3.14e+9) (actual time=3771..3771 rows=13 loops=1)\n            -> Materialize recursive CTE boarding  (cost=3.45e+9..3.45e+9 rows=3.14e+9) (actual time=3771..3771 rows=13 loops=1)\n                -> Filter: ((Queue.turn = (select #3)) and (Queue.weight <= 1000))  (cost=98013 rows=32334) (actual time=195..433 rows=1 loops=1)\n                    -> Table scan on Queue  (cost=98013 rows=970120) (actual time=0.101..181 rows=1e+6 loops=1)\n                    -> Select #3 (subquery in condition; run only once)\n                        -> Aggregate: min(Queue.turn)  (cost=195025 rows=1) (actual time=195..195 rows=1 loops=1)\n                            -> Table scan on Queue  (cost=98013 rows=970120) (actual time=0.0422..145 rows=1e+6 loops=1)\n                -> Repeat until convergence\n                    -> Filter: ((b.total_weight + q.weight) <= 1000)  (cost=3.14e+9 rows=3.14e+9) (actual time=19.7..257 rows=0.923 loops=13)\n                        -> Inner hash join (q.turn = (b.turn + 1))  (cost=3.14e+9 rows=3.14e+9) (actual time=0.0708..257 rows=1 loops=13)\n                            -> Table scan on q  (cost=0.365 rows=970120) (actual time=0.0512..184 rows=1e+6 loops=13)\n                            -> Hash\n                                -> Scan new records on b  (cost=3640 rows=32334) (actual time=0.0027..0.00275 rows=1 loops=13)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Queue": 1000000
+      },
+      "load_seconds": 8.722,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_prefix_sum",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_window_running_sum",
+          "status": "ok",
+          "median_s": 1.190346522000027,
+          "times_s": [
+            1.2328564040000174,
+            1.1867515139999796,
+            1.190346522000027
+          ],
+          "result_rows": 1,
+          "result_digest": "74733ce7939a27a4ce1457e2babed2b6d7f047b6",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=2.6..2.6 rows=0) (actual time=1419..1419 rows=1 loops=1)\n    -> Sort: t.turn DESC, limit input to 1 row(s) per chunk  (cost=2.6..2.6 rows=0) (actual time=1419..1419 rows=1 loops=1)\n        -> Filter: (t.total_weight <= 1000)  (cost=2.5..2.5 rows=0) (actual time=1141..1419 rows=13 loops=1)\n            -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=1141..1348 rows=1e+6 loops=1)\n                -> Materialize  (cost=0..0 rows=0) (actual time=1141..1141 rows=1e+6 loops=1)\n                    -> Window aggregate: sum(Queue.weight) OVER (ORDER BY Queue.turn ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)   (actual time=401..705 rows=1e+6 loops=1)\n                        -> Sort: Queue.turn  (cost=101624 rows=996190) (actual time=401..452 rows=1e+6 loops=1)\n                            -> Index scan on Queue using idx_queue_turn_cover  (cost=101624 rows=996190) (actual time=0.0699..188 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_recursive_boarding",
+          "status": "ok",
+          "median_s": 0.000678526999990936,
+          "times_s": [
+            0.000678526999990936,
+            0.0007065600000260019,
+            0.0006737080000220885
+          ],
+          "result_rows": 1,
+          "result_digest": "74733ce7939a27a4ce1457e2babed2b6d7f047b6",
+          "explain_analyze": "-> Limit: 1 row(s)  (cost=9.37..9.37 rows=1) (actual time=0.0625..0.0625 rows=1 loops=1)\n    -> Sort: boarding.turn DESC, limit input to 1 row(s) per chunk  (cost=9.37..9.37 rows=1) (actual time=0.0622..0.0622 rows=1 loops=1)\n        -> Table scan on boarding  (cost=7.28..8.97 rows=3) (actual time=0.0548..0.0563 rows=13 loops=1)\n            -> Materialize recursive CTE boarding  (cost=6.43..6.43 rows=3) (actual time=0.0544..0.0544 rows=13 loops=1)\n                -> Filter: ((Queue.turn = (select #3)) and (Queue.weight <= 1000))  (cost=1.21 rows=1) (actual time=0.00692..0.00874 rows=1 loops=1)\n                    -> Covering index range scan on Queue using idx_queue_turn_cover over (turn = 1 AND NULL < weight <= 1000)  (cost=1.21 rows=1) (actual time=0.00558..0.00731 rows=1 loops=1)\n                    -> Select #3 (subquery in condition; run only once)\n                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=70e-6..110e-6 rows=1 loops=1)\n                -> Repeat until convergence\n                    -> Nested loop inner join  (cost=4.92 rows=2) (actual time=0.00335..0.0187 rows=6 loops=2)\n                        -> Scan new records on b  (cost=2.73 rows=2) (actual time=476e-6..882e-6 rows=6.5 loops=2)\n                        -> Filter: (((b.total_weight + q.weight) <= 1000) and (q.turn = (b.turn + 1)))  (cost=1.05 rows=1) (actual time=0.00208..0.00246 rows=0.923 loops=13)\n                            -> Covering index lookup on q using idx_queue_turn_cover (turn=(b.turn + 1))  (cost=1.05 rows=1) (actual time=0.00181..0.00216 rows=1 loops=13)\n"
+        }
+      ]
+    }
+  ]
+}

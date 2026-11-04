@@ -1,0 +1,351 @@
+{
+  "problem": "21-product-price-at-a-given-date",
+  "generated_at": "2026-11-04T15:32:25+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_union_changed_and_unchanged",
+    "02_one_scan_window_pivot",
+    "03_correlated_latest"
+  ],
+  "optimal": "03_correlated_latest",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Products": 1000
+      },
+      "load_seconds": 0.02,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_changed_and_unchanged",
+          "status": "ok",
+          "median_s": 0.0028538139999909617,
+          "times_s": [
+            0.0028538139999909617,
+            0.0032511960000647377,
+            0.0028364509998937137
+          ],
+          "result_rows": 234,
+          "result_digest": "ffbc3be36fe8e846468adf974f6881a878ba3590",
+          "explain_analyze": "-> Append  (cost=182 rows=470) (actual time=0.626..1.2 rows=234 loops=1)\n    -> Stream results  (cost=111 rows=235) (actual time=0.626..0.884 rows=187 loops=1)\n        -> Nested loop inner join  (cost=111 rows=235) (actual time=0.624..0.862 rows=187 loops=1)\n            -> Filter: (l.last_date is not null)  (cost=94.2..28.9 rows=235) (actual time=0.62..0.651 rows=187 loops=1)\n                -> Table scan on l  (cost=94.5..99.9 rows=235) (actual time=0.62..0.638 rows=187 loops=1)\n                    -> Materialize  (cost=94.5..94.5 rows=235) (actual time=0.619..0.619 rows=187 loops=1)\n                        -> Filter: (Products.change_date <= DATE'2019-08-16')  (cost=71 rows=235) (actual time=0.0164..0.568 rows=187 loops=1)\n                            -> Covering index skip scan for grouping on Products using PRIMARY over (change_date <= '2019-08-16')  (cost=71 rows=235) (actual time=0.0157..0.55 rows=187 loops=1)\n            -> Single-row index lookup on p using PRIMARY (product_id=l.product_id, change_date=l.last_date)  (cost=0.25 rows=1) (actual time=844e-6..872e-6 rows=1 loops=187)\n    -> Stream results  (cost=71 rows=235) (actual time=0.00568..0.299 rows=47 loops=1)\n        -> Filter: (min(Products.change_date) > '2019-08-16')  (cost=71 rows=235) (actual time=0.00493..0.294 rows=47 loops=1)\n            -> Covering index skip scan for grouping on Products using PRIMARY  (cost=71 rows=235) (actual time=0.00444..0.278 rows=234 loops=1)\n"
+        },
+        {
+          "solution": "02_one_scan_window_pivot",
+          "status": "ok",
+          "median_s": 0.0032747469999776513,
+          "times_s": [
+            0.003285763999883784,
+            0.0032095789999857516,
+            0.0032747469999776513
+          ],
+          "result_rows": 234,
+          "result_digest": "ffbc3be36fe8e846468adf974f6881a878ba3590",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=1.96..1.98 rows=234 loops=1)\n    -> Aggregate using temporary table  (actual time=1.96..1.96 rows=234 loops=1)\n        -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=1.59..1.68 rows=1000 loops=1)\n            -> Materialize  (cost=0..0 rows=0) (actual time=1.59..1.59 rows=1000 loops=1)\n                -> Window aggregate with buffering: max(`(case when (Products.change_date <= '2019-08-16') then Products.change_date end)`) OVER (PARTITION BY Products.product_id )   (actual time=0.337..1.4 rows=1000 loops=1)\n                    -> Sort: Products.product_id  (cost=101 rows=1000) (actual time=0.325..0.375 rows=1000 loops=1)\n                        -> Table scan on Products  (cost=101 rows=1000) (actual time=0.0651..0.214 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_correlated_latest",
+          "status": "ok",
+          "median_s": 0.0028452379999635014,
+          "times_s": [
+            0.002728281999907267,
+            0.002891544000021895,
+            0.0028452379999635014
+          ],
+          "result_rows": 234,
+          "result_digest": "ffbc3be36fe8e846468adf974f6881a878ba3590",
+          "explain_analyze": "-> Table scan on p  (cost=94.5..99.9 rows=235) (actual time=0.298..0.322 rows=234 loops=1)\n    -> Materialize  (cost=94.5..94.5 rows=235) (actual time=0.298..0.298 rows=234 loops=1)\n        -> Covering index skip scan for deduplication on Products using PRIMARY  (cost=71 rows=235) (actual time=0.00891..0.274 rows=234 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Products": 1000
+      },
+      "load_seconds": 0.02,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_changed_and_unchanged",
+          "status": "ok",
+          "median_s": 0.002833284999951502,
+          "times_s": [
+            0.002833284999951502,
+            0.003100915000004534,
+            0.002740170999913971
+          ],
+          "result_rows": 234,
+          "result_digest": "ffbc3be36fe8e846468adf974f6881a878ba3590",
+          "explain_analyze": "-> Append  (cost=182 rows=470) (actual time=0.581..1.14 rows=234 loops=1)\n    -> Stream results  (cost=111 rows=235) (actual time=0.581..0.852 rows=187 loops=1)\n        -> Nested loop inner join  (cost=111 rows=235) (actual time=0.58..0.83 rows=187 loops=1)\n            -> Filter: (l.last_date is not null)  (cost=94.2..28.9 rows=235) (actual time=0.577..0.608 rows=187 loops=1)\n                -> Table scan on l  (cost=94.5..99.9 rows=235) (actual time=0.576..0.595 rows=187 loops=1)\n                    -> Materialize  (cost=94.5..94.5 rows=235) (actual time=0.576..0.576 rows=187 loops=1)\n                        -> Filter: (Products.change_date <= DATE'2019-08-16')  (cost=71 rows=235) (actual time=0.0162..0.527 rows=187 loops=1)\n                            -> Covering index skip scan for grouping on Products using PRIMARY over (change_date <= '2019-08-16')  (cost=71 rows=235) (actual time=0.0157..0.51 rows=187 loops=1)\n            -> Single-row index lookup on p using PRIMARY (product_id=l.product_id, change_date=l.last_date)  (cost=0.25 rows=1) (actual time=0.001..0.00103 rows=1 loops=187)\n    -> Stream results  (cost=71 rows=235) (actual time=0.00611..0.272 rows=47 loops=1)\n        -> Filter: (min(Products.change_date) > '2019-08-16')  (cost=71 rows=235) (actual time=0.00537..0.268 rows=47 loops=1)\n            -> Covering index skip scan for grouping on Products using PRIMARY  (cost=71 rows=235) (actual time=0.00487..0.253 rows=234 loops=1)\n"
+        },
+        {
+          "solution": "02_one_scan_window_pivot",
+          "status": "ok",
+          "median_s": 0.0033190310000463796,
+          "times_s": [
+            0.00323452499992527,
+            0.0033190310000463796,
+            0.0033759890000055748
+          ],
+          "result_rows": 234,
+          "result_digest": "ffbc3be36fe8e846468adf974f6881a878ba3590",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=1.84..1.86 rows=234 loops=1)\n    -> Aggregate using temporary table  (actual time=1.84..1.84 rows=234 loops=1)\n        -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=1.52..1.61 rows=1000 loops=1)\n            -> Materialize  (cost=0..0 rows=0) (actual time=1.52..1.52 rows=1000 loops=1)\n                -> Window aggregate with buffering: max(`(case when (Products.change_date <= '2019-08-16') then Products.change_date end)`) OVER (PARTITION BY Products.product_id )   (actual time=0.348..1.34 rows=1000 loops=1)\n                    -> Sort: Products.product_id  (cost=101 rows=1000) (actual time=0.337..0.377 rows=1000 loops=1)\n                        -> Index scan on Products using idx_products_covering  (cost=101 rows=1000) (actual time=0.0393..0.197 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_correlated_latest",
+          "status": "ok",
+          "median_s": 0.002852427999869178,
+          "times_s": [
+            0.002852427999869178,
+            0.002780927999992855,
+            0.002925467999830289
+          ],
+          "result_rows": 234,
+          "result_digest": "ffbc3be36fe8e846468adf974f6881a878ba3590",
+          "explain_analyze": "-> Table scan on p  (cost=94.5..99.9 rows=235) (actual time=0.326..0.35 rows=234 loops=1)\n    -> Materialize  (cost=94.5..94.5 rows=235) (actual time=0.325..0.325 rows=234 loops=1)\n        -> Covering index skip scan for deduplication on Products using PRIMARY  (cost=71 rows=235) (actual time=0.00882..0.302 rows=234 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Products": 100000
+      },
+      "load_seconds": 1.178,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_changed_and_unchanged",
+          "status": "ok",
+          "median_s": 0.30400469799997154,
+          "times_s": [
+            0.30959034000011343,
+            0.30400469799997154,
+            0.22878953999997975
+          ],
+          "result_rows": 23539,
+          "result_digest": "14714a684e517e9ae7df995fe8e2d7246aa7fcc4",
+          "explain_analyze": "-> Append  (cost=17404 rows=45534) (actual time=62.3..116 rows=23539 loops=1)\n    -> Stream results  (cost=10532 rows=22767) (actual time=62.3..84.7 rows=19301 loops=1)\n        -> Nested loop inner join  (cost=10532 rows=22767) (actual time=62.3..82.6 rows=19301 loops=1)\n            -> Filter: (l.last_date is not null)  (cost=9148..2564 rows=22767) (actual time=62.3..65.4 rows=19301 loops=1)\n                -> Table scan on l  (cost=9148..9435 rows=22767) (actual time=62.3..64.1 rows=19301 loops=1)\n                    -> Materialize  (cost=9148..9148 rows=22767) (actual time=62.3..62.3 rows=19301 loops=1)\n                        -> Filter: (Products.change_date <= DATE'2019-08-16')  (cost=6872 rows=22767) (actual time=0.0228..57.5 rows=19301 loops=1)\n                            -> Covering index skip scan for grouping on Products using PRIMARY over (change_date <= '2019-08-16')  (cost=6872 rows=22767) (actual time=0.0217..56 rows=19301 loops=1)\n            -> Single-row index lookup on p using PRIMARY (product_id=l.product_id, change_date=l.last_date)  (cost=0.25 rows=1) (actual time=713e-6..744e-6 rows=1 loops=19301)\n    -> Stream results  (cost=6872 rows=22767) (actual time=0.00806..29.4 rows=4238 loops=1)\n        -> Filter: (min(Products.change_date) > '2019-08-16')  (cost=6872 rows=22767) (actual time=0.00707..29.1 rows=4238 loops=1)\n            -> Covering index skip scan for grouping on Products using PRIMARY  (cost=6872 rows=22767) (actual time=0.00658..27.7 rows=23539 loops=1)\n"
+        },
+        {
+          "solution": "02_one_scan_window_pivot",
+          "status": "ok",
+          "median_s": 0.2619915800000854,
+          "times_s": [
+            0.2635054960001071,
+            0.2619915800000854,
+            0.2614979269999367
+          ],
+          "result_rows": 23539,
+          "result_digest": "14714a684e517e9ae7df995fe8e2d7246aa7fcc4",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=180..182 rows=23539 loops=1)\n    -> Aggregate using temporary table  (actual time=180..180 rows=23539 loops=1)\n        -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=147..156 rows=100000 loops=1)\n            -> Materialize  (cost=0..0 rows=0) (actual time=147..147 rows=100000 loops=1)\n                -> Window aggregate with buffering: max(`(case when (Products.change_date <= '2019-08-16') then Products.change_date end)`) OVER (PARTITION BY Products.product_id )   (actual time=30.8..129 rows=100000 loops=1)\n                    -> Sort: Products.product_id  (cost=9746 rows=96895) (actual time=30.8..35.3 rows=100000 loops=1)\n                        -> Table scan on Products  (cost=9746 rows=96895) (actual time=1.04..16.3 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_correlated_latest",
+          "status": "ok",
+          "median_s": 0.22829983899987383,
+          "times_s": [
+            0.27009351499987133,
+            0.22829983899987383,
+            0.2270083710000108
+          ],
+          "result_rows": 23539,
+          "result_digest": "14714a684e517e9ae7df995fe8e2d7246aa7fcc4",
+          "explain_analyze": "-> Table scan on p  (cost=9148..9435 rows=22767) (actual time=28.6..31.1 rows=23539 loops=1)\n    -> Materialize  (cost=9148..9148 rows=22767) (actual time=28.6..28.6 rows=23539 loops=1)\n        -> Covering index skip scan for deduplication on Products using PRIMARY  (cost=6872 rows=22767) (actual time=0.0108..26.7 rows=23539 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Products": 100000
+      },
+      "load_seconds": 1.178,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_changed_and_unchanged",
+          "status": "ok",
+          "median_s": 0.2174669560001803,
+          "times_s": [
+            0.21486672599985468,
+            0.2174669560001803,
+            0.2189626809999936
+          ],
+          "result_rows": 23539,
+          "result_digest": "14714a684e517e9ae7df995fe8e2d7246aa7fcc4",
+          "explain_analyze": "-> Append  (cost=17346 rows=45378) (actual time=62.6..116 rows=23539 loops=1)\n    -> Stream results  (cost=10496 rows=22689) (actual time=62.6..84.9 rows=19301 loops=1)\n        -> Nested loop inner join  (cost=10496 rows=22689) (actual time=62.6..82.8 rows=19301 loops=1)\n            -> Filter: (l.last_date is not null)  (cost=9118..2555 rows=22689) (actual time=62.6..65.7 rows=19301 loops=1)\n                -> Table scan on l  (cost=9119..9405 rows=22689) (actual time=62.6..64.5 rows=19301 loops=1)\n                    -> Materialize  (cost=9119..9119 rows=22689) (actual time=62.6..62.6 rows=19301 loops=1)\n                        -> Filter: (Products.change_date <= DATE'2019-08-16')  (cost=6850 rows=22689) (actual time=0.0304..57.9 rows=19301 loops=1)\n                            -> Covering index skip scan for grouping on Products using PRIMARY over (change_date <= '2019-08-16')  (cost=6850 rows=22689) (actual time=0.0293..56.4 rows=19301 loops=1)\n            -> Single-row index lookup on p using PRIMARY (product_id=l.product_id, change_date=l.last_date)  (cost=0.25 rows=1) (actual time=705e-6..733e-6 rows=1 loops=19301)\n    -> Stream results  (cost=6850 rows=22689) (actual time=0.00872..29.6 rows=4238 loops=1)\n        -> Filter: (min(Products.change_date) > '2019-08-16')  (cost=6850 rows=22689) (actual time=0.00783..29.3 rows=4238 loops=1)\n            -> Covering index skip scan for grouping on Products using PRIMARY  (cost=6850 rows=22689) (actual time=0.00711..27.9 rows=23539 loops=1)\n"
+        },
+        {
+          "solution": "02_one_scan_window_pivot",
+          "status": "ok",
+          "median_s": 0.26349466200008465,
+          "times_s": [
+            0.262445290000187,
+            0.26349466200008465,
+            0.2651118410001345
+          ],
+          "result_rows": 23539,
+          "result_digest": "14714a684e517e9ae7df995fe8e2d7246aa7fcc4",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=180..182 rows=23539 loops=1)\n    -> Aggregate using temporary table  (actual time=180..180 rows=23539 loops=1)\n        -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=147..156 rows=100000 loops=1)\n            -> Materialize  (cost=0..0 rows=0) (actual time=147..147 rows=100000 loops=1)\n                -> Window aggregate with buffering: max(`(case when (Products.change_date <= '2019-08-16') then Products.change_date end)`) OVER (PARTITION BY Products.product_id )   (actual time=29.7..128 rows=100000 loops=1)\n                    -> Sort: Products.product_id  (cost=10099 rows=100425) (actual time=29.7..34.5 rows=100000 loops=1)\n                        -> Index scan on Products using idx_products_covering  (cost=10099 rows=100425) (actual time=0.981..15.5 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_correlated_latest",
+          "status": "ok",
+          "median_s": 0.2297480929998983,
+          "times_s": [
+            0.2299315390000629,
+            0.2297480929998983,
+            0.2275798969999414
+          ],
+          "result_rows": 23539,
+          "result_digest": "14714a684e517e9ae7df995fe8e2d7246aa7fcc4",
+          "explain_analyze": "-> Table scan on p  (cost=9119..9405 rows=22689) (actual time=28.7..31.2 rows=23539 loops=1)\n    -> Materialize  (cost=9119..9119 rows=22689) (actual time=28.7..28.7 rows=23539 loops=1)\n        -> Covering index skip scan for deduplication on Products using PRIMARY  (cost=6850 rows=22689) (actual time=0.0111..26.9 rows=23539 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Products": 1000000
+      },
+      "load_seconds": 9.168,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_changed_and_unchanged",
+          "status": "ok",
+          "median_s": 2.360795310999947,
+          "times_s": [
+            2.360795310999947,
+            2.4047071649999907,
+            2.344966561000092
+          ],
+          "result_rows": 234723,
+          "result_digest": "0cbca522ec601f1fc60ba7f05f6669136439e956",
+          "explain_analyze": "-> Append  (cost=192869 rows=473698) (actual time=708..1412 rows=234723 loops=1)\n    -> Stream results  (cost=109545 rows=236849) (actual time=708..1016 rows=192823 loops=1)\n        -> Nested loop inner join  (cost=109545 rows=236849) (actual time=708..995 rows=192823 loops=1)\n            -> Filter: (l.last_date is not null)  (cost=107008..26648 rows=236849) (actual time=708..739 rows=192823 loops=1)\n                -> Table scan on l  (cost=107008..109971 rows=236849) (actual time=708..727 rows=192823 loops=1)\n                    -> Materialize  (cost=107008..107008 rows=236849) (actual time=708..708 rows=192823 loops=1)\n                        -> Filter: (Products.change_date <= DATE'2019-08-16')  (cost=83323 rows=236849) (actual time=0.0503..661 rows=192823 loops=1)\n                            -> Covering index skip scan for grouping on Products using PRIMARY over (change_date <= '2019-08-16')  (cost=83323 rows=236849) (actual time=0.0489..645 rows=192823 loops=1)\n            -> Single-row index lookup on p using PRIMARY (product_id=l.product_id, change_date=l.last_date)  (cost=0.25 rows=1) (actual time=0.00115..0.00117 rows=1 loops=192823)\n    -> Stream results  (cost=83323 rows=236849) (actual time=0.0266..382 rows=41900 loops=1)\n        -> Filter: (min(Products.change_date) > '2019-08-16')  (cost=83323 rows=236849) (actual time=0.024..378 rows=41900 loops=1)\n            -> Covering index skip scan for grouping on Products using PRIMARY  (cost=83323 rows=236849) (actual time=0.0223..362 rows=234723 loops=1)\n"
+        },
+        {
+          "solution": "02_one_scan_window_pivot",
+          "status": "ok",
+          "median_s": 5.768255963999991,
+          "times_s": [
+            5.763398224999946,
+            5.773787787000174,
+            5.768255963999991
+          ],
+          "result_rows": 234723,
+          "result_digest": "0cbca522ec601f1fc60ba7f05f6669136439e956",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=4951..4994 rows=234723 loops=1)\n    -> Aggregate using temporary table  (actual time=4951..4951 rows=234722 loops=1)\n        -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=3526..3782 rows=1e+6 loops=1)\n            -> Materialize  (cost=0..0 rows=0) (actual time=3526..3526 rows=1e+6 loops=1)\n                -> Window aggregate with buffering: max(`(case when (Products.change_date <= '2019-08-16') then Products.change_date end)`) OVER (PARTITION BY Products.product_id )   (actual time=365..2998 rows=1e+6 loops=1)\n                    -> Sort: Products.product_id  (cost=98032 rows=972796) (actual time=364..413 rows=1e+6 loops=1)\n                        -> Table scan on Products  (cost=98032 rows=972796) (actual time=1.29..185 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_correlated_latest",
+          "status": "ok",
+          "median_s": 2.619336634000092,
+          "times_s": [
+            2.6682120220000343,
+            2.619336634000092,
+            2.375737056999924
+          ],
+          "result_rows": 234723,
+          "result_digest": "0cbca522ec601f1fc60ba7f05f6669136439e956",
+          "explain_analyze": "-> Table scan on p  (cost=104245..107131 rows=230732) (actual time=329..356 rows=234723 loops=1)\n    -> Materialize  (cost=104245..104245 rows=230732) (actual time=329..329 rows=234723 loops=1)\n        -> Covering index skip scan for deduplication on Products using PRIMARY  (cost=81171 rows=230732) (actual time=0.0264..311 rows=234723 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Products": 1000000
+      },
+      "load_seconds": 9.168,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_changed_and_unchanged",
+          "status": "ok",
+          "median_s": 2.6289028500000313,
+          "times_s": [
+            2.6289028500000313,
+            2.6684075749999465,
+            2.6094115890000467
+          ],
+          "result_rows": 234723,
+          "result_digest": "0cbca522ec601f1fc60ba7f05f6669136439e956",
+          "explain_analyze": "-> Append  (cost=185715 rows=451752) (actual time=748..1880 rows=234723 loops=1)\n    -> Stream results  (cost=104470 rows=225876) (actual time=748..1061 rows=192823 loops=1)\n        -> Nested loop inner join  (cost=104470 rows=225876) (actual time=748..1040 rows=192823 loops=1)\n            -> Filter: (l.last_date is not null)  (cost=103832..25414 rows=225876) (actual time=748..779 rows=192823 loops=1)\n                -> Table scan on l  (cost=103833..106659 rows=225876) (actual time=748..767 rows=192823 loops=1)\n                    -> Materialize  (cost=103833..103833 rows=225876) (actual time=748..748 rows=192823 loops=1)\n                        -> Filter: (Products.change_date <= DATE'2019-08-16')  (cost=81245 rows=225876) (actual time=0.049..700 rows=192823 loops=1)\n                            -> Covering index skip scan for grouping on Products using idx_products_covering over (change_date <= '2019-08-16')  (cost=81245 rows=225876) (actual time=0.0477..684 rows=192823 loops=1)\n            -> Single-row index lookup on p using PRIMARY (product_id=l.product_id, change_date=l.last_date)  (cost=0.25 rows=1) (actual time=0.00117..0.0012 rows=1 loops=192823)\n    -> Stream results  (cost=81245 rows=225876) (actual time=0.0273..805 rows=41900 loops=1)\n        -> Filter: (min(Products.change_date) > '2019-08-16')  (cost=81245 rows=225876) (actual time=0.0247..801 rows=41900 loops=1)\n            -> Covering index skip scan for grouping on Products using idx_products_covering  (cost=81245 rows=225876) (actual time=0.0233..784 rows=234723 loops=1)\n"
+        },
+        {
+          "solution": "02_one_scan_window_pivot",
+          "status": "ok",
+          "median_s": 5.804559686000175,
+          "times_s": [
+            5.804559686000175,
+            5.811528150999948,
+            5.762432472
+          ],
+          "result_rows": 234723,
+          "result_digest": "0cbca522ec601f1fc60ba7f05f6669136439e956",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=4891..4934 rows=234723 loops=1)\n    -> Aggregate using temporary table  (actual time=4891..4891 rows=234722 loops=1)\n        -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=3477..3730 rows=1e+6 loops=1)\n            -> Materialize  (cost=0..0 rows=0) (actual time=3477..3477 rows=1e+6 loops=1)\n                -> Window aggregate with buffering: max(`(case when (Products.change_date <= '2019-08-16') then Products.change_date end)`) OVER (PARTITION BY Products.product_id )   (actual time=324..2950 rows=1e+6 loops=1)\n                    -> Sort: Products.product_id  (cost=101338 rows=998585) (actual time=323..374 rows=1e+6 loops=1)\n                        -> Index scan on Products using idx_products_covering  (cost=101338 rows=998585) (actual time=1.08..157 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_correlated_latest",
+          "status": "ok",
+          "median_s": 2.6133227739999256,
+          "times_s": [
+            2.4149134630001754,
+            2.6650847349999367,
+            2.6133227739999256
+          ],
+          "result_rows": 234723,
+          "result_digest": "0cbca522ec601f1fc60ba7f05f6669136439e956",
+          "explain_analyze": "-> Table scan on p  (cost=103833..106659 rows=225876) (actual time=439..467 rows=234723 loops=1)\n    -> Materialize  (cost=103833..103833 rows=225876) (actual time=439..439 rows=234723 loops=1)\n        -> Covering index skip scan for deduplication on Products using idx_products_covering  (cost=81245 rows=225876) (actual time=0.026..419 rows=234723 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

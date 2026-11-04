@@ -1,0 +1,357 @@
+{
+  "problem": "02-confirmation-rate",
+  "generated_at": "2026-11-04T15:14:12+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subqueries",
+    "02_left_join_group_by",
+    "03_aggregate_then_join"
+  ],
+  "optimal": "03_aggregate_then_join",
+  "machine": {
+    "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "python": "3.11.18",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "mem_total": "8122100 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261101.186.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Signups": 333,
+        "Confirmations": 1000
+      },
+      "load_seconds": 0.028,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.0047430259999998725,
+          "times_s": [
+            0.005261006000012003,
+            0.0047430259999998725,
+            0.004627071000015803
+          ],
+          "result_rows": 333,
+          "result_digest": "a49406a211ff8ca9bfafc766e430443bb8bad846",
+          "explain_analyze": "-> Covering index scan on s using PRIMARY  (cost=33.6 rows=333) (actual time=0.0382..0.0693 rows=333 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.03 rows=1) (actual time=0.00224..0.00228 rows=1 loops=333)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.641 rows=3.89) (actual time=0.00147..0.00194 rows=2.95 loops=333)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=0.64 rows=1) (actual time=0.00306..0.00309 rows=1 loops=238)\n        -> Filter: (c.`action` = 'confirmed')  (cost=0.446 rows=1.95) (actual time=0.00193..0.00274 rows=2.06 loops=238)\n            -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.446 rows=3.89) (actual time=0.0014..0.00211 rows=4.12 loops=238)\n-> Select #4 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.03 rows=1) (actual time=0.00237..0.0024 rows=1 loops=238)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.641 rows=3.89) (actual time=0.00129..0.002 rows=4.12 loops=238)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 0.0033857699999941815,
+          "times_s": [
+            0.0033857699999941815,
+            0.003529307000007975,
+            0.0033123299999999745
+          ],
+          "result_rows": 333,
+          "result_digest": "a49406a211ff8ca9bfafc766e430443bb8bad846",
+          "explain_analyze": "-> Group aggregate: avg((c.`action` = 'confirmed'))  (cost=376 rows=333) (actual time=0.0832..1.04 rows=333 loops=1)\n    -> Nested loop left join  (cost=247 rows=1296) (actual time=0.0458..0.856 rows=1076 loops=1)\n        -> Covering index scan on s using PRIMARY  (cost=33.6 rows=333) (actual time=0.035..0.0676 rows=333 loops=1)\n        -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.252 rows=3.89) (actual time=0.00144..0.00201 rows=2.95 loops=333)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.0030338400000005095,
+          "times_s": [
+            0.0030338400000005095,
+            0.003032178000012209,
+            0.0031535110000220357
+          ],
+          "result_rows": 333,
+          "result_digest": "a49406a211ff8ca9bfafc766e430443bb8bad846",
+          "explain_analyze": "-> Nested loop left join  (cost=9424 rows=85581) (actual time=0.514..0.861 rows=333 loops=1)\n    -> Covering index scan on s using PRIMARY  (cost=33.6 rows=333) (actual time=0.0371..0.0796 rows=333 loops=1)\n    -> Index lookup on p using <auto_key0> (user_id=s.user_id)  (cost=227..229 rows=10) (actual time=0.00205..0.00217 rows=0.715 loops=333)\n        -> Materialize CTE per_user  (cost=226..226 rows=257) (actual time=0.472..0.472 rows=257 loops=1)\n            -> Group aggregate: sum((Confirmations.`action` = 'confirmed')), count(0)  (cost=201 rows=257) (actual time=0.0676..0.337 rows=257 loops=1)\n                -> Index scan on Confirmations using PRIMARY  (cost=101 rows=1000) (actual time=0.0483..0.181 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Signups": 333,
+        "Confirmations": 1000
+      },
+      "load_seconds": 0.028,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.004589704000011352,
+          "times_s": [
+            0.004603323999987197,
+            0.004518027000017355,
+            0.004589704000011352
+          ],
+          "result_rows": 333,
+          "result_digest": "a49406a211ff8ca9bfafc766e430443bb8bad846",
+          "explain_analyze": "-> Covering index scan on s using PRIMARY  (cost=33.6 rows=333) (actual time=0.0405..0.0703 rows=333 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.03 rows=1) (actual time=0.00214..0.00221 rows=1 loops=333)\n        -> Covering index lookup on c using idx_confirmations_user_action (user_id=s.user_id)  (cost=0.64 rows=3.89) (actual time=0.00129..0.00182 rows=2.95 loops=333)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=0.808 rows=1) (actual time=0.00243..0.00246 rows=1 loops=238)\n        -> Filter: (c.`action` = 'confirmed')  (cost=0.529 rows=2.79) (actual time=0.00143..0.00214 rows=2.06 loops=238)\n            -> Covering index lookup on c using idx_confirmations_user_action (user_id=s.user_id, action='confirmed')  (cost=0.529 rows=2.79) (actual time=0.00122..0.0017 rows=2.06 loops=238)\n-> Select #4 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.03 rows=1) (actual time=0.00218..0.00221 rows=1 loops=238)\n        -> Covering index lookup on c using idx_confirmations_user_action (user_id=s.user_id)  (cost=0.64 rows=3.89) (actual time=0.00119..0.00182 rows=4.12 loops=238)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 0.003359060000008185,
+          "times_s": [
+            0.003370167000014135,
+            0.0032569569999907344,
+            0.003359060000008185
+          ],
+          "result_rows": 333,
+          "result_digest": "a49406a211ff8ca9bfafc766e430443bb8bad846",
+          "explain_analyze": "-> Group aggregate: avg((c.`action` = 'confirmed'))  (cost=376 rows=333) (actual time=0.0939..0.995 rows=333 loops=1)\n    -> Nested loop left join  (cost=247 rows=1296) (actual time=0.054..0.808 rows=1076 loops=1)\n        -> Covering index scan on s using PRIMARY  (cost=33.6 rows=333) (actual time=0.0404..0.0724 rows=333 loops=1)\n        -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.252 rows=3.89) (actual time=0.00134..0.00188 rows=2.95 loops=333)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.0031205310000075315,
+          "times_s": [
+            0.003106410000015103,
+            0.003145729000010533,
+            0.0031205310000075315
+          ],
+          "result_rows": 333,
+          "result_digest": "a49406a211ff8ca9bfafc766e430443bb8bad846",
+          "explain_analyze": "-> Nested loop left join  (cost=9424 rows=85581) (actual time=0.474..0.77 rows=333 loops=1)\n    -> Covering index scan on s using PRIMARY  (cost=33.6 rows=333) (actual time=0.042..0.0736 rows=333 loops=1)\n    -> Index lookup on p using <auto_key0> (user_id=s.user_id)  (cost=227..229 rows=10) (actual time=0.00174..0.00184 rows=0.715 loops=333)\n        -> Materialize CTE per_user  (cost=226..226 rows=257) (actual time=0.426..0.426 rows=257 loops=1)\n            -> Group aggregate: sum((Confirmations.`action` = 'confirmed')), count(0)  (cost=201 rows=257) (actual time=0.0582..0.319 rows=257 loops=1)\n                -> Covering index scan on Confirmations using idx_confirmations_user_action  (cost=101 rows=1000) (actual time=0.0374..0.162 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Signups": 33333,
+        "Confirmations": 100000
+      },
+      "load_seconds": 1.247,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.35490167699998665,
+          "times_s": [
+            0.35791385500002093,
+            0.35218113899998116,
+            0.35490167699998665
+          ],
+          "result_rows": 33333,
+          "result_digest": "d888fbd37a426fbf11445a8842cc6386aa269458",
+          "explain_analyze": "-> Covering index scan on s using PRIMARY  (cost=3269 rows=32452) (actual time=0.247..7.44 rows=33333 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.07 rows=1) (actual time=0.0031..0.00314 rows=1 loops=33333)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.663 rows=4.11) (actual time=0.00212..0.00273 rows=2.94 loops=33333)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=0.662 rows=1) (actual time=0.00441..0.00445 rows=1 loops=23382)\n        -> Filter: (c.`action` = 'confirmed')  (cost=0.457 rows=2.06) (actual time=0.00295..0.00401 rows=2.11 loops=23382)\n            -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.457 rows=4.11) (actual time=0.00229..0.00318 rows=4.19 loops=23382)\n-> Select #4 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.07 rows=1) (actual time=0.00353..0.00357 rows=1 loops=23382)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.663 rows=4.11) (actual time=0.00219..0.00303 rows=4.19 loops=23382)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 0.23928698699998563,
+          "times_s": [
+            0.23928698699998563,
+            0.23881188100000372,
+            0.2513634499999853
+          ],
+          "result_rows": 33333,
+          "result_digest": "d888fbd37a426fbf11445a8842cc6386aa269458",
+          "explain_analyze": "-> Group aggregate: avg((c.`action` = 'confirmed'))  (cost=38114 rows=32452) (actual time=0.587..97.6 rows=33333 loops=1)\n    -> Nested loop left join  (cost=24766 rows=133482) (actual time=0.262..79.3 rows=107919 loops=1)\n        -> Covering index scan on s using PRIMARY  (cost=3269 rows=32452) (actual time=0.246..5.51 rows=33333 loops=1)\n        -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.251 rows=4.11) (actual time=0.00138..0.00189 rows=2.94 loops=33333)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.230301360000027,
+          "times_s": [
+            0.230301360000027,
+            0.2368941629999881,
+            0.22904195399999594
+          ],
+          "result_rows": 33333,
+          "result_digest": "d888fbd37a426fbf11445a8842cc6386aa269458",
+          "explain_analyze": "-> Nested loop left join  (cost=76.4e+6 rows=763e+6) (actual time=48.8..81.9 rows=33333 loops=1)\n    -> Covering index scan on s using PRIMARY  (cost=3269 rows=32452) (actual time=0.272..5.4 rows=33333 loops=1)\n    -> Index lookup on p using <auto_key0> (user_id=s.user_id)  (cost=21773..21776 rows=10) (actual time=0.00202..0.00213 rows=0.701 loops=33333)\n        -> Materialize CTE per_user  (cost=21773..21773 rows=23503) (actual time=48.5..48.5 rows=24247 loops=1)\n            -> Group aggregate: sum((Confirmations.`action` = 'confirmed')), count(0)  (cost=19423 rows=23503) (actual time=1.21..33.1 rows=24247 loops=1)\n                -> Index scan on Confirmations using PRIMARY  (cost=9756 rows=96673) (actual time=1.07..18 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Signups": 33333,
+        "Confirmations": 100000
+      },
+      "load_seconds": 1.247,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.35252410299997905,
+          "times_s": [
+            0.35252410299997905,
+            0.3522755300000142,
+            0.3546124759999998
+          ],
+          "result_rows": 33333,
+          "result_digest": "d888fbd37a426fbf11445a8842cc6386aa269458",
+          "explain_analyze": "-> Covering index scan on s using PRIMARY  (cost=3354 rows=33296) (actual time=0.262..5.46 rows=33333 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.11 rows=1) (actual time=0.00228..0.00231 rows=1 loops=33333)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.683 rows=4.31) (actual time=0.00153..0.00198 rows=2.94 loops=33333)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=0.682 rows=1) (actual time=0.00311..0.00315 rows=1 loops=23382)\n        -> Filter: (c.`action` = 'confirmed')  (cost=0.466 rows=2.15) (actual time=0.00202..0.00282 rows=2.11 loops=23382)\n            -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.466 rows=4.31) (actual time=0.00154..0.0022 rows=4.19 loops=23382)\n-> Select #4 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.11 rows=1) (actual time=0.00241..0.00244 rows=1 loops=23382)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.683 rows=4.31) (actual time=0.00143..0.00205 rows=4.19 loops=23382)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 0.23976771200000258,
+          "times_s": [
+            0.23976771200000258,
+            0.24210901499998272,
+            0.23876438300001723
+          ],
+          "result_rows": 33333,
+          "result_digest": "d888fbd37a426fbf11445a8842cc6386aa269458",
+          "explain_analyze": "-> Group aggregate: avg((c.`action` = 'confirmed'))  (cost=40402 rows=33296) (actual time=0.595..96.9 rows=33333 loops=1)\n    -> Nested loop left join  (cost=26058 rows=143442) (actual time=0.268..79.2 rows=107919 loops=1)\n        -> Covering index scan on s using PRIMARY  (cost=3354 rows=33296) (actual time=0.253..5.65 rows=33333 loops=1)\n        -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.251 rows=4.31) (actual time=0.00138..0.00188 rows=2.94 loops=33333)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.22795831300001623,
+          "times_s": [
+            0.23442545399998949,
+            0.22703978000001257,
+            0.22795831300001623
+          ],
+          "result_rows": 33333,
+          "result_digest": "d888fbd37a426fbf11445a8842cc6386aa269458",
+          "explain_analyze": "-> Nested loop left join  (cost=79.4e+6 rows=794e+6) (actual time=46.7..79.6 rows=33333 loops=1)\n    -> Covering index scan on s using PRIMARY  (cost=3354 rows=33296) (actual time=0.252..5.46 rows=33333 loops=1)\n    -> Index lookup on p using <auto_key0> (user_id=s.user_id)  (cost=23009..23011 rows=10) (actual time=0.00196..0.00206 rows=0.701 loops=33333)\n        -> Materialize CTE per_user  (cost=23008..23008 rows=23835) (actual time=46.5..46.5 rows=24247 loops=1)\n            -> Group aggregate: sum((Confirmations.`action` = 'confirmed')), count(0)  (cost=20625 rows=23835) (actual time=1.09..31.1 rows=24247 loops=1)\n                -> Covering index scan on Confirmations using idx_confirmations_user_action  (cost=10357 rows=102683) (actual time=0.957..15.9 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Signups": 333333,
+        "Confirmations": 1000000
+      },
+      "load_seconds": 12.922,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 3.7074219029999824,
+          "times_s": [
+            3.6794611260000067,
+            3.7074219029999824,
+            3.7106355740000083
+          ],
+          "result_rows": 333333,
+          "result_digest": "890e2d02ea37a61ab458b0faaea01636a9f0cf38",
+          "explain_analyze": "-> Covering index scan on s using PRIMARY  (cost=33493 rows=333408) (actual time=1.9..54.2 rows=333333 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.06 rows=1) (actual time=0.00248..0.00252 rows=1 loops=333333)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.655 rows=4.03) (actual time=0.00173..0.00218 rows=2.94 loops=333333)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=0.654 rows=1) (actual time=0.00316..0.0032 rows=1 loops=234166)\n        -> Filter: (c.`action` = 'confirmed')  (cost=0.453 rows=2.02) (actual time=0.00208..0.00286 rows=2.1 loops=234166)\n            -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.453 rows=4.03) (actual time=0.0016..0.00225 rows=4.19 loops=234166)\n-> Select #4 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.06 rows=1) (actual time=0.00247..0.0025 rows=1 loops=234166)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.655 rows=4.03) (actual time=0.0015..0.00211 rows=4.19 loops=234166)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 2.471902022999984,
+          "times_s": [
+            2.471902022999984,
+            2.5007589169999846,
+            2.451856128000003
+          ],
+          "result_rows": 333333,
+          "result_digest": "890e2d02ea37a61ab458b0faaea01636a9f0cf38",
+          "explain_analyze": "-> Group aggregate: avg((c.`action` = 'confirmed'))  (cost=386113 rows=333408) (actual time=2.78..1035 rows=333333 loops=1)\n    -> Nested loop left join  (cost=251645 rows=1.34e+6) (actual time=1.89..858 rows=1.08e+6 loops=1)\n        -> Covering index scan on s using PRIMARY  (cost=33493 rows=333408) (actual time=1.87..54.8 rows=333333 loops=1)\n        -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.251 rows=4.03) (actual time=0.00158..0.00209 rows=2.94 loops=333333)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 2.9577500210000096,
+          "times_s": [
+            2.947603763000018,
+            2.9577500210000096,
+            2.9735097830000257
+          ],
+          "result_rows": 333333,
+          "result_digest": "890e2d02ea37a61ab458b0faaea01636a9f0cf38",
+          "explain_analyze": "-> Nested loop left join  (cost=7.88e+9 rows=78.8e+9) (actual time=767..1462 rows=333333 loops=1)\n    -> Covering index scan on s using PRIMARY  (cost=33493 rows=333408) (actual time=1.9..60.1 rows=333333 loops=1)\n    -> Index lookup on p using <auto_key0> (user_id=s.user_id)  (cost=215029..215031 rows=10) (actual time=0.0039..0.00403 rows=0.702 loops=333333)\n        -> Materialize CTE per_user  (cost=215029..215029 rows=236317) (actual time=765..765 rows=235166 loops=1)\n            -> Group aggregate: sum((Confirmations.`action` = 'confirmed')), count(0)  (cost=191397 rows=236317) (actual time=1.64..343 rows=235166 loops=1)\n                -> Index scan on Confirmations using PRIMARY  (cost=96087 rows=953099) (actual time=1.23..183 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Signups": 333333,
+        "Confirmations": 1000000
+      },
+      "load_seconds": 12.922,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 3.652394739999977,
+          "times_s": [
+            3.6408963190000065,
+            3.652394739999977,
+            3.6990741319999643
+          ],
+          "result_rows": 333333,
+          "result_digest": "890e2d02ea37a61ab458b0faaea01636a9f0cf38",
+          "explain_analyze": "-> Covering index scan on s using PRIMARY  (cost=33493 rows=333408) (actual time=1.89..55.1 rows=333333 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.01 rows=1) (actual time=0.00248..0.00251 rows=1 loops=333333)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.632 rows=3.81) (actual time=0.0017..0.00218 rows=2.94 loops=333333)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=0.632 rows=1) (actual time=0.00317..0.0032 rows=1 loops=234166)\n        -> Filter: (c.`action` = 'confirmed')  (cost=0.441 rows=1.9) (actual time=0.00206..0.00287 rows=2.1 loops=234166)\n            -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.441 rows=3.81) (actual time=0.00157..0.00226 rows=4.19 loops=234166)\n-> Select #4 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.01 rows=1) (actual time=0.00249..0.00252 rows=1 loops=234166)\n        -> Covering index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.632 rows=3.81) (actual time=0.00148..0.00212 rows=4.19 loops=234166)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 2.45535077400001,
+          "times_s": [
+            2.45535077400001,
+            2.4708900159999985,
+            2.4502428689999647
+          ],
+          "result_rows": 333333,
+          "result_digest": "890e2d02ea37a61ab458b0faaea01636a9f0cf38",
+          "explain_analyze": "-> Group aggregate: avg((c.`action` = 'confirmed'))  (cost=371066 rows=333408) (actual time=2.82..1028 rows=333333 loops=1)\n    -> Nested loop left join  (cost=244080 rows=1.27e+6) (actual time=1.92..852 rows=1.08e+6 loops=1)\n        -> Covering index scan on s using PRIMARY  (cost=33493 rows=333408) (actual time=1.91..55.7 rows=333333 loops=1)\n        -> Index lookup on c using PRIMARY (user_id=s.user_id)  (cost=0.251 rows=3.81) (actual time=0.00153..0.00207 rows=2.94 loops=333333)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 2.89611985199997,
+          "times_s": [
+            2.941698317000032,
+            2.8532517189999567,
+            2.89611985199997
+          ],
+          "result_rows": 333333,
+          "result_digest": "890e2d02ea37a61ab458b0faaea01636a9f0cf38",
+          "explain_analyze": "-> Nested loop left join  (cost=8.49e+9 rows=84.8e+9) (actual time=732..1437 rows=333333 loops=1)\n    -> Covering index scan on s using PRIMARY  (cost=33493 rows=333408) (actual time=1.89..63.2 rows=333333 loops=1)\n    -> Index lookup on p using <auto_key0> (user_id=s.user_id)  (cost=220075..220077 rows=10) (actual time=0.00382..0.00395 rows=0.702 loops=333333)\n        -> Materialize CTE per_user  (cost=220075..220075 rows=254481) (actual time=730..730 rows=235166 loops=1)\n            -> Group aggregate: sum((Confirmations.`action` = 'confirmed')), count(0)  (cost=194627 rows=254481) (actual time=1.5..314 rows=235166 loops=1)\n                -> Covering index scan on Confirmations using idx_confirmations_user_action  (cost=97702 rows=969247) (actual time=1.07..159 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

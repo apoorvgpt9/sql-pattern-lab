@@ -1,0 +1,342 @@
+{
+  "problem": "26-find-consistently-improving-employees",
+  "generated_at": "2026-11-04T15:17:13+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_rank_self_join",
+    "02_lead_on_newest",
+    "03_row_number_pivot"
+  ],
+  "optimal": "03_row_number_pivot",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "employees": 201,
+        "performance_reviews": 1000
+      },
+      "load_seconds": 0.036,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_rank_self_join",
+          "status": "ok",
+          "median_s": 0.17717590400002337,
+          "times_s": [
+            0.16929881499999055,
+            0.2084716130000288,
+            0.17717590400002337
+          ],
+          "result_rows": 2,
+          "result_digest": "b0e75c679b84ebfd528454bcce5ca3e88e392e0d",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=216..216 rows=2 loops=1)\n    -> Stream results  (cost=646 rows=13.4) (actual time=216..216 rows=2 loops=1)\n        -> Nested loop inner join  (cost=646 rows=13.4) (actual time=216..216 rows=2 loops=1)\n            -> Nested loop inner join  (cost=641 rows=13.4) (actual time=216..216 rows=2 loops=1)\n                -> Nested loop inner join  (cost=500 rows=36.7) (actual time=216..216 rows=15 loops=1)\n                    -> Filter: ((r1.rn = 1) and (r1.employee_id is not null))  (cost=200..115 rows=100) (actual time=216..216 rows=126 loops=1)\n                        -> Table scan on r1  (cost=201..216 rows=1000) (actual time=216..216 rows=1000 loops=1)\n                            -> Materialize CTE ranked if needed  (cost=201..201 rows=1000) (actual time=216..216 rows=1000 loops=1)\n                                -> Table scan on r  (cost=101 rows=1000) (actual time=0.0402..0.232 rows=1000 loops=1)\n                                -> Select #3 (subquery in projection; dependent)\n                                    -> Aggregate: count(0)  (cost=8.11 rows=1) (actual time=0.214..0.214 rows=1 loops=1000)\n                                        -> Filter: ((x.employee_id = r.employee_id) and ((x.review_date > r.review_date) or ((x.review_date = r.review_date) and (x.review_id > r.review_id))))  (cost=4.56 rows=35.6) (actual time=0.136..0.214 rows=4.51 loops=1000)\n                                            -> Table scan on x  (cost=4.56 rows=1000) (actual time=0.0386..0.168 rows=1000 loops=1000)\n                    -> Filter: ((r2.rn = 2) and (r1.rating > r2.rating))  (cost=2.75..2.75 rows=0.367) (actual time=0.00197..0.00208 rows=0.119 loops=126)\n                        -> Covering index lookup on r2 using <auto_key0> (employee_id=r1.employee_id)  (cost=201..204 rows=11) (actual time=579e-6..0.0016 rows=7.94 loops=126)\n                            -> Materialize CTE ranked if needed (query plan printed elsewhere)  (cost=201..201 rows=1000) (never executed)\n                -> Filter: ((r3.rn = 3) and (r2.rating > r3.rating))  (cost=2.75..2.75 rows=0.367) (actual time=0.00189..0.00202 rows=0.133 loops=15)\n                    -> Covering index lookup on r3 using <auto_key0> (employee_id=r1.employee_id)  (cost=201..204 rows=11) (actual time=590e-6..0.00153 rows=6.73 loops=15)\n                        -> Materialize CTE ranked if needed (query plan printed elsewhere)  (cost=201..201 rows=1000) (never executed)\n            -> Single-row index lookup on e using PRIMARY (employee_id=r1.employee_id)  (cost=0.257 rows=1) (actual time=0.00474..0.00478 rows=1 loops=2)\n"
+        },
+        {
+          "solution": "02_lead_on_newest",
+          "status": "ok",
+          "median_s": 0.002688358000000335,
+          "times_s": [
+            0.002688358000000335,
+            0.0026531359999921733,
+            0.002702155000008588
+          ],
+          "result_rows": 2,
+          "result_digest": "b0e75c679b84ebfd528454bcce5ca3e88e392e0d",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=2.23..2.23 rows=2 loops=1)\n    -> Stream results  (cost=118 rows=10) (actual time=2.1..2.22 rows=2 loops=1)\n        -> Nested loop inner join  (cost=118 rows=10) (actual time=2.1..2.22 rows=2 loops=1)\n            -> Filter: ((l.rn = 1) and (l.oldest is not null) and (l.newest > l.middle) and (l.middle > l.oldest) and (l.employee_id is not null))  (cost=11.5..115 rows=10) (actual time=2.09..2.21 rows=2 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=2.07..2.16 rows=1000 loops=1)\n                    -> Materialize CTE latest  (cost=0..0 rows=0) (actual time=2.07..2.07 rows=1000 loops=1)\n                        -> Window aggregate with buffering: lead(performance_reviews.rating,1) OVER w, lead(performance_reviews.rating,2) OVER w, row_number() OVER w  (actual time=0.39..1.88 rows=1000 loops=1)\n                            -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=101 rows=1000) (actual time=0.379..0.423 rows=1000 loops=1)\n                                -> Table scan on performance_reviews  (cost=101 rows=1000) (actual time=0.0386..0.187 rows=1000 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.26 rows=1) (actual time=0.00339..0.00343 rows=1 loops=2)\n"
+        },
+        {
+          "solution": "03_row_number_pivot",
+          "status": "ok",
+          "median_s": 0.0014741340000341552,
+          "times_s": [
+            0.0015767769999683878,
+            0.0014508170000340215,
+            0.0014741340000341552
+          ],
+          "result_rows": 2,
+          "result_digest": "b0e75c679b84ebfd528454bcce5ca3e88e392e0d",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=1.08..1.08 rows=2 loops=1)\n    -> Stream results  (cost=157 rows=333) (actual time=1.07..1.07 rows=2 loops=1)\n        -> Nested loop inner join  (cost=157 rows=333) (actual time=1.07..1.07 rows=2 loops=1)\n            -> Filter: (l.employee_id is not null)  (cost=0.12..40 rows=333) (actual time=1.06..1.06 rows=2 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=1.06..1.06 rows=2 loops=1)\n                    -> Materialize CTE last3  (cost=0..0 rows=0) (actual time=1.06..1.06 rows=2 loops=1)\n                        -> Filter: ((n = 3) and (newest > middle) and (middle > oldest))  (actual time=1.04..1.06 rows=2 loops=1)\n                            -> Table scan on <temporary>  (actual time=1.04..1.05 rows=126 loops=1)\n                                -> Aggregate using temporary table  (actual time=1.04..1.04 rows=126 loops=1)\n                                    -> Filter: (ranked.rn <= 3)  (cost=0.345..115 rows=333) (actual time=0.801..0.94 rows=361 loops=1)\n                                        -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=0.8..0.891 rows=1000 loops=1)\n                                            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=0.799..0.799 rows=1000 loops=1)\n                                                -> Window aggregate: row_number() OVER (PARTITION BY performance_reviews.employee_id ORDER BY performance_reviews.review_date desc,performance_reviews.review_id desc )   (actual time=0.422..0.683 rows=1000 loops=1)\n                                                    -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=101 rows=1000) (actual time=0.419..0.46 rows=1000 loops=1)\n                                                        -> Table scan on performance_reviews  (cost=101 rows=1000) (actual time=0.0384..0.225 rows=1000 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=0.00292..0.00296 rows=1 loops=2)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "employees": 201,
+        "performance_reviews": 1000
+      },
+      "load_seconds": 0.036,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_rank_self_join",
+          "status": "ok",
+          "median_s": 0.006227668999997604,
+          "times_s": [
+            0.006227668999997604,
+            0.006164280999996663,
+            0.006245130000024801
+          ],
+          "result_rows": 2,
+          "result_digest": "b0e75c679b84ebfd528454bcce5ca3e88e392e0d",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=6.57..6.57 rows=2 loops=1)\n    -> Stream results  (cost=646 rows=13.4) (actual time=6.19..6.56 rows=2 loops=1)\n        -> Nested loop inner join  (cost=646 rows=13.4) (actual time=6.18..6.55 rows=2 loops=1)\n            -> Nested loop inner join  (cost=641 rows=13.4) (actual time=6.18..6.55 rows=2 loops=1)\n                -> Nested loop inner join  (cost=500 rows=36.7) (actual time=6.14..6.52 rows=15 loops=1)\n                    -> Filter: ((r1.rn = 1) and (r1.employee_id is not null))  (cost=200..115 rows=100) (actual time=6.12..6.25 rows=126 loops=1)\n                        -> Table scan on r1  (cost=201..216 rows=1000) (actual time=6.11..6.2 rows=1000 loops=1)\n                            -> Materialize CTE ranked if needed  (cost=201..201 rows=1000) (actual time=6.11..6.11 rows=1000 loops=1)\n                                -> Covering index scan on r using idx_reviews_emp_date_rating  (cost=101 rows=1000) (actual time=0.0379..0.201 rows=1000 loops=1)\n                                -> Select #3 (subquery in projection; dependent)\n                                    -> Aggregate: count(0)  (cost=1.2 rows=1) (actual time=0.00487..0.0049 rows=1 loops=1000)\n                                        -> Filter: ((x.review_date > r.review_date) or ((x.review_date = r.review_date) and (x.review_id > r.review_id)))  (cost=0.917 rows=2.82) (actual time=0.00317..0.0044 rows=4.51 loops=1000)\n                                            -> Covering index lookup on x using idx_reviews_emp_date_rating (employee_id=r.employee_id)  (cost=0.917 rows=7.94) (actual time=0.00196..0.00334 rows=10 loops=1000)\n                    -> Filter: ((r2.rn = 2) and (r1.rating > r2.rating))  (cost=2.75..2.75 rows=0.367) (actual time=0.00187..0.00199 rows=0.119 loops=126)\n                        -> Covering index lookup on r2 using <auto_key0> (employee_id=r1.employee_id)  (cost=201..204 rows=11) (actual time=538e-6..0.00151 rows=7.94 loops=126)\n                            -> Materialize CTE ranked if needed (query plan printed elsewhere)  (cost=201..201 rows=1000) (never executed)\n                -> Filter: ((r3.rn = 3) and (r2.rating > r3.rating))  (cost=2.75..2.75 rows=0.367) (actual time=0.00168..0.00182 rows=0.133 loops=15)\n                    -> Covering index lookup on r3 using <auto_key0> (employee_id=r1.employee_id)  (cost=201..204 rows=11) (actual time=514e-6..0.00136 rows=6.73 loops=15)\n                        -> Materialize CTE ranked if needed (query plan printed elsewhere)  (cost=201..201 rows=1000) (never executed)\n            -> Single-row index lookup on e using PRIMARY (employee_id=r1.employee_id)  (cost=0.257 rows=1) (actual time=0.00261..0.00265 rows=1 loops=2)\n"
+        },
+        {
+          "solution": "02_lead_on_newest",
+          "status": "ok",
+          "median_s": 0.0027606149999996887,
+          "times_s": [
+            0.0027361980000364383,
+            0.0027606149999996887,
+            0.002831066999988252
+          ],
+          "result_rows": 2,
+          "result_digest": "b0e75c679b84ebfd528454bcce5ca3e88e392e0d",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=2.28..2.28 rows=2 loops=1)\n    -> Stream results  (cost=118 rows=10) (actual time=2.16..2.28 rows=2 loops=1)\n        -> Nested loop inner join  (cost=118 rows=10) (actual time=2.15..2.27 rows=2 loops=1)\n            -> Filter: ((l.rn = 1) and (l.oldest is not null) and (l.newest > l.middle) and (l.middle > l.oldest) and (l.employee_id is not null))  (cost=11.5..115 rows=10) (actual time=2.15..2.26 rows=2 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=2.13..2.22 rows=1000 loops=1)\n                    -> Materialize CTE latest  (cost=0..0 rows=0) (actual time=2.13..2.13 rows=1000 loops=1)\n                        -> Window aggregate with buffering: lead(performance_reviews.rating,1) OVER w, lead(performance_reviews.rating,2) OVER w, row_number() OVER w  (actual time=0.369..1.95 rows=1000 loops=1)\n                            -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=101 rows=1000) (actual time=0.357..0.429 rows=1000 loops=1)\n                                -> Index scan on performance_reviews using idx_reviews_emp_date_rating  (cost=101 rows=1000) (actual time=0.0361..0.179 rows=1000 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.26 rows=1) (actual time=0.00398..0.00402 rows=1 loops=2)\n"
+        },
+        {
+          "solution": "03_row_number_pivot",
+          "status": "ok",
+          "median_s": 0.0014770980000093914,
+          "times_s": [
+            0.001447172000041519,
+            0.0014911559999859492,
+            0.0014770980000093914
+          ],
+          "result_rows": 2,
+          "result_digest": "b0e75c679b84ebfd528454bcce5ca3e88e392e0d",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=1.23..1.23 rows=2 loops=1)\n    -> Stream results  (cost=157 rows=333) (actual time=1.22..1.22 rows=2 loops=1)\n        -> Nested loop inner join  (cost=157 rows=333) (actual time=1.22..1.22 rows=2 loops=1)\n            -> Filter: (l.employee_id is not null)  (cost=0.12..40 rows=333) (actual time=1.21..1.21 rows=2 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=1.21..1.21 rows=2 loops=1)\n                    -> Materialize CTE last3  (cost=0..0 rows=0) (actual time=1.21..1.21 rows=2 loops=1)\n                        -> Filter: ((n = 3) and (newest > middle) and (middle > oldest))  (actual time=1.19..1.21 rows=2 loops=1)\n                            -> Table scan on <temporary>  (actual time=1.19..1.2 rows=126 loops=1)\n                                -> Aggregate using temporary table  (actual time=1.19..1.19 rows=126 loops=1)\n                                    -> Filter: (ranked.rn <= 3)  (cost=0.345..115 rows=333) (actual time=0.87..1.04 rows=361 loops=1)\n                                        -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=0.87..0.993 rows=1000 loops=1)\n                                            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=0.869..0.869 rows=1000 loops=1)\n                                                -> Window aggregate: row_number() OVER (PARTITION BY performance_reviews.employee_id ORDER BY performance_reviews.review_date desc,performance_reviews.review_id desc )   (actual time=0.438..0.741 rows=1000 loops=1)\n                                                    -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=101 rows=1000) (actual time=0.434..0.481 rows=1000 loops=1)\n                                                        -> Index scan on performance_reviews using idx_reviews_emp_date_rating  (cost=101 rows=1000) (actual time=0.0363..0.206 rows=1000 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=0.00413..0.00417 rows=1 loops=2)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "employees": 20001,
+        "performance_reviews": 100000
+      },
+      "load_seconds": 1.093,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_rank_self_join",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_lead_on_newest",
+          "status": "ok",
+          "median_s": 0.20784620500000983,
+          "times_s": [
+            0.2144820149999873,
+            0.2078289819999668,
+            0.20784620500000983
+          ],
+          "result_rows": 529,
+          "result_digest": "e080dd3c09e62ce30a08c9a088970379f904bd9a",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=226..226 rows=529 loops=1)\n    -> Stream results  (cost=11640 rows=1003) (actual time=211..226 rows=529 loops=1)\n        -> Nested loop inner join  (cost=11640 rows=1003) (actual time=211..226 rows=529 loops=1)\n            -> Filter: ((l.rn = 1) and (l.oldest is not null) and (l.newest > l.middle) and (l.middle > l.oldest) and (l.employee_id is not null))  (cost=11.3..11288 rows=1003) (actual time=211..225 rows=530 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=211..220 rows=100000 loops=1)\n                    -> Materialize CTE latest  (cost=0..0 rows=0) (actual time=211..211 rows=100000 loops=1)\n                        -> Window aggregate with buffering: lead(performance_reviews.rating,1) OVER w, lead(performance_reviews.rating,2) OVER w, row_number() OVER w  (actual time=46.6..195 rows=100000 loops=1)\n                            -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=10104 rows=100320) (actual time=46.6..51.1 rows=100000 loops=1)\n                                -> Table scan on performance_reviews  (cost=10104 rows=100320) (actual time=1.07..18.3 rows=100000 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=0.00116..0.00119 rows=0.998 loops=530)\n"
+        },
+        {
+          "solution": "03_row_number_pivot",
+          "status": "ok",
+          "median_s": 0.09107508599998937,
+          "times_s": [
+            0.09107508599998937,
+            0.09113399899996466,
+            0.0902901320000069
+          ],
+          "result_rows": 529,
+          "result_digest": "e080dd3c09e62ce30a08c9a088970379f904bd9a",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=113..113 rows=529 loops=1)\n    -> Stream results  (cost=15467 rows=33436) (actual time=112..113 rows=529 loops=1)\n        -> Nested loop inner join  (cost=15467 rows=33436) (actual time=112..112 rows=529 loops=1)\n            -> Filter: (l.employee_id is not null)  (cost=0.113..3764 rows=33436) (actual time=112..112 rows=530 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=112..112 rows=530 loops=1)\n                    -> Materialize CTE last3  (cost=0..0 rows=0) (actual time=112..112 rows=530 loops=1)\n                        -> Filter: ((n = 3) and (newest > middle) and (middle > oldest))  (actual time=109..112 rows=530 loops=1)\n                            -> Table scan on <temporary>  (actual time=109..111 rows=13007 loops=1)\n                                -> Aggregate using temporary table  (actual time=109..109 rows=13007 loops=1)\n                                    -> Filter: (ranked.rn <= 3)  (cost=0.338..11288 rows=33437) (actual time=85..99.1 rows=36555 loops=1)\n                                        -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=85..94.2 rows=100000 loops=1)\n                                            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=85..85 rows=100000 loops=1)\n                                                -> Window aggregate: row_number() OVER (PARTITION BY performance_reviews.employee_id ORDER BY performance_reviews.review_date desc,performance_reviews.review_id desc )   (actual time=47.7..73.2 rows=100000 loops=1)\n                                                    -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=10104 rows=100320) (actual time=47.7..52.3 rows=100000 loops=1)\n                                                        -> Table scan on performance_reviews  (cost=10104 rows=100320) (actual time=1.04..18.6 rows=100000 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=0.00116..0.00119 rows=0.998 loops=530)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "employees": 20001,
+        "performance_reviews": 100000
+      },
+      "load_seconds": 1.093,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_rank_self_join",
+          "status": "ok",
+          "median_s": 0.5234775309999691,
+          "times_s": [
+            0.5305185880000067,
+            0.5234775309999691,
+            0.5226409570000214
+          ],
+          "result_rows": 529,
+          "result_digest": "e080dd3c09e62ce30a08c9a088970379f904bd9a",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=706..706 rows=529 loops=1)\n    -> Stream results  (cost=108752 rows=3362) (actual time=656..706 rows=529 loops=1)\n        -> Nested loop inner join  (cost=108752 rows=3362) (actual time=656..706 rows=529 loops=1)\n            -> Nested loop inner join  (cost=107575 rows=3362) (actual time=656..705 rows=530 loops=1)\n                -> Nested loop inner join  (cost=72273 rows=5807) (actual time=656..700 rows=2261 loops=1)\n                    -> Filter: ((r1.rn = 1) and (r1.employee_id is not null))  (cost=20135..11288 rows=10032) (actual time=656..671 rows=13007 loops=1)\n                        -> Table scan on r1  (cost=20136..21393 rows=100320) (actual time=656..666 rows=100000 loops=1)\n                            -> Materialize CTE ranked if needed  (cost=20136..20136 rows=100320) (actual time=656..656 rows=100000 loops=1)\n                                -> Covering index scan on r using idx_reviews_emp_date_rating  (cost=10104 rows=100320) (actual time=0.964..21.2 rows=100000 loops=1)\n                                -> Select #3 (subquery in projection; dependent)\n                                    -> Aggregate: count(0)  (cost=1.56 rows=1) (actual time=0.00504..0.00507 rows=1 loops=100000)\n                                        -> Filter: ((x.review_date > r.review_date) or ((x.review_date = r.review_date) and (x.review_id > r.review_id)))  (cost=1.28 rows=2.74) (actual time=0.0034..0.0046 rows=4.54 loops=100000)\n                                            -> Covering index lookup on x using idx_reviews_emp_date_rating (employee_id=r.employee_id)  (cost=1.28 rows=7.71) (actual time=0.00209..0.00351 rows=10.1 loops=100000)\n                    -> Filter: ((r2.rn = 2) and (r1.rating > r2.rating))  (cost=4.34..4.34 rows=0.579) (actual time=0.00208..0.00214 rows=0.174 loops=13007)\n                        -> Index lookup on r2 using <auto_key1> (employee_id=r1.employee_id)  (cost=20137..20141 rows=17.4) (actual time=629e-6..0.00166 rows=7.69 loops=13007)\n                            -> Materialize CTE ranked if needed (query plan printed elsewhere)  (cost=20136..20136 rows=100320) (never executed)\n                -> Filter: ((r3.rn = 3) and (r2.rating > r3.rating))  (cost=4.34..4.34 rows=0.579) (actual time=0.00188..0.00202 rows=0.234 loops=2261)\n                    -> Index lookup on r3 using <auto_key1> (employee_id=r1.employee_id)  (cost=20137..20141 rows=17.4) (actual time=617e-6..0.00153 rows=7.23 loops=2261)\n                        -> Materialize CTE ranked if needed (query plan printed elsewhere)  (cost=20136..20136 rows=100320) (never executed)\n            -> Single-row index lookup on e using PRIMARY (employee_id=r1.employee_id)  (cost=0.25 rows=1) (actual time=0.00122..0.00124 rows=0.998 loops=530)\n"
+        },
+        {
+          "solution": "02_lead_on_newest",
+          "status": "ok",
+          "median_s": 0.20507363600000872,
+          "times_s": [
+            0.20507363600000872,
+            0.20481616399996483,
+            0.20638936299997113
+          ],
+          "result_rows": 529,
+          "result_digest": "e080dd3c09e62ce30a08c9a088970379f904bd9a",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=224..224 rows=529 loops=1)\n    -> Stream results  (cost=11640 rows=1003) (actual time=209..223 rows=529 loops=1)\n        -> Nested loop inner join  (cost=11640 rows=1003) (actual time=209..223 rows=529 loops=1)\n            -> Filter: ((l.rn = 1) and (l.oldest is not null) and (l.newest > l.middle) and (l.middle > l.oldest) and (l.employee_id is not null))  (cost=11.3..11288 rows=1003) (actual time=209..223 rows=530 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=209..218 rows=100000 loops=1)\n                    -> Materialize CTE latest  (cost=0..0 rows=0) (actual time=209..209 rows=100000 loops=1)\n                        -> Window aggregate with buffering: lead(performance_reviews.rating,1) OVER w, lead(performance_reviews.rating,2) OVER w, row_number() OVER w  (actual time=43.1..191 rows=100000 loops=1)\n                            -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=10104 rows=100320) (actual time=43.1..47.8 rows=100000 loops=1)\n                                -> Index scan on performance_reviews using idx_reviews_emp_date_rating  (cost=10104 rows=100320) (actual time=0.972..17.2 rows=100000 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=0.00119..0.00122 rows=0.998 loops=530)\n"
+        },
+        {
+          "solution": "03_row_number_pivot",
+          "status": "ok",
+          "median_s": 0.08683879799997385,
+          "times_s": [
+            0.08773512099998015,
+            0.08601984799997808,
+            0.08683879799997385
+          ],
+          "result_rows": 529,
+          "result_digest": "e080dd3c09e62ce30a08c9a088970379f904bd9a",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=108..108 rows=529 loops=1)\n    -> Stream results  (cost=15467 rows=33436) (actual time=107..108 rows=529 loops=1)\n        -> Nested loop inner join  (cost=15467 rows=33436) (actual time=107..108 rows=529 loops=1)\n            -> Filter: (l.employee_id is not null)  (cost=0.113..3764 rows=33436) (actual time=107..107 rows=530 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=107..107 rows=530 loops=1)\n                    -> Materialize CTE last3  (cost=0..0 rows=0) (actual time=107..107 rows=530 loops=1)\n                        -> Filter: ((n = 3) and (newest > middle) and (middle > oldest))  (actual time=104..107 rows=530 loops=1)\n                            -> Table scan on <temporary>  (actual time=104..106 rows=13007 loops=1)\n                                -> Aggregate using temporary table  (actual time=104..104 rows=13007 loops=1)\n                                    -> Filter: (ranked.rn <= 3)  (cost=0.338..11288 rows=33437) (actual time=80.1..94.2 rows=36555 loops=1)\n                                        -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=80.1..89.3 rows=100000 loops=1)\n                                            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=80.1..80.1 rows=100000 loops=1)\n                                                -> Window aggregate: row_number() OVER (PARTITION BY performance_reviews.employee_id ORDER BY performance_reviews.review_date desc,performance_reviews.review_id desc )   (actual time=43.2..68.4 rows=100000 loops=1)\n                                                    -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=10104 rows=100320) (actual time=43.2..47.5 rows=100000 loops=1)\n                                                        -> Index scan on performance_reviews using idx_reviews_emp_date_rating  (cost=10104 rows=100320) (actual time=0.98..17.2 rows=100000 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=0.00117..0.0012 rows=0.998 loops=530)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "employees": 200001,
+        "performance_reviews": 1000000
+      },
+      "load_seconds": 10.338,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_rank_self_join",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_lead_on_newest",
+          "status": "ok",
+          "median_s": 7.209386450000011,
+          "times_s": [
+            7.209386450000011,
+            7.09404411700001,
+            7.760309699000004
+          ],
+          "result_rows": 5355,
+          "result_digest": "cf85d7551b14db3e912bc39d79287dd0cba84c2e",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=7323..7323 rows=5355 loops=1)\n    -> Stream results  (cost=118064 rows=9982) (actual time=7010..7320 rows=5355 loops=1)\n        -> Nested loop inner join  (cost=118064 rows=9982) (actual time=7010..7318 rows=5355 loops=1)\n            -> Filter: ((l.rn = 1) and (l.oldest is not null) and (l.newest > l.middle) and (l.middle > l.oldest) and (l.employee_id is not null))  (cost=11.3..112318 rows=9982) (actual time=7010..7307 rows=5357 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=7010..7260 rows=1e+6 loops=1)\n                    -> Materialize CTE latest  (cost=0..0 rows=0) (actual time=7010..7010 rows=1e+6 loops=1)\n                        -> Window aggregate with buffering: lead(performance_reviews.rating,1) OVER w, lead(performance_reviews.rating,2) OVER w, row_number() OVER w  (actual time=510..6453 rows=1e+6 loops=1)\n                            -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=101276 rows=998360) (actual time=510..567 rows=1e+6 loops=1)\n                                -> Table scan on performance_reviews  (cost=101276 rows=998360) (actual time=1.13..198 rows=1e+6 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.476 rows=1) (actual time=0.00192..0.00195 rows=1 loops=5357)\n"
+        },
+        {
+          "solution": "03_row_number_pivot",
+          "status": "ok",
+          "median_s": 1.4118522250000183,
+          "times_s": [
+            1.4028793159999964,
+            1.4706545559999995,
+            1.4118522250000183
+          ],
+          "result_rows": 5355,
+          "result_digest": "cf85d7551b14db3e912bc39d79287dd0cba84c2e",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=1641..1641 rows=5355 loops=1)\n    -> Stream results  (cost=228991 rows=332753) (actual time=1618..1636 rows=5355 loops=1)\n        -> Nested loop inner join  (cost=228991 rows=332753) (actual time=1618..1633 rows=5355 loops=1)\n            -> Filter: (l.employee_id is not null)  (cost=0.113..37437 rows=332753) (actual time=1618..1619 rows=5357 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=1618..1619 rows=5357 loops=1)\n                    -> Materialize CTE last3  (cost=0..0 rows=0) (actual time=1618..1618 rows=5357 loops=1)\n                        -> Filter: ((n = 3) and (newest > middle) and (middle > oldest))  (actual time=1590..1617 rows=5357 loops=1)\n                            -> Table scan on <temporary>  (actual time=1590..1604 rows=130199 loops=1)\n                                -> Aggregate using temporary table  (actual time=1590..1590 rows=130199 loops=1)\n                                    -> Filter: (ranked.rn <= 3)  (cost=0.338..112318 rows=332753) (actual time=1145..1440 rows=365947 loops=1)\n                                        -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=1145..1385 rows=1e+6 loops=1)\n                                            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=1145..1145 rows=1e+6 loops=1)\n                                                -> Window aggregate: row_number() OVER (PARTITION BY performance_reviews.employee_id ORDER BY performance_reviews.review_date desc,performance_reviews.review_id desc )   (actual time=501..757 rows=1e+6 loops=1)\n                                                    -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=100405 rows=998360) (actual time=501..546 rows=1e+6 loops=1)\n                                                        -> Table scan on performance_reviews  (cost=100405 rows=998360) (actual time=1.05..185 rows=1e+6 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.476 rows=1) (actual time=0.0023..0.00233 rows=1 loops=5357)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "employees": 200001,
+        "performance_reviews": 1000000
+      },
+      "load_seconds": 10.338,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_rank_self_join",
+          "status": "ok",
+          "median_s": 8.431625997999959,
+          "times_s": [
+            8.436358686999995,
+            8.429443902999992,
+            8.431625997999959
+          ],
+          "result_rows": 5355,
+          "result_digest": "cf85d7551b14db3e912bc39d79287dd0cba84c2e",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=10662..10662 rows=5355 loops=1)\n    -> Stream results  (cost=1.09e+6 rows=33456) (actual time=8861..10658 rows=5355 loops=1)\n        -> Nested loop inner join  (cost=1.09e+6 rows=33456) (actual time=8861..10655 rows=5355 loops=1)\n            -> Nested loop inner join  (cost=1.07e+6 rows=33456) (actual time=8861..10645 rows=5357 loops=1)\n                -> Nested loop inner join  (cost=719216 rows=57794) (actual time=8861..10432 rows=22303 loops=1)\n                    -> Filter: ((r1.rn = 1) and (r1.employee_id is not null))  (cost=201946..112318 rows=99836) (actual time=8860..9134 rows=130199 loops=1)\n                        -> Table scan on r1  (cost=201947..214429 rows=998360) (actual time=8860..9082 rows=1e+6 loops=1)\n                            -> Materialize CTE ranked if needed  (cost=201947..201947 rows=998360) (actual time=8860..8860 rows=1e+6 loops=1)\n                                -> Covering index scan on r using idx_reviews_emp_date_rating  (cost=102111 rows=998360) (actual time=0.963..228 rows=1e+6 loops=1)\n                                -> Select #3 (subquery in projection; dependent)\n                                    -> Aggregate: count(0)  (cost=1.54 rows=1) (actual time=0.00638..0.00641 rows=1 loops=1e+6)\n                                        -> Filter: ((x.review_date > r.review_date) or ((x.review_date = r.review_date) and (x.review_id > r.review_id)))  (cost=1.28 rows=2.65) (actual time=0.00409..0.00585 rows=6.53 loops=1e+6)\n                                            -> Covering index lookup on x using idx_reviews_emp_date_rating (employee_id=r.employee_id)  (cost=1.28 rows=7.45) (actual time=0.00217..0.00439 rows=14.1 loops=1e+6)\n                    -> Filter: ((r2.rn = 2) and (r1.rating > r2.rating))  (cost=4.34..4.34 rows=0.579) (actual time=0.00962..0.00986 rows=0.171 loops=130199)\n                        -> Index lookup on r2 using <auto_key1> (employee_id=r1.employee_id)  (cost=201947..201952 rows=17.4) (actual time=0.00219..0.00929 rows=7.68 loops=130199)\n                            -> Materialize CTE ranked if needed (query plan printed elsewhere)  (cost=201947..201947 rows=998360) (never executed)\n                -> Filter: ((r3.rn = 3) and (r2.rating > r3.rating))  (cost=4.34..4.34 rows=0.579) (actual time=0.00876..0.00941 rows=0.24 loops=22303)\n                    -> Index lookup on r3 using <auto_key1> (employee_id=r1.employee_id)  (cost=201947..201952 rows=17.4) (actual time=0.00228..0.00885 rows=7.17 loops=22303)\n                        -> Materialize CTE ranked if needed (query plan printed elsewhere)  (cost=201947..201947 rows=998360) (never executed)\n            -> Single-row index lookup on e using PRIMARY (employee_id=r1.employee_id)  (cost=0.476 rows=1) (actual time=0.00183..0.00186 rows=1 loops=5357)\n"
+        },
+        {
+          "solution": "02_lead_on_newest",
+          "status": "ok",
+          "median_s": 7.106405552999945,
+          "times_s": [
+            7.088260799000011,
+            7.110822979000034,
+            7.106405552999945
+          ],
+          "result_rows": 5355,
+          "result_digest": "cf85d7551b14db3e912bc39d79287dd0cba84c2e",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=7317..7317 rows=5355 loops=1)\n    -> Stream results  (cost=118064 rows=9982) (actual time=7005..7313 rows=5355 loops=1)\n        -> Nested loop inner join  (cost=118064 rows=9982) (actual time=7005..7312 rows=5355 loops=1)\n            -> Filter: ((l.rn = 1) and (l.oldest is not null) and (l.newest > l.middle) and (l.middle > l.oldest) and (l.employee_id is not null))  (cost=11.3..112318 rows=9982) (actual time=7005..7304 rows=5357 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=7005..7256 rows=1e+6 loops=1)\n                    -> Materialize CTE latest  (cost=0..0 rows=0) (actual time=7005..7005 rows=1e+6 loops=1)\n                        -> Window aggregate with buffering: lead(performance_reviews.rating,1) OVER w, lead(performance_reviews.rating,2) OVER w, row_number() OVER w  (actual time=458..6435 rows=1e+6 loops=1)\n                            -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=102111 rows=998360) (actual time=458..513 rows=1e+6 loops=1)\n                                -> Index scan on performance_reviews using idx_reviews_emp_date_rating  (cost=102111 rows=998360) (actual time=1.7..173 rows=1e+6 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.476 rows=1) (actual time=0.00136..0.00139 rows=1 loops=5357)\n"
+        },
+        {
+          "solution": "03_row_number_pivot",
+          "status": "ok",
+          "median_s": 1.3056763060000094,
+          "times_s": [
+            1.3008359540000356,
+            1.3056763060000094,
+            1.3396608550000337
+          ],
+          "result_rows": 5355,
+          "result_digest": "cf85d7551b14db3e912bc39d79287dd0cba84c2e",
+          "explain_analyze": "-> Sort: improvement_score DESC, e.`name`  (actual time=1558..1558 rows=5355 loops=1)\n    -> Stream results  (cost=228991 rows=332753) (actual time=1545..1555 rows=5355 loops=1)\n        -> Nested loop inner join  (cost=228991 rows=332753) (actual time=1545..1553 rows=5355 loops=1)\n            -> Filter: (l.employee_id is not null)  (cost=0.113..37437 rows=332753) (actual time=1545..1546 rows=5357 loops=1)\n                -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=1545..1545 rows=5357 loops=1)\n                    -> Materialize CTE last3  (cost=0..0 rows=0) (actual time=1545..1545 rows=5357 loops=1)\n                        -> Filter: ((n = 3) and (newest > middle) and (middle > oldest))  (actual time=1522..1544 rows=5357 loops=1)\n                            -> Table scan on <temporary>  (actual time=1522..1534 rows=130199 loops=1)\n                                -> Aggregate using temporary table  (actual time=1522..1522 rows=130199 loops=1)\n                                    -> Filter: (ranked.rn <= 3)  (cost=0.338..112318 rows=332753) (actual time=1112..1384 rows=365947 loops=1)\n                                        -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=1112..1332 rows=1e+6 loops=1)\n                                            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=1112..1112 rows=1e+6 loops=1)\n                                                -> Window aggregate: row_number() OVER (PARTITION BY performance_reviews.employee_id ORDER BY performance_reviews.review_date desc,performance_reviews.review_id desc )   (actual time=466..723 rows=1e+6 loops=1)\n                                                    -> Sort: performance_reviews.employee_id, performance_reviews.review_date DESC, performance_reviews.review_id DESC  (cost=102111 rows=998360) (actual time=466..511 rows=1e+6 loops=1)\n                                                        -> Index scan on performance_reviews using idx_reviews_emp_date_rating  (cost=102111 rows=998360) (actual time=0.966..173 rows=1e+6 loops=1)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.476 rows=1) (actual time=0.00124..0.00127 rows=1 loops=5357)\n"
+        }
+      ]
+    }
+  ]
+}

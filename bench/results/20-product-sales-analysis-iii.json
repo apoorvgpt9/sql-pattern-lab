@@ -1,0 +1,336 @@
+{
+  "problem": "20-product-sales-analysis-iii",
+  "generated_at": "2026-11-04T15:30:17+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_min",
+    "02_window_min_year",
+    "03_join_to_min_year"
+  ],
+  "optimal": "03_join_to_min_year",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Sales": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_min",
+          "status": "ok",
+          "median_s": 0.26522786199984694,
+          "times_s": [
+            0.27477113500003725,
+            0.26522786199984694,
+            0.26417892900008155
+          ],
+          "result_rows": 512,
+          "result_digest": "0a5385174b56132b8675fe03061d71a36fc83e4d",
+          "explain_analyze": "-> Filter: (s.`year` = (select #2))  (cost=101 rows=1000) (actual time=0.434..324 rows=512 loops=1)\n    -> Table scan on s  (cost=101 rows=1000) (actual time=0.0512..0.389 rows=1000 loops=1)\n    -> Select #2 (subquery in condition; dependent)\n        -> Aggregate: min(s2.`year`)  (cost=21.3 rows=1) (actual time=0.323..0.323 rows=1 loops=1000)\n            -> Filter: (s2.product_id = s.product_id)  (cost=11.3 rows=100) (actual time=0.0857..0.321 rows=8.68 loops=1000)\n                -> Table scan on s2  (cost=11.3 rows=1000) (actual time=0.0525..0.259 rows=1000 loops=1000)\n"
+        },
+        {
+          "solution": "02_window_min_year",
+          "status": "ok",
+          "median_s": 0.0066268870000385505,
+          "times_s": [
+            0.006731914000056349,
+            0.006377016999977059,
+            0.0066268870000385505
+          ],
+          "result_rows": 512,
+          "result_digest": "0a5385174b56132b8675fe03061d71a36fc83e4d",
+          "explain_analyze": "-> Filter: (t.yr = t.first_year)  (cost=1.15..115 rows=100) (actual time=1.14..1.28 rows=512 loops=1)\n    -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=1.14..1.23 rows=1000 loops=1)\n        -> Materialize  (cost=0..0 rows=0) (actual time=1.14..1.14 rows=1000 loops=1)\n            -> Window aggregate with buffering: min(Sales.`year`) OVER (PARTITION BY Sales.product_id )   (actual time=0.367..0.947 rows=1000 loops=1)\n                -> Sort: Sales.product_id  (cost=101 rows=1000) (actual time=0.345..0.385 rows=1000 loops=1)\n                    -> Table scan on Sales  (cost=101 rows=1000) (actual time=0.0331..0.199 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_join_to_min_year",
+          "status": "ok",
+          "median_s": 0.006812145999901986,
+          "times_s": [
+            0.007224016000009215,
+            0.00649318000000676,
+            0.006812145999901986
+          ],
+          "result_rows": 512,
+          "result_digest": "0a5385174b56132b8675fe03061d71a36fc83e4d",
+          "explain_analyze": "-> Nested loop inner join  (cost=2601 rows=0) (actual time=0.805..2.04 rows=512 loops=1)\n    -> Table scan on s  (cost=101 rows=1000) (actual time=0.0515..0.345 rows=1000 loops=1)\n    -> Covering index lookup on f using <auto_key0> (product_id=s.product_id, first_year=s.`year`)  (cost=0.25..2.5 rows=10) (actual time=0.00145..0.00153 rows=0.512 loops=1000)\n        -> Materialize  (cost=0..0 rows=0) (actual time=0.75..0.75 rows=195 loops=1)\n            -> Table scan on <temporary>  (actual time=0.636..0.659 rows=195 loops=1)\n                -> Aggregate using temporary table  (actual time=0.636..0.636 rows=195 loops=1)\n                    -> Table scan on Sales  (cost=101 rows=1000) (actual time=0.0644..0.304 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Sales": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_min",
+          "status": "ok",
+          "median_s": 0.006989798999939012,
+          "times_s": [
+            0.007445501999882254,
+            0.006989798999939012,
+            0.006893838999985746
+          ],
+          "result_rows": 512,
+          "result_digest": "0a5385174b56132b8675fe03061d71a36fc83e4d",
+          "explain_analyze": "-> Filter: (s.`year` = (select #2))  (cost=101 rows=1000) (actual time=0.0521..4.6 rows=512 loops=1)\n    -> Covering index scan on s using idx_sales_product_year  (cost=101 rows=1000) (actual time=0.0296..0.243 rows=1000 loops=1)\n    -> Select #2 (subquery in condition; dependent)\n        -> Aggregate: min(s2.`year`)  (cost=1.66 rows=1) (actual time=0.00384..0.00386 rows=1 loops=1000)\n            -> Covering index lookup on s2 using idx_sales_product_year (product_id=s.product_id)  (cost=1.15 rows=5.13) (actual time=0.00175..0.00312 rows=8.68 loops=1000)\n"
+        },
+        {
+          "solution": "02_window_min_year",
+          "status": "ok",
+          "median_s": 0.0044598819999919215,
+          "times_s": [
+            0.004366351000044233,
+            0.005152685999973983,
+            0.0044598819999919215
+          ],
+          "result_rows": 512,
+          "result_digest": "0a5385174b56132b8675fe03061d71a36fc83e4d",
+          "explain_analyze": "-> Filter: (t.yr = t.first_year)  (cost=1.15..115 rows=100) (actual time=1.11..1.26 rows=512 loops=1)\n    -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=1.11..1.2 rows=1000 loops=1)\n        -> Materialize  (cost=0..0 rows=0) (actual time=1.11..1.11 rows=1000 loops=1)\n            -> Window aggregate with buffering: min(Sales.`year`) OVER (PARTITION BY Sales.product_id )   (actual time=0.32..0.919 rows=1000 loops=1)\n                -> Sort: Sales.product_id  (cost=101 rows=1000) (actual time=0.298..0.335 rows=1000 loops=1)\n                    -> Index scan on Sales using idx_sales_product_year  (cost=101 rows=1000) (actual time=0.0327..0.195 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_join_to_min_year",
+          "status": "ok",
+          "median_s": 0.004150404000029084,
+          "times_s": [
+            0.00414007499989566,
+            0.00423317800004952,
+            0.004150404000029084
+          ],
+          "result_rows": 512,
+          "result_digest": "0a5385174b56132b8675fe03061d71a36fc83e4d",
+          "explain_analyze": "-> Nested loop inner join  (cost=186 rows=383) (actual time=0.297..0.754 rows=512 loops=1)\n    -> Filter: (f.first_year is not null)  (cost=80..24.6 rows=196) (actual time=0.292..0.323 rows=195 loops=1)\n        -> Table scan on f  (cost=80.3..85.2 rows=196) (actual time=0.292..0.311 rows=195 loops=1)\n            -> Materialize  (cost=80.3..80.3 rows=196) (actual time=0.291..0.291 rows=195 loops=1)\n                -> Covering index skip scan for grouping on Sales using idx_sales_product_year  (cost=60.7 rows=196) (actual time=0.0103..0.268 rows=195 loops=1)\n    -> Covering index lookup on s using idx_sales_product_year (product_id=f.product_id, year=f.first_year)  (cost=0.628 rows=1.95) (actual time=0.00125..0.00194 rows=2.63 loops=195)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Sales": 100000
+      },
+      "load_seconds": 0.886,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_min",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_window_min_year",
+          "status": "ok",
+          "median_s": 0.40586200399980044,
+          "times_s": [
+            0.44136732199990547,
+            0.40586200399980044,
+            0.40569009899991215
+          ],
+          "result_rows": 53121,
+          "result_digest": "8bdd7c3c45869bdae62143e592c85f9073dcda12",
+          "explain_analyze": "-> Filter: (t.yr = t.first_year)  (cost=1.13..11261 rows=10008) (actual time=121..136 rows=53121 loops=1)\n    -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=121..130 rows=100000 loops=1)\n        -> Materialize  (cost=0..0 rows=0) (actual time=121..121 rows=100000 loops=1)\n            -> Window aggregate with buffering: min(Sales.`year`) OVER (PARTITION BY Sales.product_id )   (actual time=45.5..102 rows=100000 loops=1)\n                -> Sort: Sales.product_id  (cost=10080 rows=100076) (actual time=45.4..49.3 rows=100000 loops=1)\n                    -> Table scan on Sales  (cost=10080 rows=100076) (actual time=0.878..19.6 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_join_to_min_year",
+          "status": "ok",
+          "median_s": 0.40690083499998764,
+          "times_s": [
+            0.4126845969999522,
+            0.40690083499998764,
+            0.406296513000143
+          ],
+          "result_rows": 53121,
+          "result_digest": "8bdd7c3c45869bdae62143e592c85f9073dcda12",
+          "explain_analyze": "-> Nested loop inner join  (cost=260285 rows=0) (actual time=50.9..160 rows=53121 loops=1)\n    -> Table scan on s  (cost=10080 rows=100076) (actual time=0.77..20.6 rows=100000 loops=1)\n    -> Covering index lookup on f using <auto_key0> (product_id=s.product_id, first_year=s.`year`)  (cost=0.25..2.5 rows=10) (actual time=0.00118..0.00126 rows=0.531 loops=100000)\n        -> Materialize  (cost=0..0 rows=0) (actual time=50.2..50.2 rows=19597 loops=1)\n            -> Table scan on <temporary>  (actual time=39.5..41.3 rows=19597 loops=1)\n                -> Aggregate using temporary table  (actual time=39.5..39.5 rows=19597 loops=1)\n                    -> Table scan on Sales  (cost=10080 rows=100076) (actual time=1.07..16.7 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Sales": 100000
+      },
+      "load_seconds": 0.886,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_min",
+          "status": "ok",
+          "median_s": 0.6994437819998893,
+          "times_s": [
+            0.7037700010000663,
+            0.6994437819998893,
+            0.6796065359999375
+          ],
+          "result_rows": 53121,
+          "result_digest": "8bdd7c3c45869bdae62143e592c85f9073dcda12",
+          "explain_analyze": "-> Filter: (s.`year` = (select #2))  (cost=10080 rows=100076) (actual time=0.855..426 rows=53121 loops=1)\n    -> Covering index scan on s using idx_sales_product_year  (cost=10080 rows=100076) (actual time=0.76..18.5 rows=100000 loops=1)\n    -> Select #2 (subquery in condition; dependent)\n        -> Aggregate: min(s2.`year`)  (cost=2.03 rows=1) (actual time=0.00369..0.00372 rows=1 loops=100000)\n            -> Covering index lookup on s2 using idx_sales_product_year (product_id=s.product_id)  (cost=1.52 rows=5.1) (actual time=0.00149..0.00299 rows=9.98 loops=100000)\n"
+        },
+        {
+          "solution": "02_window_min_year",
+          "status": "ok",
+          "median_s": 0.3932909769998787,
+          "times_s": [
+            0.39881203999993886,
+            0.3932909769998787,
+            0.39237000299999636
+          ],
+          "result_rows": 53121,
+          "result_digest": "8bdd7c3c45869bdae62143e592c85f9073dcda12",
+          "explain_analyze": "-> Filter: (t.yr = t.first_year)  (cost=1.13..11261 rows=10008) (actual time=109..123 rows=53121 loops=1)\n    -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=109..118 rows=100000 loops=1)\n        -> Materialize  (cost=0..0 rows=0) (actual time=109..109 rows=100000 loops=1)\n            -> Window aggregate with buffering: min(Sales.`year`) OVER (PARTITION BY Sales.product_id )   (actual time=33.9..90 rows=100000 loops=1)\n                -> Sort: Sales.product_id  (cost=10080 rows=100076) (actual time=33.8..37.7 rows=100000 loops=1)\n                    -> Index scan on Sales using idx_sales_product_year  (cost=10080 rows=100076) (actual time=0.842..18.7 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_join_to_min_year",
+          "status": "ok",
+          "median_s": 0.38074617100005526,
+          "times_s": [
+            0.38074617100005526,
+            0.41829844800008686,
+            0.3802150559999973
+          ],
+          "result_rows": 53121,
+          "result_digest": "8bdd7c3c45869bdae62143e592c85f9073dcda12",
+          "explain_analyze": "-> Nested loop inner join  (cost=25730 rows=39386) (actual time=38.4..87.1 rows=53121 loops=1)\n    -> Filter: (f.first_year is not null)  (cost=8138..2210 rows=19618) (actual time=38.4..41.5 rows=19597 loops=1)\n        -> Table scan on f  (cost=8139..8387 rows=19618) (actual time=38.4..40.2 rows=19597 loops=1)\n            -> Materialize  (cost=8139..8139 rows=19618) (actual time=38.4..38.4 rows=19597 loops=1)\n                -> Covering index skip scan for grouping on Sales using idx_sales_product_year  (cost=6177 rows=19618) (actual time=0.0263..36.3 rows=19597 loops=1)\n    -> Covering index lookup on s using idx_sales_product_year (product_id=f.product_id, year=f.first_year)  (cost=0.998 rows=2.01) (actual time=0.00155..0.00206 rows=2.71 loops=19597)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Sales": 1000000
+      },
+      "load_seconds": 8.247,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_min",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_window_min_year",
+          "status": "ok",
+          "median_s": 6.717254054000023,
+          "times_s": [
+            6.717254054000023,
+            6.683045999999877,
+            6.725077684000098
+          ],
+          "result_rows": 533728,
+          "result_digest": "ea6e814bbb45f378ffe113cfc405082eafc98439",
+          "explain_analyze": "-> Filter: (t.yr = t.first_year)  (cost=1.13..112278 rows=99800) (actual time=3556..3863 rows=533728 loops=1)\n    -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=3556..3806 rows=1e+6 loops=1)\n        -> Materialize  (cost=0..0 rows=0) (actual time=3556..3556 rows=1e+6 loops=1)\n            -> Window aggregate with buffering: min(Sales.`year`) OVER (PARTITION BY Sales.product_id )   (actual time=532..3006 rows=1e+6 loops=1)\n                -> Sort: Sales.product_id  (cost=100934 rows=998002) (actual time=532..574 rows=1e+6 loops=1)\n                    -> Table scan on Sales  (cost=100934 rows=998002) (actual time=1..198 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_join_to_min_year",
+          "status": "ok",
+          "median_s": 5.395751335000114,
+          "times_s": [
+            5.93172493599991,
+            5.375044960999958,
+            5.395751335000114
+          ],
+          "result_rows": 533728,
+          "result_digest": "ea6e814bbb45f378ffe113cfc405082eafc98439",
+          "explain_analyze": "-> Nested loop inner join  (cost=2.6e+6 rows=0) (actual time=1566..2850 rows=533728 loops=1)\n    -> Table scan on s  (cost=100449 rows=998002) (actual time=0.836..218 rows=1e+6 loops=1)\n    -> Covering index lookup on f using <auto_key0> (product_id=s.product_id, first_year=s.`year`)  (cost=0.25..2.5 rows=10) (actual time=0.00242..0.0025 rows=0.534 loops=1e+6)\n        -> Materialize  (cost=0..0 rows=0) (actual time=1565..1565 rows=195748 loops=1)\n            -> Table scan on <temporary>  (actual time=1387..1425 rows=195748 loops=1)\n                -> Aggregate using temporary table  (actual time=1387..1387 rows=195747 loops=1)\n                    -> Table scan on Sales  (cost=100449 rows=998002) (actual time=1.14..175 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Sales": 1000000
+      },
+      "load_seconds": 8.247,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_min",
+          "status": "ok",
+          "median_s": 6.905632675000106,
+          "times_s": [
+            6.905632675000106,
+            6.9026505550000365,
+            6.956422105999991
+          ],
+          "result_rows": 533728,
+          "result_digest": "ea6e814bbb45f378ffe113cfc405082eafc98439",
+          "explain_analyze": "-> Filter: (s.`year` = (select #2))  (cost=100449 rows=998002) (actual time=0.955..4900 rows=533728 loops=1)\n    -> Covering index scan on s using idx_sales_product_year  (cost=100449 rows=998002) (actual time=0.729..214 rows=1e+6 loops=1)\n    -> Select #2 (subquery in condition; dependent)\n        -> Aggregate: min(s2.`year`)  (cost=2.03 rows=1) (actual time=0.00426..0.00429 rows=1 loops=1e+6)\n            -> Covering index lookup on s2 using idx_sales_product_year (product_id=s.product_id)  (cost=1.52 rows=5.08) (actual time=0.00176..0.00348 rows=10.2 loops=1e+6)\n"
+        },
+        {
+          "solution": "02_window_min_year",
+          "status": "ok",
+          "median_s": 6.494195690999959,
+          "times_s": [
+            6.532846082999868,
+            6.420685925000043,
+            6.494195690999959
+          ],
+          "result_rows": 533728,
+          "result_digest": "ea6e814bbb45f378ffe113cfc405082eafc98439",
+          "explain_analyze": "-> Filter: (t.yr = t.first_year)  (cost=1.13..112278 rows=99800) (actual time=3394..3708 rows=533728 loops=1)\n    -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=3394..3650 rows=1e+6 loops=1)\n        -> Materialize  (cost=0..0 rows=0) (actual time=3394..3394 rows=1e+6 loops=1)\n            -> Window aggregate with buffering: min(Sales.`year`) OVER (PARTITION BY Sales.product_id )   (actual time=377..2839 rows=1e+6 loops=1)\n                -> Sort: Sales.product_id  (cost=102396 rows=998002) (actual time=377..420 rows=1e+6 loops=1)\n                    -> Index scan on Sales using idx_sales_product_year  (cost=102396 rows=998002) (actual time=0.853..187 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_join_to_min_year",
+          "status": "ok",
+          "median_s": 4.03145677700013,
+          "times_s": [
+            4.03145677700013,
+            4.053171349999957,
+            4.02973907500018
+          ],
+          "result_rows": 533728,
+          "result_digest": "ea6e814bbb45f378ffe113cfc405082eafc98439",
+          "explain_analyze": "-> Nested loop inner join  (cost=258593 rows=395974) (actual time=499..1040 rows=533728 loops=1)\n    -> Filter: (f.first_year is not null)  (cost=91301..22098 rows=196408) (actual time=499..532 rows=195748 loops=1)\n        -> Table scan on f  (cost=91301..93759 rows=196408) (actual time=499..519 rows=195748 loops=1)\n            -> Materialize  (cost=91301..91301 rows=196408) (actual time=499..499 rows=195748 loops=1)\n                -> Covering index skip scan for grouping on Sales using idx_sales_product_year  (cost=71660 rows=196408) (actual time=0.0279..476 rows=195748 loops=1)\n    -> Covering index lookup on s using idx_sales_product_year (product_id=f.product_id, year=f.first_year)  (cost=1 rows=2.02) (actual time=0.00181..0.00232 rows=2.73 loops=195748)\n"
+        }
+      ]
+    }
+  ]
+}

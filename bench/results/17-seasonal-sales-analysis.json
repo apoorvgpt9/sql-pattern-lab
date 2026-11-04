@@ -1,0 +1,203 @@
+{
+  "problem": "17-seasonal-sales-analysis",
+  "generated_at": "2026-11-04T15:14:39+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes"
+    ]
+  },
+  "solutions": [
+    "01_not_exists_anti_join",
+    "02_preaggregate_then_rank",
+    "03_join_group_rank"
+  ],
+  "optimal": "03_join_group_rank",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "products": 12,
+        "sales": 1006
+      },
+      "load_seconds": 0.033,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_not_exists_anti_join",
+          "status": "ok",
+          "median_s": 0.0028448300000150084,
+          "times_s": [
+            0.0031973330000028,
+            0.0028448300000150084,
+            0.0026279009999825576
+          ],
+          "result_rows": 4,
+          "result_digest": "c2537b4c3a0bc565e21d6e6377725f80335fd9c0",
+          "explain_analyze": "-> Nested loop antijoin  (cost=2769 rows=0) (actual time=2.17..2.22 rows=4 loops=1)\n    -> Sort: a.season  (cost=2.6..2.6 rows=0) (actual time=2.16..2.16 rows=30 loops=1)\n        -> Table scan on a  (cost=2.5..2.5 rows=0) (actual time=2.14..2.14 rows=30 loops=1)\n            -> Materialize CTE cat_season if needed  (cost=0..0 rows=0) (actual time=2.14..2.14 rows=30 loops=1)\n                -> Table scan on <temporary>  (actual time=2.12..2.12 rows=30 loops=1)\n                    -> Aggregate using temporary table  (actual time=2.12..2.12 rows=30 loops=1)\n                        -> Nested loop inner join  (cost=454 rows=1006) (actual time=0.0376..1.07 rows=994 loops=1)\n                            -> Table scan on s  (cost=102 rows=1006) (actual time=0.0329..0.273 rows=1006 loops=1)\n                            -> Single-row index lookup on p using PRIMARY (product_id=s.product_id)  (cost=0.25 rows=1) (actual time=611e-6..639e-6 rows=0.988 loops=1006)\n    -> Filter: ((b.total_quantity > a.total_quantity) or ((b.total_quantity = a.total_quantity) and (b.total_revenue > a.total_revenue)) or ((b.total_revenue = a.total_revenue) and (b.total_quantity = a.total_quantity) and (b.category < a.category)))  (cost=2.75..30.3 rows=11) (actual time=0.00187..0.00187 rows=0.867 loops=30)\n        -> Covering index lookup on b using <auto_key0> (season=a.season)  (cost=2.75..30.3 rows=11) (actual time=519e-6..890e-6 rows=3.27 loops=30)\n            -> Materialize CTE cat_season if needed (query plan printed elsewhere)  (cost=0..0 rows=0) (never executed)\n"
+        },
+        {
+          "solution": "02_preaggregate_then_rank",
+          "status": "ok",
+          "median_s": 0.0018563990000188824,
+          "times_s": [
+            0.0019393439999930706,
+            0.0018563990000188824,
+            0.0018090609999603657
+          ],
+          "result_rows": 4,
+          "result_digest": "c2537b4c3a0bc565e21d6e6377725f80335fd9c0",
+          "explain_analyze": "-> Sort: ranked.season  (cost=3.6..3.6 rows=0) (actual time=1.24..1.24 rows=4 loops=1)\n    -> Index lookup on ranked using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=1.23..1.23 rows=4 loops=1)\n        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=1.23..1.23 rows=30 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY cs.season ORDER BY cs.total_quantity desc,cs.total_revenue desc,cs.category )   (actual time=1.2..1.22 rows=30 loops=1)\n                -> Sort: cs.season, cs.total_quantity DESC, cs.total_revenue DESC, cs.category  (cost=2.6..2.6 rows=0) (actual time=1.2..1.2 rows=30 loops=1)\n                    -> Table scan on cs  (cost=2.5..2.5 rows=0) (actual time=1.18..1.18 rows=30 loops=1)\n                        -> Materialize CTE cat_season  (cost=0..0 rows=0) (actual time=1.18..1.18 rows=30 loops=1)\n                            -> Table scan on <temporary>  (actual time=1.17..1.17 rows=30 loops=1)\n                                -> Aggregate using temporary table  (actual time=1.17..1.17 rows=30 loops=1)\n                                    -> Nested loop inner join  (cost=31.6 rows=0) (actual time=1.11..1.13 rows=46 loops=1)\n                                        -> Table scan on p  (cost=1.45 rows=12) (actual time=0.00735..0.0117 rows=12 loops=1)\n                                        -> Index lookup on ps using <auto_key0> (product_id=p.product_id)  (cost=0.258..2.6 rows=10.1) (actual time=0.092..0.0927 rows=3.83 loops=12)\n                                            -> Materialize CTE prod_season  (cost=0..0 rows=0) (actual time=1.1..1.1 rows=58 loops=1)\n                                                -> Table scan on <temporary>  (actual time=1.04..1.07 rows=58 loops=1)\n                                                    -> Aggregate using temporary table  (actual time=1.04..1.04 rows=58 loops=1)\n                                                        -> Table scan on sales  (cost=102 rows=1006) (actual time=0.0281..0.24 rows=1006 loops=1)\n"
+        },
+        {
+          "solution": "03_join_group_rank",
+          "status": "ok",
+          "median_s": 0.002632390000030682,
+          "times_s": [
+            0.003040743000042312,
+            0.002632390000030682,
+            0.002590290999989975
+          ],
+          "result_rows": 4,
+          "result_digest": "c2537b4c3a0bc565e21d6e6377725f80335fd9c0",
+          "explain_analyze": "-> Sort: ranked.season  (cost=3.62..3.62 rows=0) (actual time=2.15..2.15 rows=4 loops=1)\n    -> Index lookup on ranked using <auto_key0> (rn=1)  (cost=0.35..3.52 rows=10.1) (actual time=2.15..2.15 rows=4 loops=1)\n        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=2.15..2.15 rows=30 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY cs.season ORDER BY cs.total_quantity desc,cs.total_revenue desc,cs.category )   (actual time=2.12..2.13 rows=30 loops=1)\n                -> Sort: cs.season, cs.total_quantity DESC, cs.total_revenue DESC, cs.category  (cost=2.6..2.6 rows=0) (actual time=2.12..2.12 rows=30 loops=1)\n                    -> Table scan on cs  (cost=2.5..2.5 rows=0) (actual time=2.1..2.1 rows=30 loops=1)\n                        -> Materialize CTE cat_season  (cost=0..0 rows=0) (actual time=2.09..2.09 rows=30 loops=1)\n                            -> Table scan on <temporary>  (actual time=2.08..2.09 rows=30 loops=1)\n                                -> Aggregate using temporary table  (actual time=2.08..2.08 rows=30 loops=1)\n                                    -> Nested loop inner join  (cost=454 rows=1006) (actual time=0.0368..1.02 rows=994 loops=1)\n                                        -> Table scan on s  (cost=102 rows=1006) (actual time=0.0328..0.269 rows=1006 loops=1)\n                                        -> Single-row index lookup on p using PRIMARY (product_id=s.product_id)  (cost=0.25 rows=1) (actual time=571e-6..599e-6 rows=0.988 loops=1006)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "products": 1002,
+        "sales": 100006
+      },
+      "load_seconds": 1.049,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_not_exists_anti_join",
+          "status": "ok",
+          "median_s": 0.18615562299999056,
+          "times_s": [
+            0.18716980099998182,
+            0.18557131700003993,
+            0.18615562299999056
+          ],
+          "result_rows": 4,
+          "result_digest": "b62e061d97eb516bcdb85685b412dc4f8e8c2bc0",
+          "explain_analyze": "-> Nested loop antijoin  (cost=25e+6 rows=0) (actual time=212..212 rows=4 loops=1)\n    -> Sort: a.season  (cost=2.6..2.6 rows=0) (actual time=212..212 rows=54 loops=1)\n        -> Table scan on a  (cost=2.5..2.5 rows=0) (actual time=212..212 rows=54 loops=1)\n            -> Materialize CTE cat_season if needed  (cost=0..0 rows=0) (actual time=212..212 rows=54 loops=1)\n                -> Table scan on <temporary>  (actual time=212..212 rows=54 loops=1)\n                    -> Aggregate using temporary table  (actual time=212..212 rows=54 loops=1)\n                        -> Nested loop inner join  (cost=45106 rows=100076) (actual time=0.818..112 rows=98055 loops=1)\n                            -> Table scan on s  (cost=10080 rows=100076) (actual time=0.813..23.3 rows=100006 loops=1)\n                            -> Single-row index lookup on p using PRIMARY (product_id=s.product_id)  (cost=0.25 rows=1) (actual time=709e-6..737e-6 rows=0.98 loops=100006)\n    -> Filter: ((b.total_quantity > a.total_quantity) or ((b.total_quantity = a.total_quantity) and (b.total_revenue > a.total_revenue)) or ((b.total_revenue = a.total_revenue) and (b.total_quantity = a.total_quantity) and (b.category < a.category)))  (cost=250..250001 rows=1000) (actual time=0.002..0.002 rows=0.926 loops=54)\n        -> Covering index lookup on b using <auto_key0> (season=a.season)  (cost=250..250001 rows=1000) (actual time=508e-6..946e-6 rows=3.85 loops=54)\n            -> Materialize CTE cat_season if needed (query plan printed elsewhere)  (cost=0..0 rows=0) (never executed)\n"
+        },
+        {
+          "solution": "02_preaggregate_then_rank",
+          "status": "ok",
+          "median_s": 0.10578726299996788,
+          "times_s": [
+            0.10578726299996788,
+            0.10577106800002412,
+            0.11021190200000319
+          ],
+          "result_rows": 4,
+          "result_digest": "b62e061d97eb516bcdb85685b412dc4f8e8c2bc0",
+          "explain_analyze": "-> Sort: ranked.season  (cost=3.6..3.6 rows=0) (actual time=111..111 rows=4 loops=1)\n    -> Index lookup on ranked using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=111..111 rows=4 loops=1)\n        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=111..111 rows=54 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY cs.season ORDER BY cs.total_quantity desc,cs.total_revenue desc,cs.category )   (actual time=111..111 rows=54 loops=1)\n                -> Sort: cs.season, cs.total_quantity DESC, cs.total_revenue DESC, cs.category  (cost=2.6..2.6 rows=0) (actual time=111..111 rows=54 loops=1)\n                    -> Table scan on cs  (cost=2.5..2.5 rows=0) (actual time=111..111 rows=54 loops=1)\n                        -> Materialize CTE cat_season  (cost=0..0 rows=0) (actual time=111..111 rows=54 loops=1)\n                            -> Table scan on <temporary>  (actual time=110..110 rows=54 loops=1)\n                                -> Aggregate using temporary table  (actual time=110..110 rows=54 loops=1)\n                                    -> Nested loop inner join  (cost=25120 rows=0) (actual time=106..107 rows=4006 loops=1)\n                                        -> Table scan on p  (cost=101 rows=1002) (actual time=0.0205..0.235 rows=1002 loops=1)\n                                        -> Index lookup on ps using <auto_key0> (product_id=p.product_id)  (cost=0.25..25 rows=99.9) (actual time=0.106..0.107 rows=4 loops=1002)\n                                            -> Materialize CTE prod_season  (cost=0..0 rows=0) (actual time=105..105 rows=4206 loops=1)\n                                                -> Table scan on <temporary>  (actual time=103..103 rows=4206 loops=1)\n                                                    -> Aggregate using temporary table  (actual time=103..103 rows=4206 loops=1)\n                                                        -> Table scan on sales  (cost=10080 rows=100076) (actual time=0.853..20.1 rows=100006 loops=1)\n"
+        },
+        {
+          "solution": "03_join_group_rank",
+          "status": "ok",
+          "median_s": 0.18699916200000644,
+          "times_s": [
+            0.18830250100000967,
+            0.1869628540000008,
+            0.18699916200000644
+          ],
+          "result_rows": 4,
+          "result_digest": "b62e061d97eb516bcdb85685b412dc4f8e8c2bc0",
+          "explain_analyze": "-> Sort: ranked.season  (cost=3.6..3.6 rows=0) (actual time=210..210 rows=4 loops=1)\n    -> Index lookup on ranked using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=210..210 rows=4 loops=1)\n        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=210..210 rows=54 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY cs.season ORDER BY cs.total_quantity desc,cs.total_revenue desc,cs.category )   (actual time=209..209 rows=54 loops=1)\n                -> Sort: cs.season, cs.total_quantity DESC, cs.total_revenue DESC, cs.category  (cost=2.6..2.6 rows=0) (actual time=209..209 rows=54 loops=1)\n                    -> Table scan on cs  (cost=2.5..2.5 rows=0) (actual time=209..209 rows=54 loops=1)\n                        -> Materialize CTE cat_season  (cost=0..0 rows=0) (actual time=209..209 rows=54 loops=1)\n                            -> Table scan on <temporary>  (actual time=209..209 rows=54 loops=1)\n                                -> Aggregate using temporary table  (actual time=209..209 rows=54 loops=1)\n                                    -> Nested loop inner join  (cost=45106 rows=100076) (actual time=0.83..111 rows=98055 loops=1)\n                                        -> Table scan on s  (cost=10080 rows=100076) (actual time=0.825..23.3 rows=100006 loops=1)\n                                        -> Single-row index lookup on p using PRIMARY (product_id=s.product_id)  (cost=0.25 rows=1) (actual time=696e-6..723e-6 rows=0.98 loops=100006)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "products": 10002,
+        "sales": 1000006
+      },
+      "load_seconds": 9.859,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_not_exists_anti_join",
+          "status": "ok",
+          "median_s": 1.9258015079999495,
+          "times_s": [
+            1.9134400940000091,
+            1.9258015079999495,
+            1.9591551530000402
+          ],
+          "result_rows": 4,
+          "result_digest": "08213e60d5a10cad60dcfcbbd217ae67cdf1ec19",
+          "explain_analyze": "-> Nested loop antijoin  (cost=2.49e+9 rows=0) (actual time=2166..2167 rows=4 loops=1)\n    -> Sort: a.season  (cost=2.6..2.6 rows=0) (actual time=2166..2166 rows=54 loops=1)\n        -> Table scan on a  (cost=2.5..2.5 rows=0) (actual time=2166..2166 rows=54 loops=1)\n            -> Materialize CTE cat_season if needed  (cost=0..0 rows=0) (actual time=2166..2166 rows=54 loops=1)\n                -> Table scan on <temporary>  (actual time=2166..2166 rows=54 loops=1)\n                    -> Aggregate using temporary table  (actual time=2166..2166 rows=54 loops=1)\n                        -> Nested loop inner join  (cost=449750 rows=998002) (actual time=0.869..1176 rows=980231 loops=1)\n                            -> Table scan on s  (cost=100449 rows=998002) (actual time=0.863..232 rows=1e+6 loops=1)\n                            -> Single-row index lookup on p using PRIMARY (product_id=s.product_id)  (cost=0.25 rows=1) (actual time=763e-6..791e-6 rows=0.98 loops=1e+6)\n    -> Filter: ((b.total_quantity > a.total_quantity) or ((b.total_quantity = a.total_quantity) and (b.total_revenue > a.total_revenue)) or ((b.total_revenue = a.total_revenue) and (b.total_quantity = a.total_quantity) and (b.category < a.category)))  (cost=2495..24.9e+6 rows=9980) (actual time=0.00256..0.00256 rows=0.926 loops=54)\n        -> Covering index lookup on b using <auto_key0> (season=a.season)  (cost=2495..24.9e+6 rows=9980) (actual time=977e-6..0.00143 rows=3.78 loops=54)\n            -> Materialize CTE cat_season if needed (query plan printed elsewhere)  (cost=0..0 rows=0) (never executed)\n"
+        },
+        {
+          "solution": "02_preaggregate_then_rank",
+          "status": "ok",
+          "median_s": 4.0764365599999905,
+          "times_s": [
+            4.069934289999992,
+            4.6706691269999965,
+            4.0764365599999905
+          ],
+          "result_rows": 4,
+          "result_digest": "08213e60d5a10cad60dcfcbbd217ae67cdf1ec19",
+          "explain_analyze": "-> Sort: ranked.season  (cost=3.6..3.6 rows=0) (actual time=4131..4131 rows=4 loops=1)\n    -> Index lookup on ranked using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=4131..4131 rows=4 loops=1)\n        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=4131..4131 rows=54 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY cs.season ORDER BY cs.total_quantity desc,cs.total_revenue desc,cs.category )   (actual time=4131..4131 rows=54 loops=1)\n                -> Sort: cs.season, cs.total_quantity DESC, cs.total_revenue DESC, cs.category  (cost=2.6..2.6 rows=0) (actual time=4131..4131 rows=54 loops=1)\n                    -> Table scan on cs  (cost=2.5..2.5 rows=0) (actual time=4131..4131 rows=54 loops=1)\n                        -> Materialize CTE cat_season  (cost=0..0 rows=0) (actual time=4131..4131 rows=54 loops=1)\n                            -> Table scan on <temporary>  (actual time=4131..4131 rows=54 loops=1)\n                                -> Aggregate using temporary table  (actual time=4131..4131 rows=54 loops=1)\n                                    -> Nested loop inner join  (cost=250519 rows=0) (actual time=4081..4100 rows=40006 loops=1)\n                                        -> Table scan on p  (cost=1018 rows=10105) (actual time=0.0251..2.26 rows=10002 loops=1)\n                                        -> Index lookup on ps using <auto_key0> (product_id=p.product_id)  (cost=0.25..24.7 rows=98.8) (actual time=0.409..0.409 rows=4 loops=10002)\n                                            -> Materialize CTE prod_season  (cost=0..0 rows=0) (actual time=4081..4081 rows=40206 loops=1)\n                                                -> Table scan on <temporary>  (actual time=4040..4051 rows=40206 loops=1)\n                                                    -> Aggregate using temporary table  (actual time=4040..4040 rows=40206 loops=1)\n                                                        -> Table scan on sales  (cost=100449 rows=998002) (actual time=0.843..217 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_join_group_rank",
+          "status": "ok",
+          "median_s": 1.979475631000014,
+          "times_s": [
+            1.9640042749999793,
+            2.019398394999996,
+            1.979475631000014
+          ],
+          "result_rows": 4,
+          "result_digest": "08213e60d5a10cad60dcfcbbd217ae67cdf1ec19",
+          "explain_analyze": "-> Sort: ranked.season  (cost=3.6..3.6 rows=0) (actual time=2228..2228 rows=4 loops=1)\n    -> Index lookup on ranked using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=2228..2228 rows=4 loops=1)\n        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=2228..2228 rows=54 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY cs.season ORDER BY cs.total_quantity desc,cs.total_revenue desc,cs.category )   (actual time=2228..2228 rows=54 loops=1)\n                -> Sort: cs.season, cs.total_quantity DESC, cs.total_revenue DESC, cs.category  (cost=2.6..2.6 rows=0) (actual time=2228..2228 rows=54 loops=1)\n                    -> Table scan on cs  (cost=2.5..2.5 rows=0) (actual time=2228..2228 rows=54 loops=1)\n                        -> Materialize CTE cat_season  (cost=0..0 rows=0) (actual time=2228..2228 rows=54 loops=1)\n                            -> Table scan on <temporary>  (actual time=2228..2228 rows=54 loops=1)\n                                -> Aggregate using temporary table  (actual time=2228..2228 rows=54 loops=1)\n                                    -> Nested loop inner join  (cost=449750 rows=998002) (actual time=0.974..1209 rows=980231 loops=1)\n                                        -> Table scan on s  (cost=100449 rows=998002) (actual time=0.967..242 rows=1e+6 loops=1)\n                                        -> Single-row index lookup on p using PRIMARY (product_id=s.product_id)  (cost=0.25 rows=1) (actual time=786e-6..814e-6 rows=0.98 loops=1e+6)\n"
+        }
+      ]
+    }
+  ]
+}

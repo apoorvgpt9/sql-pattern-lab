@@ -1,0 +1,342 @@
+{
+  "problem": "34-find-covid-recovery-patients",
+  "generated_at": "2026-11-04T15:25:39+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subqueries",
+    "02_window_anchor_one_pass",
+    "03_aggregate_then_join"
+  ],
+  "optimal": "03_aggregate_then_join",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "mem_total": "8121092 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "patients": 250,
+        "covid_tests": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.1619465889999674,
+          "times_s": [
+            0.19032743899992965,
+            0.1619465889999674,
+            0.16124553000008746
+          ],
+          "result_rows": 81,
+          "result_digest": "a635e7ee9978b8bac35dcf5dc18f045949b4de74",
+          "explain_analyze": "-> Sort: recovery_time, per_patient.patient_name  (cost=305..305 rows=250) (actual time=212..212 rows=81 loops=1)\n    -> Filter: (per_patient.first_neg_after is not null)  (cost=50.4..80.9 rows=250) (actual time=212..212 rows=81 loops=1)\n        -> Table scan on per_patient  (cost=50.3..55.9 rows=250) (actual time=212..212 rows=250 loops=1)\n            -> Materialize CTE per_patient  (cost=50.2..50.2 rows=250) (actual time=212..212 rows=250 loops=1)\n                -> Table scan on p  (cost=25.2 rows=250) (actual time=0.0123..0.0733 rows=250 loops=1)\n                -> Select #3 (subquery in projection; dependent)\n                    -> Aggregate: min(t.test_date)  (cost=93.2 rows=1) (actual time=0.214..0.214 rows=1 loops=250)\n                        -> Filter: ((t.result = 'Positive') and (t.patient_id = p.patient_id))  (cost=92.2 rows=10) (actual time=0.156..0.213 rows=1.52 loops=250)\n                            -> Table scan on t  (cost=92.2 rows=1000) (actual time=0.0094..0.138 rows=1000 loops=250)\n                -> Select #4 (subquery in projection; dependent)\n                    -> Aggregate: min(n.test_date)  (cost=93.2 rows=1) (actual time=0.633..0.633 rows=1 loops=250)\n                        -> Filter: ((n.result = 'Negative') and (n.patient_id = p.patient_id) and (n.test_date > (select #5)))  (cost=92.2 rows=10) (actual time=0.452..0.633 rows=0.872 loops=250)\n                            -> Table scan on n  (cost=92.2 rows=1000) (actual time=0.0094..0.137 rows=1000 loops=250)\n                            -> Select #5 (subquery in condition; dependent)\n                                -> Aggregate: min(t.test_date)  (cost=93.2 rows=1) (actual time=0.22..0.22 rows=1 loops=471)\n                                    -> Filter: ((t.result = 'Positive') and (t.patient_id = p.patient_id))  (cost=92.2 rows=10) (actual time=0.127..0.219 rows=2.82 loops=471)\n                                        -> Table scan on t  (cost=92.2 rows=1000) (actual time=0.00963..0.144 rows=1000 loops=471)\n"
+        },
+        {
+          "solution": "02_window_anchor_one_pass",
+          "status": "ok",
+          "median_s": 0.0026670629999898665,
+          "times_s": [
+            0.002722672999993847,
+            0.0026448140000638887,
+            0.0026670629999898665
+          ],
+          "result_rows": 81,
+          "result_digest": "a635e7ee9978b8bac35dcf5dc18f045949b4de74",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=2..2 rows=81 loops=1)\n    -> Stream results  (cost=418 rows=899) (actual time=1.85..1.97 rows=81 loops=1)\n        -> Nested loop inner join  (cost=418 rows=899) (actual time=1.85..1.96 rows=81 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.115..104 rows=899) (actual time=1.85..1.86 rows=82 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=1.85..1.85 rows=82 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=1.85..1.85 rows=82 loops=1)\n                        -> Filter: (first_neg_after is not null)  (actual time=1.82..1.83 rows=82 loops=1)\n                            -> Table scan on <temporary>  (actual time=1.82..1.83 rows=123 loops=1)\n                                -> Aggregate using temporary table  (actual time=1.82..1.82 rows=123 loops=1)\n                                    -> Filter: (anchored.first_pos is not null)  (cost=0.128..115 rows=900) (actual time=1.4..1.53 rows=848 loops=1)\n                                        -> Table scan on anchored  (cost=2.5..2.5 rows=0) (actual time=1.4..1.49 rows=1000 loops=1)\n                                            -> Materialize CTE anchored  (cost=0..0 rows=0) (actual time=1.4..1.4 rows=1000 loops=1)\n                                                -> Window aggregate with buffering: min(`(case when (covid_tests.result = 'Positive') then covid_tests.test_date end)`) OVER (PARTITION BY covid_tests.patient_id )   (actual time=0.314..1.22 rows=1000 loops=1)\n                                                    -> Sort: covid_tests.patient_id  (cost=101 rows=1000) (actual time=0.298..0.337 rows=1000 loops=1)\n                                                        -> Table scan on covid_tests  (cost=101 rows=1000) (actual time=0.0184..0.168 rows=1000 loops=1)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.25 rows=1) (actual time=0.00105..0.00107 rows=0.988 loops=82)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.0016846939998913513,
+          "times_s": [
+            0.0017083829999364752,
+            0.0016846939998913513,
+            0.0016656820000662265
+          ],
+          "result_rows": 81,
+          "result_digest": "a635e7ee9978b8bac35dcf5dc18f045949b4de74",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=1.16..1.16 rows=81 loops=1)\n    -> Stream results  (cost=172 rows=366) (actual time=1.03..1.13 rows=81 loops=1)\n        -> Nested loop inner join  (cost=172 rows=366) (actual time=1.03..1.12 rows=81 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.119..43.7 rows=366) (actual time=1.03..1.04 rows=82 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=1.03..1.03 rows=82 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=1.03..1.03 rows=82 loops=1)\n                        -> Table scan on <temporary>  (actual time=1.01..1.01 rows=82 loops=1)\n                            -> Aggregate using temporary table  (actual time=1.01..1.01 rows=82 loops=1)\n                                -> Nested loop inner join  (cost=486 rows=367) (actual time=0.379..0.938 rows=221 loops=1)\n                                    -> Filter: ((n.result = 'Negative') and (n.patient_id is not null))  (cost=101 rows=100) (actual time=0.0206..0.285 rows=480 loops=1)\n                                        -> Table scan on n  (cost=101 rows=1000) (actual time=0.0181..0.196 rows=1000 loops=1)\n                                    -> Filter: (n.test_date > f.first_pos)  (cost=0.751..2.75 rows=3.67) (actual time=0.00119..0.00125 rows=0.46 loops=480)\n                                        -> Covering index lookup on f using <auto_key0> (patient_id=n.patient_id)  (cost=0.25..2.75 rows=11) (actual time=0.00105..0.00113 rows=0.742 loops=480)\n                                            -> Materialize CTE first_pos  (cost=0..0 rows=0) (actual time=0.351..0.351 rows=123 loops=1)\n                                                -> Table scan on <temporary>  (actual time=0.313..0.321 rows=123 loops=1)\n                                                    -> Aggregate using temporary table  (actual time=0.312..0.312 rows=123 loops=1)\n                                                        -> Filter: (covid_tests.result = 'Positive')  (cost=101 rows=100) (actual time=0.0108..0.248 rows=382 loops=1)\n                                                            -> Table scan on covid_tests  (cost=101 rows=1000) (actual time=0.0105..0.161 rows=1000 loops=1)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.25 rows=1) (actual time=853e-6..872e-6 rows=0.988 loops=82)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "patients": 250,
+        "covid_tests": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.0034022690000483635,
+          "times_s": [
+            0.0034022690000483635,
+            0.0037027500000021973,
+            0.0033699500000921034
+          ],
+          "result_rows": 81,
+          "result_digest": "a635e7ee9978b8bac35dcf5dc18f045949b4de74",
+          "explain_analyze": "-> Sort: recovery_time, per_patient.patient_name  (cost=305..305 rows=250) (actual time=2.81..2.82 rows=81 loops=1)\n    -> Filter: (per_patient.first_neg_after is not null)  (cost=50.4..80.9 rows=250) (actual time=2.75..2.79 rows=81 loops=1)\n        -> Table scan on per_patient  (cost=50.3..55.9 rows=250) (actual time=2.75..2.78 rows=250 loops=1)\n            -> Materialize CTE per_patient  (cost=50.2..50.2 rows=250) (actual time=2.75..2.75 rows=250 loops=1)\n                -> Table scan on p  (cost=25.2 rows=250) (actual time=0.0109..0.057 rows=250 loops=1)\n                -> Select #3 (subquery in projection; dependent)\n                    -> Aggregate: min(t.test_date)  (cost=1.24 rows=1) (actual time=0.00208..0.0021 rows=1 loops=250)\n                        -> Covering index lookup on t using idx_tests_patient_result_date (patient_id=p.patient_id, result='Positive')  (cost=0.938 rows=2.99) (actual time=0.00152..0.0018 rows=1.52 loops=250)\n                -> Select #4 (subquery in projection; dependent)\n                    -> Aggregate: min(n.test_date)  (cost=1.24 rows=1) (actual time=0.0078..0.00782 rows=1 loops=250)\n                        -> Filter: (n.test_date > (select #5))  (cost=0.938 rows=2.99) (actual time=0.00543..0.00758 rows=0.872 loops=250)\n                            -> Covering index lookup on n using idx_tests_patient_result_date (patient_id=p.patient_id, result='Negative')  (cost=0.938 rows=2.99) (actual time=0.00156..0.00199 rows=1.91 loops=250)\n                            -> Select #5 (subquery in condition; dependent)\n                                -> Aggregate: min(t.test_date)  (cost=1.24 rows=1) (actual time=0.00252..0.00255 rows=1 loops=471)\n                                    -> Covering index lookup on t using idx_tests_patient_result_date (patient_id=p.patient_id, result='Positive')  (cost=0.938 rows=2.99) (actual time=0.00165..0.00218 rows=2.82 loops=471)\n"
+        },
+        {
+          "solution": "02_window_anchor_one_pass",
+          "status": "ok",
+          "median_s": 0.0026311720000649075,
+          "times_s": [
+            0.002627770000003693,
+            0.002728234000073826,
+            0.0026311720000649075
+          ],
+          "result_rows": 81,
+          "result_digest": "a635e7ee9978b8bac35dcf5dc18f045949b4de74",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=1.92..1.93 rows=81 loops=1)\n    -> Stream results  (cost=418 rows=899) (actual time=1.8..1.9 rows=81 loops=1)\n        -> Nested loop inner join  (cost=418 rows=899) (actual time=1.8..1.89 rows=81 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.115..104 rows=899) (actual time=1.79..1.8 rows=82 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=1.79..1.8 rows=82 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=1.79..1.79 rows=82 loops=1)\n                        -> Filter: (first_neg_after is not null)  (actual time=1.77..1.78 rows=82 loops=1)\n                            -> Table scan on <temporary>  (actual time=1.77..1.78 rows=123 loops=1)\n                                -> Aggregate using temporary table  (actual time=1.77..1.77 rows=123 loops=1)\n                                    -> Filter: (anchored.first_pos is not null)  (cost=0.128..115 rows=900) (actual time=1.32..1.47 rows=848 loops=1)\n                                        -> Table scan on anchored  (cost=2.5..2.5 rows=0) (actual time=1.32..1.41 rows=1000 loops=1)\n                                            -> Materialize CTE anchored  (cost=0..0 rows=0) (actual time=1.32..1.32 rows=1000 loops=1)\n                                                -> Window aggregate with buffering: min(`(case when (covid_tests.result = 'Positive') then covid_tests.test_date end)`) OVER (PARTITION BY covid_tests.patient_id )   (actual time=0.272..1.12 rows=1000 loops=1)\n                                                    -> Sort: covid_tests.patient_id  (cost=101 rows=1000) (actual time=0.258..0.295 rows=1000 loops=1)\n                                                        -> Index scan on covid_tests using idx_tests_patient_result_date  (cost=101 rows=1000) (actual time=0.0182..0.154 rows=1000 loops=1)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.25 rows=1) (actual time=853e-6..873e-6 rows=0.988 loops=82)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.0018039870000166047,
+          "times_s": [
+            0.0017889239999249185,
+            0.0018039870000166047,
+            0.0018607550000524498
+          ],
+          "result_rows": 81,
+          "result_digest": "a635e7ee9978b8bac35dcf5dc18f045949b4de74",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=1.1..1.1 rows=81 loops=1)\n    -> Stream results  (cost=72.3 rows=151) (actual time=0.969..1.07 rows=81 loops=1)\n        -> Nested loop inner join  (cost=72.3 rows=151) (actual time=0.967..1.06 rows=81 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.129..19.5 rows=151) (actual time=0.964..0.974 rows=82 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=0.963..0.969 rows=82 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=0.963..0.963 rows=82 loops=1)\n                        -> Table scan on <temporary>  (actual time=0.943..0.949 rows=82 loops=1)\n                            -> Aggregate using temporary table  (actual time=0.943..0.943 rows=82 loops=1)\n                                -> Nested loop inner join  (cost=162 rows=151) (actual time=0.492..0.841 rows=221 loops=1)\n                                    -> Filter: (f.patient_id is not null)  (cost=68..19.6 rows=152) (actual time=0.488..0.505 rows=123 loops=1)\n                                        -> Table scan on f  (cost=68.3..72.7 rows=152) (actual time=0.487..0.498 rows=123 loops=1)\n                                            -> Materialize CTE first_pos  (cost=68.3..68.3 rows=152) (actual time=0.487..0.487 rows=123 loops=1)\n                                                -> Filter: (covid_tests.result = 'Positive')  (cost=53.1 rows=152) (actual time=0.0185..0.458 rows=123 loops=1)\n                                                    -> Covering index skip scan for grouping on covid_tests using idx_tests_patient_result_date  (cost=53.1 rows=152) (actual time=0.0178..0.439 rows=123 loops=1)\n                                    -> Filter: (n.test_date > f.first_pos)  (cost=0.64 rows=0.995) (actual time=0.00196..0.00254 rows=1.8 loops=123)\n                                        -> Covering index lookup on n using idx_tests_patient_result_date (patient_id=f.patient_id, result='Negative')  (cost=0.64 rows=2.99) (actual time=0.0016..0.00227 rows=2.89 loops=123)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.251 rows=1) (actual time=862e-6..882e-6 rows=0.988 loops=82)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "patients": 25000,
+        "covid_tests": 100000
+      },
+      "load_seconds": 0.914,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_window_anchor_one_pass",
+          "status": "ok",
+          "median_s": 0.20598985200001607,
+          "times_s": [
+            0.20730606699999043,
+            0.20598985200001607,
+            0.2046036639999329
+          ],
+          "result_rows": 7971,
+          "result_digest": "a7595f23980b783cd0f33ef909def148340b6b1e",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=201..201 rows=7971 loops=1)\n    -> Stream results  (cost=40678 rows=87946) (actual time=191..198 rows=7971 loops=1)\n        -> Nested loop inner join  (cost=40678 rows=87946) (actual time=191..197 rows=7971 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.113..9896 rows=87946) (actual time=191..192 rows=8065 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=191..191 rows=8065 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=191..191 rows=8065 loops=1)\n                        -> Filter: (first_neg_after is not null)  (actual time=188..190 rows=8065 loops=1)\n                            -> Table scan on <temporary>  (actual time=188..189 rows=11224 loops=1)\n                                -> Aggregate using temporary table  (actual time=188..188 rows=11224 loops=1)\n                                    -> Filter: (anchored.first_pos is not null)  (cost=0.125..10996 rows=87946) (actual time=145..159 rows=86200 loops=1)\n                                        -> Table scan on anchored  (cost=2.5..2.5 rows=0) (actual time=145..154 rows=100000 loops=1)\n                                            -> Materialize CTE anchored  (cost=0..0 rows=0) (actual time=145..145 rows=100000 loops=1)\n                                                -> Window aggregate with buffering: min(`(case when (covid_tests.result = 'Positive') then covid_tests.test_date end)`) OVER (PARTITION BY covid_tests.patient_id )   (actual time=35.4..127 rows=100000 loops=1)\n                                                    -> Sort: covid_tests.patient_id  (cost=9844 rows=97718) (actual time=35.3..40 rows=100000 loops=1)\n                                                        -> Table scan on covid_tests  (cost=9844 rows=97718) (actual time=0.146..14.8 rows=100000 loops=1)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.25 rows=1) (actual time=480e-6..499e-6 rows=0.988 loops=8065)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.12294894300009673,
+          "times_s": [
+            0.1226151820000041,
+            0.12495499399994969,
+            0.12294894300009673
+          ],
+          "result_rows": 7971,
+          "result_digest": "a7595f23980b783cd0f33ef909def148340b6b1e",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=130..130 rows=7971 loops=1)\n    -> Stream results  (cost=81407 rows=0) (actual time=108..127 rows=7971 loops=1)\n        -> Nested loop inner join  (cost=81407 rows=0) (actual time=108..126 rows=7971 loops=1)\n            -> Table scan on p  (cost=2426 rows=24016) (actual time=0.0451..4.41 rows=25000 loops=1)\n            -> Index lookup on r using <auto_key0> (patient_id=p.patient_id)  (cost=0.25..3.29 rows=13.2) (actual time=0.00471..0.00475 rows=0.319 loops=25000)\n                -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=108..108 rows=8065 loops=1)\n                    -> Table scan on <temporary>  (actual time=104..105 rows=8065 loops=1)\n                        -> Aggregate using temporary table  (actual time=104..104 rows=8065 loops=1)\n                            -> Nested loop inner join  (cost=341597 rows=315923) (actual time=33.1..96 rows=25554 loops=1)\n                                -> Filter: ((n.result = 'Negative') and (n.patient_id is not null))  (cost=9844 rows=9772) (actual time=0.125..27.1 rows=46882 loops=1)\n                                    -> Table scan on n  (cost=9844 rows=97718) (actual time=0.122..18.1 rows=100000 loops=1)\n                                -> Filter: (n.test_date > f.first_pos)  (cost=0.75..24.3 rows=32.3) (actual time=0.00127..0.00136 rows=0.545 loops=46882)\n                                    -> Covering index lookup on f using <auto_key0> (patient_id=n.patient_id)  (cost=0.25..24.3 rows=97) (actual time=0.00114..0.00123 rows=0.76 loops=46882)\n                                        -> Materialize CTE first_pos  (cost=0..0 rows=0) (actual time=32.9..32.9 rows=11244 loops=1)\n                                            -> Table scan on <temporary>  (actual time=28.5..29.4 rows=11244 loops=1)\n                                                -> Aggregate using temporary table  (actual time=28.5..28.5 rows=11244 loops=1)\n                                                    -> Filter: (covid_tests.result = 'Positive')  (cost=9844 rows=9772) (actual time=0.12..22 rows=37966 loops=1)\n                                                        -> Table scan on covid_tests  (cost=9844 rows=97718) (actual time=0.12..15.1 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "patients": 25000,
+        "covid_tests": 100000
+      },
+      "load_seconds": 0.914,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.2838917730000503,
+          "times_s": [
+            0.28524594599991815,
+            0.28099924599996484,
+            0.2838917730000503
+          ],
+          "result_rows": 7971,
+          "result_digest": "a7595f23980b783cd0f33ef909def148340b6b1e",
+          "explain_analyze": "-> Sort: recovery_time, per_patient.patient_name  (cost=47889..47889 rows=25508) (actual time=285..286 rows=7971 loops=1)\n    -> Filter: (per_patient.first_neg_after is not null)  (cost=5126..7998 rows=25508) (actual time=279..282 rows=7971 loops=1)\n        -> Table scan on per_patient  (cost=5126..5447 rows=25508) (actual time=279..281 rows=25000 loops=1)\n            -> Materialize CTE per_patient  (cost=5126..5126 rows=25508) (actual time=279..279 rows=25000 loops=1)\n                -> Table scan on p  (cost=2575 rows=25508) (actual time=0.047..4.12 rows=25000 loops=1)\n                -> Select #3 (subquery in projection; dependent)\n                    -> Aggregate: min(t.test_date)  (cost=1.63 rows=1) (actual time=0.00215..0.00218 rows=1 loops=25000)\n                        -> Covering index lookup on t using idx_tests_patient_result_date (patient_id=p.patient_id, result='Positive')  (cost=1.33 rows=3.07) (actual time=0.00164..0.00189 rows=1.49 loops=25000)\n                -> Select #4 (subquery in projection; dependent)\n                    -> Aggregate: min(n.test_date)  (cost=1.63 rows=1) (actual time=0.00802..0.00804 rows=1 loops=25000)\n                        -> Filter: (n.test_date > (select #5))  (cost=1.33 rows=3.07) (actual time=0.00499..0.00779 rows=0.991 loops=25000)\n                            -> Covering index lookup on n using idx_tests_patient_result_date (patient_id=p.patient_id, result='Negative')  (cost=1.33 rows=3.07) (actual time=0.00164..0.00199 rows=1.84 loops=25000)\n                            -> Select #5 (subquery in condition; dependent)\n                                -> Aggregate: min(t.test_date)  (cost=1.63 rows=1) (actual time=0.00275..0.00277 rows=1 loops=45471)\n                                    -> Covering index lookup on t using idx_tests_patient_result_date (patient_id=p.patient_id, result='Positive')  (cost=1.33 rows=3.07) (actual time=0.00185..0.00238 rows=3.28 loops=45471)\n"
+        },
+        {
+          "solution": "02_window_anchor_one_pass",
+          "status": "ok",
+          "median_s": 0.19628203499996744,
+          "times_s": [
+            0.19575589600003696,
+            0.19628203499996744,
+            0.22137170700000297
+          ],
+          "result_rows": 7971,
+          "result_digest": "a7595f23980b783cd0f33ef909def148340b6b1e",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=191..191 rows=7971 loops=1)\n    -> Stream results  (cost=39674 rows=85776) (actual time=181..188 rows=7971 loops=1)\n        -> Nested loop inner join  (cost=39674 rows=85776) (actual time=181..187 rows=7971 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.113..9652 rows=85776) (actual time=181..182 rows=8065 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=181..181 rows=8065 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=181..181 rows=8065 loops=1)\n                        -> Filter: (first_neg_after is not null)  (actual time=178..180 rows=8065 loops=1)\n                            -> Table scan on <temporary>  (actual time=178..179 rows=11224 loops=1)\n                                -> Aggregate using temporary table  (actual time=178..178 rows=11224 loops=1)\n                                    -> Filter: (anchored.first_pos is not null)  (cost=0.125..10725 rows=85776) (actual time=135..148 rows=86200 loops=1)\n                                        -> Table scan on anchored  (cost=2.5..2.5 rows=0) (actual time=135..144 rows=100000 loops=1)\n                                            -> Materialize CTE anchored  (cost=0..0 rows=0) (actual time=135..135 rows=100000 loops=1)\n                                                -> Window aggregate with buffering: min(`(case when (covid_tests.result = 'Positive') then covid_tests.test_date end)`) OVER (PARTITION BY covid_tests.patient_id )   (actual time=30.2..117 rows=100000 loops=1)\n                                                    -> Sort: covid_tests.patient_id  (cost=9603 rows=95307) (actual time=30.2..34.8 rows=100000 loops=1)\n                                                        -> Index scan on covid_tests using idx_tests_patient_result_date  (cost=9603 rows=95307) (actual time=0.135..13.9 rows=100000 loops=1)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.25 rows=1) (actual time=481e-6..500e-6 rows=0.988 loops=8065)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.11277758099993207,
+          "times_s": [
+            0.1127703099999735,
+            0.11277758099993207,
+            0.11500668799999403
+          ],
+          "result_rows": 7971,
+          "result_digest": "a7595f23980b783cd0f33ef909def148340b6b1e",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=94.6..94.9 rows=7971 loops=1)\n    -> Stream results  (cost=6746 rows=14581) (actual time=84.1..91.6 rows=7971 loops=1)\n        -> Nested loop inner join  (cost=6746 rows=14581) (actual time=84.1..90 rows=7971 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.113..1643 rows=14581) (actual time=84.1..85.1 rows=8065 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=84.1..84.7 rows=8065 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=84.1..84.1 rows=8065 loops=1)\n                        -> Table scan on <temporary>  (actual time=82.6..83.2 rows=8065 loops=1)\n                            -> Aggregate using temporary table  (actual time=82.6..82.6 rows=8065 loops=1)\n                                -> Nested loop inner join  (cost=20521 rows=14581) (actual time=41.7..74.7 rows=25554 loops=1)\n                                    -> Filter: (f.patient_id is not null)  (cost=7522..1607 rows=14262) (actual time=41.7..43.2 rows=11244 loops=1)\n                                        -> Table scan on f  (cost=7522..7703 rows=14262) (actual time=41.7..42.6 rows=11244 loops=1)\n                                            -> Materialize CTE first_pos  (cost=7522..7522 rows=14262) (actual time=41.7..41.7 rows=11244 loops=1)\n                                                -> Filter: (covid_tests.result = 'Positive')  (cost=6096 rows=14262) (actual time=0.0227..39.8 rows=11244 loops=1)\n                                                    -> Covering index skip scan for grouping on covid_tests using idx_tests_patient_result_date  (cost=6096 rows=14262) (actual time=0.0216..38.5 rows=11244 loops=1)\n                                    -> Filter: (n.test_date > f.first_pos)  (cost=1.02 rows=1.02) (actual time=0.00201..0.00261 rows=2.27 loops=11244)\n                                        -> Covering index lookup on n using idx_tests_patient_result_date (patient_id=f.patient_id, result='Negative')  (cost=1.02 rows=3.07) (actual time=0.00173..0.00233 rows=3.17 loops=11244)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.25 rows=1) (actual time=467e-6..495e-6 rows=0.988 loops=8065)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "patients": 250000,
+        "covid_tests": 1000000
+      },
+      "load_seconds": 7.772,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_window_anchor_one_pass",
+          "status": "ok",
+          "median_s": 4.567730141999959,
+          "times_s": [
+            4.623297090999927,
+            4.559273892000078,
+            4.567730141999959
+          ],
+          "result_rows": 80017,
+          "result_digest": "5f4d6837d86cbb5dcf9ecc413488f984d47205bf",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=4646..4649 rows=80017 loops=1)\n    -> Stream results  (cost=415032 rows=897360) (actual time=4505..4614 rows=80017 loops=1)\n        -> Nested loop inner join  (cost=415032 rows=897360) (actual time=4505..4600 rows=80017 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.113..100956 rows=897360) (actual time=4505..4517 rows=80117 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=4505..4513 rows=80117 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=4505..4505 rows=80117 loops=1)\n                        -> Filter: (first_neg_after is not null)  (actual time=4483..4496 rows=80117 loops=1)\n                            -> Table scan on <temporary>  (actual time=4483..4491 rows=111264 loops=1)\n                                -> Aggregate using temporary table  (actual time=4483..4483 rows=111264 loops=1)\n                                    -> Filter: (anchored.first_pos is not null)  (cost=0.125..112173 rows=897360) (actual time=3929..4166 rows=864992 loops=1)\n                                        -> Table scan on anchored  (cost=2.5..2.5 rows=0) (actual time=3929..4120 rows=1e+6 loops=1)\n                                            -> Materialize CTE anchored  (cost=0..0 rows=0) (actual time=3929..3929 rows=1e+6 loops=1)\n                                                -> Window aggregate with buffering: min(`(case when (covid_tests.result = 'Positive') then covid_tests.test_date end)`) OVER (PARTITION BY covid_tests.patient_id )   (actual time=418..3475 rows=1e+6 loops=1)\n                                                    -> Sort: covid_tests.patient_id  (cost=101193 rows=997067) (actual time=418..472 rows=1e+6 loops=1)\n                                                        -> Table scan on covid_tests  (cost=101193 rows=997067) (actual time=0.193..169 rows=1e+6 loops=1)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.25 rows=1) (actual time=903e-6..922e-6 rows=0.999 loops=80117)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 1.3891626140000426,
+          "times_s": [
+            1.3891626140000426,
+            1.417402605999996,
+            1.3831626209999968
+          ],
+          "result_rows": 80017,
+          "result_digest": "5f4d6837d86cbb5dcf9ecc413488f984d47205bf",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=1457..1460 rows=80017 loops=1)\n    -> Stream results  (cost=8.31e+6 rows=0) (actual time=1213..1425 rows=80017 loops=1)\n        -> Nested loop inner join  (cost=8.31e+6 rows=0) (actual time=1213..1410 rows=80017 loops=1)\n            -> Table scan on p  (cost=25108 rows=249716) (actual time=0.0878..44.2 rows=250000 loops=1)\n            -> Index lookup on r using <auto_key0> (patient_id=p.patient_id)  (cost=0.25..33.2 rows=133) (actual time=0.0053..0.00535 rows=0.32 loops=250000)\n                -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=1213..1213 rows=80117 loops=1)\n                    -> Table scan on <temporary>  (actual time=1165..1171 rows=80117 loops=1)\n                        -> Aggregate using temporary table  (actual time=1165..1165 rows=80117 loops=1)\n                            -> Nested loop inner join  (cost=34.9e+6 rows=33.1e+6) (actual time=362..1064 rows=256568 loops=1)\n                                -> Filter: ((n.result = 'Negative') and (n.patient_id is not null))  (cost=100398 rows=99733) (actual time=0.139..275 rows=465366 loops=1)\n                                    -> Table scan on n  (cost=100398 rows=997330) (actual time=0.135..185 rows=1e+6 loops=1)\n                                -> Filter: (n.test_date > f.first_pos)  (cost=0.75..249 rows=332) (actual time=0.00149..0.00158 rows=0.551 loops=465366)\n                                    -> Covering index lookup on f using <auto_key0> (patient_id=n.patient_id)  (cost=0.25..249 rows=997) (actual time=0.00135..0.00145 rows=0.764 loops=465366)\n                                        -> Materialize CTE first_pos  (cost=0..0 rows=0) (actual time=362..362 rows=111537 loops=1)\n                                            -> Table scan on <temporary>  (actual time=295..303 rows=111537 loops=1)\n                                                -> Aggregate using temporary table  (actual time=295..295 rows=111537 loops=1)\n                                                    -> Filter: (covid_tests.result = 'Positive')  (cost=100398 rows=99733) (actual time=0.122..219 rows=384429 loops=1)\n                                                        -> Table scan on covid_tests  (cost=100398 rows=997330) (actual time=0.121..150 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "patients": 250000,
+        "covid_tests": 1000000
+      },
+      "load_seconds": 7.772,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 3.098912710000036,
+          "times_s": [
+            3.091075503999946,
+            3.108477920999917,
+            3.098912710000036
+          ],
+          "result_rows": 80017,
+          "result_digest": "5f4d6837d86cbb5dcf9ecc413488f984d47205bf",
+          "explain_analyze": "-> Sort: recovery_time, per_patient.patient_name  (cost=551008..551008 rows=249768) (actual time=3193..3197 rows=80017 loops=1)\n    -> Filter: (per_patient.first_neg_after is not null)  (cost=50090..78191 rows=249768) (actual time=3103..3158 rows=80017 loops=1)\n        -> Table scan on per_patient  (cost=50090..53214 rows=249768) (actual time=3103..3150 rows=250000 loops=1)\n            -> Materialize CTE per_patient  (cost=50090..50090 rows=249768) (actual time=3103..3103 rows=250000 loops=1)\n                -> Table scan on p  (cost=25113 rows=249768) (actual time=0.0877..41.5 rows=250000 loops=1)\n                -> Select #3 (subquery in projection; dependent)\n                    -> Aggregate: min(t.test_date)  (cost=1.67 rows=1) (actual time=0.00242..0.00245 rows=1 loops=250000)\n                        -> Covering index lookup on t using idx_tests_patient_result_date (patient_id=p.patient_id, result='Positive')  (cost=1.35 rows=3.22) (actual time=0.0019..0.00215 rows=1.51 loops=250000)\n                -> Select #4 (subquery in projection; dependent)\n                    -> Aggregate: min(n.test_date)  (cost=1.67 rows=1) (actual time=0.00873..0.00875 rows=1 loops=250000)\n                        -> Filter: (n.test_date > (select #5))  (cost=1.35 rows=3.22) (actual time=0.00552..0.0085 rows=0.99 loops=250000)\n                            -> Covering index lookup on n using idx_tests_patient_result_date (patient_id=p.patient_id, result='Negative')  (cost=1.35 rows=3.22) (actual time=0.00188..0.00223 rows=1.82 loops=250000)\n                            -> Select #5 (subquery in condition; dependent)\n                                -> Aggregate: min(t.test_date)  (cost=1.67 rows=1) (actual time=0.00303..0.00305 rows=1 loops=451652)\n                                    -> Covering index lookup on t using idx_tests_patient_result_date (patient_id=p.patient_id, result='Positive')  (cost=1.35 rows=3.22) (actual time=0.0021..0.00264 rows=3.32 loops=451652)\n"
+        },
+        {
+          "solution": "02_window_anchor_one_pass",
+          "status": "ok",
+          "median_s": 4.377961832999972,
+          "times_s": [
+            4.377961832999972,
+            4.366964098999915,
+            4.40300759999991
+          ],
+          "result_rows": 80017,
+          "result_digest": "5f4d6837d86cbb5dcf9ecc413488f984d47205bf",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=4370..4373 rows=80017 loops=1)\n    -> Stream results  (cost=415415 rows=898190) (actual time=4231..4338 rows=80017 loops=1)\n        -> Nested loop inner join  (cost=415415 rows=898190) (actual time=4231..4323 rows=80017 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.113..101049 rows=898190) (actual time=4231..4243 rows=80117 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=4231..4239 rows=80117 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=4231..4231 rows=80117 loops=1)\n                        -> Filter: (first_neg_after is not null)  (actual time=4209..4222 rows=80117 loops=1)\n                            -> Table scan on <temporary>  (actual time=4209..4216 rows=111264 loops=1)\n                                -> Aggregate using temporary table  (actual time=4209..4209 rows=111264 loops=1)\n                                    -> Filter: (anchored.first_pos is not null)  (cost=0.125..112276 rows=898190) (actual time=3652..3895 rows=864992 loops=1)\n                                        -> Table scan on anchored  (cost=2.5..2.5 rows=0) (actual time=3652..3844 rows=1e+6 loops=1)\n                                            -> Materialize CTE anchored  (cost=0..0 rows=0) (actual time=3652..3652 rows=1e+6 loops=1)\n                                                -> Window aggregate with buffering: min(`(case when (covid_tests.result = 'Positive') then covid_tests.test_date end)`) OVER (PARTITION BY covid_tests.patient_id )   (actual time=329..3220 rows=1e+6 loops=1)\n                                                    -> Sort: covid_tests.patient_id  (cost=102458 rows=997989) (actual time=329..380 rows=1e+6 loops=1)\n                                                        -> Index scan on covid_tests using idx_tests_patient_result_date  (cost=102458 rows=997989) (actual time=0.16..141 rows=1e+6 loops=1)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.25 rows=1) (actual time=857e-6..877e-6 rows=0.999 loops=80117)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 1.2546462489999612,
+          "times_s": [
+            1.2546462489999612,
+            1.2475215150000167,
+            1.2822954199999685
+          ],
+          "result_rows": 80017,
+          "result_digest": "5f4d6837d86cbb5dcf9ecc413488f984d47205bf",
+          "explain_analyze": "-> Sort: recovery_time, p.patient_name  (actual time=1060..1063 rows=80017 loops=1)\n    -> Stream results  (cost=70307 rows=152009) (actual time=939..1028 rows=80017 loops=1)\n        -> Nested loop inner join  (cost=70307 rows=152009) (actual time=939..1014 rows=80017 loops=1)\n            -> Filter: (r.patient_id is not null)  (cost=0.113..17104 rows=152009) (actual time=939..951 rows=80117 loops=1)\n                -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=939..947 rows=80117 loops=1)\n                    -> Materialize CTE recovered  (cost=0..0 rows=0) (actual time=939..939 rows=80117 loops=1)\n                        -> Table scan on <temporary>  (actual time=925..930 rows=80117 loops=1)\n                            -> Aggregate using temporary table  (actual time=925..925 rows=80117 loops=1)\n                                -> Nested loop inner join  (cost=206930 rows=152009) (actual time=479..837 rows=256568 loops=1)\n                                    -> Filter: (f.patient_id is not null)  (cost=82490..15953 rows=141781) (actual time=479..495 rows=111537 loops=1)\n                                        -> Table scan on f  (cost=82490..84265 rows=141781) (actual time=479..489 rows=111537 loops=1)\n                                            -> Materialize CTE first_pos  (cost=82490..82490 rows=141781) (actual time=479..479 rows=111537 loops=1)\n                                                -> Filter: (covid_tests.result = 'Positive')  (cost=68312 rows=141781) (actual time=0.0469..460 rows=111537 loops=1)\n                                                    -> Covering index skip scan for grouping on covid_tests using idx_tests_patient_result_date  (cost=68312 rows=141781) (actual time=0.0455..447 rows=111537 loops=1)\n                                    -> Filter: (n.test_date > f.first_pos)  (cost=1.03 rows=1.07) (actual time=0.00225..0.00286 rows=2.3 loops=111537)\n                                        -> Covering index lookup on n using idx_tests_patient_result_date (patient_id=f.patient_id, result='Negative')  (cost=1.03 rows=3.22) (actual time=0.00197..0.00258 rows=3.19 loops=111537)\n            -> Single-row index lookup on p using PRIMARY (patient_id=r.patient_id)  (cost=0.25 rows=1) (actual time=656e-6..675e-6 rows=0.999 loops=80117)\n"
+        }
+      ]
+    }
+  ]
+}

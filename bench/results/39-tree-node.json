@@ -1,0 +1,336 @@
+{
+  "problem": "39-tree-node",
+  "generated_at": "2026-11-04T15:15:18+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_union_three_passes",
+    "02_case_correlated_exists",
+    "03_left_join_parent_set"
+  ],
+  "optimal": "03_left_join_parent_set",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122096 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Tree": 1000
+      },
+      "load_seconds": 0.044,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_three_passes",
+          "status": "ok",
+          "median_s": 0.007521765999996433,
+          "times_s": [
+            0.007521765999996433,
+            0.007660930999996651,
+            0.007319305000002885
+          ],
+          "result_rows": 1000,
+          "result_digest": "890295a7df72e831d8d4fb48c08bde4ada1f079c",
+          "explain_analyze": "-> Append  (cost=90392 rows=901000) (actual time=0.18..2.78 rows=1000 loops=1)\n    -> Stream results  (cost=101 rows=100) (actual time=0.179..0.225 rows=1 loops=1)\n        -> Filter: (Tree.p_id is null)  (cost=101 rows=100) (actual time=0.175..0.221 rows=1 loops=1)\n            -> Table scan on Tree  (cost=101 rows=1000) (actual time=0.0608..0.186 rows=1000 loops=1)\n    -> Stream results  (cost=90191 rows=900000) (actual time=0.409..1.14 rows=514 loops=1)\n        -> Nested loop inner join  (cost=90191 rows=900000) (actual time=0.407..1.08 rows=514 loops=1)\n            -> Filter: (Tree.p_id is not null)  (cost=101 rows=900) (actual time=0.0429..0.24 rows=999 loops=1)\n                -> Table scan on Tree  (cost=101 rows=1000) (actual time=0.0425..0.18 rows=1000 loops=1)\n            -> Single-row index lookup on <subquery3> using <auto_distinct_key> (p_id=Tree.id)  (cost=201..201 rows=1) (actual time=656e-6..717e-6 rows=0.515 loops=999)\n                -> Materialize with deduplication  (cost=201..201 rows=1000) (actual time=0.359..0.359 rows=515 loops=1)\n                    -> Filter: (Tree.p_id is not null)  (cost=101 rows=1000) (actual time=0.066..0.228 rows=999 loops=1)\n                        -> Table scan on Tree  (cost=101 rows=1000) (actual time=0.0657..0.167 rows=1000 loops=1)\n    -> Stream results  (cost=101 rows=900) (actual time=0.388..1.33 rows=485 loops=1)\n        -> Filter: ((Tree.p_id is not null) and <in_optimizer>(Tree.id,Tree.id in (select #5) is false))  (cost=101 rows=900) (actual time=0.385..1.27 rows=485 loops=1)\n            -> Table scan on Tree  (cost=101 rows=1000) (actual time=0.0447..0.164 rows=1000 loops=1)\n            -> Select #5 (subquery in condition; run only once)\n                -> Filter: ((Tree.id = `<materialized_subquery>`.p_id))  (cost=191..191 rows=1) (actual time=916e-6..916e-6 rows=0.514 loops=1000)\n                    -> Limit: 1 row(s)  (cost=191..191 rows=1) (actual time=746e-6..746e-6 rows=0.514 loops=1000)\n                        -> Index lookup on <materialized_subquery> using <auto_distinct_key> (p_id=Tree.id)  (actual time=627e-6..627e-6 rows=0.514 loops=1000)\n                            -> Materialize with deduplication  (cost=191..191 rows=900) (actual time=0.333..0.333 rows=515 loops=1)\n                                -> Filter: (Tree.p_id is not null)  (cost=101 rows=900) (actual time=0.0418..0.2 rows=999 loops=1)\n                                    -> Table scan on Tree  (cost=101 rows=1000) (actual time=0.0416..0.139 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_case_correlated_exists",
+          "status": "ok",
+          "median_s": 0.11228665299999818,
+          "times_s": [
+            0.11281794599999984,
+            0.11228665299999818,
+            0.11039677400000159
+          ],
+          "result_rows": 1000,
+          "result_digest": "890295a7df72e831d8d4fb48c08bde4ada1f079c",
+          "explain_analyze": "-> Table scan on t  (cost=101 rows=1000) (actual time=0.0533..0.225 rows=1000 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Limit: 1 row(s)  (cost=10.8 rows=1) (actual time=0.151..0.151 rows=0.515 loops=999)\n        -> Filter: (c.p_id = t.id)  (cost=10.8 rows=100) (actual time=0.151..0.151 rows=0.515 loops=999)\n            -> Table scan on c  (cost=10.8 rows=1000) (actual time=0.0394..0.117 rows=711 loops=999)\n"
+        },
+        {
+          "solution": "03_left_join_parent_set",
+          "status": "ok",
+          "median_s": 0.006460550999996428,
+          "times_s": [
+            0.006460550999996428,
+            0.006366520000000264,
+            0.006760078999995756
+          ],
+          "result_rows": 1000,
+          "result_digest": "890295a7df72e831d8d4fb48c08bde4ada1f079c",
+          "explain_analyze": "-> Nested loop left join  (cost=92626 rows=900000) (actual time=0.661..1.46 rows=1000 loops=1)\n    -> Table scan on t  (cost=101 rows=1000) (actual time=0.0647..0.225 rows=1000 loops=1)\n    -> Covering index lookup on par using <auto_key0> (p_id=t.id)  (cost=295..297 rows=10.1) (actual time=0.00103..0.00109 rows=0.515 loops=1000)\n        -> Materialize CTE parents  (cost=294..294 rows=900) (actual time=0.591..0.591 rows=515 loops=1)\n            -> Table scan on <temporary>  (cost=191..204 rows=900) (actual time=0.35..0.398 rows=515 loops=1)\n                -> Temporary table with deduplication  (cost=191..191 rows=900) (actual time=0.35..0.35 rows=515 loops=1)\n                    -> Filter: (Tree.p_id is not null)  (cost=101 rows=900) (actual time=0.0425..0.219 rows=999 loops=1)\n                        -> Table scan on Tree  (cost=101 rows=1000) (actual time=0.042..0.158 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Tree": 1000
+      },
+      "load_seconds": 0.044,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_three_passes",
+          "status": "ok",
+          "median_s": 0.006982632000003264,
+          "times_s": [
+            0.006982632000003264,
+            0.006928430000002095,
+            0.007063343000005773
+          ],
+          "result_rows": 1000,
+          "result_digest": "890295a7df72e831d8d4fb48c08bde4ada1f079c",
+          "explain_analyze": "-> Append  (cost=554 rows=1515) (actual time=0.0165..2.3 rows=1000 loops=1)\n    -> Stream results  (cost=0.35 rows=1) (actual time=0.0158..0.0185 rows=1 loops=1)\n        -> Filter: (Tree.p_id is null)  (cost=0.35 rows=1) (actual time=0.0132..0.0158 rows=1 loops=1)\n            -> Covering index lookup on Tree using idx_tree_p_id (p_id=NULL)  (cost=0.35 rows=1) (actual time=0.0121..0.0146 rows=1 loops=1)\n    -> Stream results  (cost=354 rows=515) (actual time=0.0413..0.906 rows=514 loops=1)\n        -> Nested loop inner join  (cost=354 rows=515) (actual time=0.0405..0.848 rows=514 loops=1)\n            -> Remove duplicates from input sorted on idx_tree_p_id  (cost=52.1 rows=516) (actual time=0.0335..0.296 rows=515 loops=1)\n                -> Filter: (Tree.p_id is not null)  (cost=52.1 rows=516) (actual time=0.0327..0.239 rows=999 loops=1)\n                    -> Covering index scan on Tree using idx_tree_p_id  (cost=52.1 rows=1000) (actual time=0.0318..0.177 rows=1000 loops=1)\n            -> Filter: (Tree.p_id is not null)  (cost=250 rows=0.999) (actual time=832e-6..919e-6 rows=0.998 loops=515)\n                -> Single-row index lookup on Tree using PRIMARY (id=Tree.p_id)  (cost=250 rows=1) (actual time=710e-6..738e-6 rows=1 loops=515)\n    -> Stream results  (cost=200 rows=999) (actual time=0.384..1.31 rows=485 loops=1)\n        -> Filter: ((Tree.p_id is not null) and <in_optimizer>(Tree.id,Tree.id in (select #5) is false))  (cost=200 rows=999) (actual time=0.383..1.26 rows=485 loops=1)\n            -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=200 rows=999) (actual time=0.0528..0.181 rows=999 loops=1)\n            -> Select #5 (subquery in condition; run only once)\n                -> Filter: ((Tree.id = `<materialized_subquery>`.p_id))  (cost=300..300 rows=1) (actual time=864e-6..864e-6 rows=0.514 loops=1000)\n                    -> Limit: 1 row(s)  (cost=300..300 rows=1) (actual time=738e-6..738e-6 rows=0.514 loops=1000)\n                        -> Index lookup on <materialized_subquery> using <auto_distinct_key> (p_id=Tree.id)  (actual time=620e-6..620e-6 rows=0.514 loops=1000)\n                            -> Materialize with deduplication  (cost=300..300 rows=999) (actual time=0.323..0.323 rows=515 loops=1)\n                                -> Filter: (Tree.p_id is not null)  (cost=200 rows=999) (actual time=0.0317..0.195 rows=999 loops=1)\n                                    -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=200 rows=999) (actual time=0.0313..0.134 rows=999 loops=1)\n"
+        },
+        {
+          "solution": "02_case_correlated_exists",
+          "status": "ok",
+          "median_s": 0.007062372999996569,
+          "times_s": [
+            0.0070984079999973915,
+            0.007062372999996569,
+            0.006924714000000165
+          ],
+          "result_rows": 1000,
+          "result_digest": "890295a7df72e831d8d4fb48c08bde4ada1f079c",
+          "explain_analyze": "-> Covering index scan on t using idx_tree_p_id  (cost=101 rows=1000) (actual time=0.0535..0.17 rows=1000 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Limit: 1 row(s)  (cost=0.444 rows=1) (actual time=0.00125..0.00127 rows=0.515 loops=999)\n        -> Covering index lookup on c using idx_tree_p_id (p_id=t.id)  (cost=0.444 rows=1.94) (actual time=0.0011..0.0011 rows=0.515 loops=999)\n"
+        },
+        {
+          "solution": "03_left_join_parent_set",
+          "status": "ok",
+          "median_s": 0.006712761000002843,
+          "times_s": [
+            0.0065297450000016966,
+            0.0067180079999999975,
+            0.006712761000002843
+          ],
+          "result_rows": 1000,
+          "result_digest": "890295a7df72e831d8d4fb48c08bde4ada1f079c",
+          "explain_analyze": "-> Nested loop left join  (cost=54223 rows=516000) (actual time=0.533..1.35 rows=1000 loops=1)\n    -> Covering index scan on t using idx_tree_p_id  (cost=101 rows=1000) (actual time=0.0476..0.178 rows=1000 loops=1)\n    -> Covering index lookup on par using <auto_key0> (p_id=t.id)  (cost=352..354 rows=10.1) (actual time=967e-6..0.00103 rows=0.515 loops=1000)\n        -> Materialize CTE parents  (cost=352..352 rows=516) (actual time=0.481..0.481 rows=515 loops=1)\n            -> Group (no aggregates)  (cost=300 rows=516) (actual time=0.0452..0.284 rows=515 loops=1)\n                -> Filter: (Tree.p_id is not null)  (cost=200 rows=999) (actual time=0.0417..0.216 rows=999 loops=1)\n                    -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=200 rows=999) (actual time=0.0409..0.155 rows=999 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Tree": 100000
+      },
+      "load_seconds": 0.818,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_three_passes",
+          "status": "ok",
+          "median_s": 0.6297364950000031,
+          "times_s": [
+            0.6297364950000031,
+            0.6219678639999984,
+            0.6813762290000014
+          ],
+          "result_rows": 100000,
+          "result_digest": "e0c9279dea92b332ea90156b72c4eb9e57680bd7",
+          "explain_analyze": "-> Append  (cost=891e+6 rows=8.91e+9) (actual time=11.5..322 rows=100000 loops=1)\n    -> Stream results  (cost=10038 rows=9949) (actual time=11.5..19.4 rows=1 loops=1)\n        -> Filter: (Tree.p_id is null)  (cost=10038 rows=9949) (actual time=11.5..19.4 rows=1 loops=1)\n            -> Table scan on Tree  (cost=10038 rows=99494) (actual time=1.05..16 rows=100000 loops=1)\n    -> Stream results  (cost=891e+6 rows=8.91e+9) (actual time=43.3..139 rows=50102 loops=1)\n        -> Nested loop inner join  (cost=891e+6 rows=8.91e+9) (actual time=43.3..133 rows=50102 loops=1)\n            -> Filter: (Tree.p_id is not null)  (cost=10038 rows=89545) (actual time=0.996..24.9 rows=99999 loops=1)\n                -> Table scan on Tree  (cost=10038 rows=99494) (actual time=0.995..18.7 rows=100000 loops=1)\n            -> Single-row index lookup on <subquery3> using <auto_distinct_key> (p_id=Tree.id)  (cost=19987..19987 rows=1) (actual time=915e-6..958e-6 rows=0.501 loops=99999)\n                -> Materialize with deduplication  (cost=19987..19987 rows=99494) (actual time=42.3..42.3 rows=50103 loops=1)\n                    -> Filter: (Tree.p_id is not null)  (cost=10038 rows=99494) (actual time=0.751..20.8 rows=99999 loops=1)\n                        -> Table scan on Tree  (cost=10038 rows=99494) (actual time=0.75..14.6 rows=100000 loops=1)\n    -> Stream results  (cost=10038 rows=89545) (actual time=44.2..157 rows=49897 loops=1)\n        -> Filter: ((Tree.p_id is not null) and <in_optimizer>(Tree.id,Tree.id in (select #5) is false))  (cost=10038 rows=89545) (actual time=43.2..151 rows=49897 loops=1)\n            -> Table scan on Tree  (cost=10038 rows=99494) (actual time=1.05..17.2 rows=100000 loops=1)\n            -> Select #5 (subquery in condition; run only once)\n                -> Filter: ((Tree.id = `<materialized_subquery>`.p_id))  (cost=18992..18992 rows=1) (actual time=0.00115..0.00115 rows=0.501 loops=100000)\n                    -> Limit: 1 row(s)  (cost=18992..18992 rows=1) (actual time=0.00103..0.00103 rows=0.501 loops=100000)\n                        -> Index lookup on <materialized_subquery> using <auto_distinct_key> (p_id=Tree.id)  (actual time=909e-6..909e-6 rows=0.501 loops=100000)\n                            -> Materialize with deduplication  (cost=18992..18992 rows=89545) (actual time=42.1..42.1 rows=50103 loops=1)\n                                -> Filter: (Tree.p_id is not null)  (cost=10038 rows=89545) (actual time=0.752..20.8 rows=99999 loops=1)\n                                    -> Table scan on Tree  (cost=10038 rows=99494) (actual time=0.751..14.6 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "02_case_correlated_exists",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "03_left_join_parent_set",
+          "status": "ok",
+          "median_s": 0.595608232999993,
+          "times_s": [
+            0.595608232999993,
+            0.5936763750000011,
+            0.6060950020000035
+          ],
+          "result_rows": 100000,
+          "result_digest": "e0c9279dea92b332ea90156b72c4eb9e57680bd7",
+          "explain_analyze": "-> Nested loop left join  (cost=897e+6 rows=8.96e+9) (actual time=76..178 rows=100000 loops=1)\n    -> Table scan on t  (cost=10068 rows=99801) (actual time=1.08..18.6 rows=100000 loops=1)\n    -> Covering index lookup on par using <auto_key0> (p_id=t.id)  (cost=29158..29160 rows=10) (actual time=0.00134..0.00144 rows=0.501 loops=100000)\n        -> Materialize CTE parents  (cost=29158..29158 rows=89821) (actual time=74.9..74.9 rows=50103 loops=1)\n            -> Table scan on <temporary>  (cost=19050..20176 rows=89821) (actual time=42.6..47.6 rows=50103 loops=1)\n                -> Temporary table with deduplication  (cost=19050..19050 rows=89821) (actual time=42.6..42.6 rows=50103 loops=1)\n                    -> Filter: (Tree.p_id is not null)  (cost=10068 rows=89821) (actual time=0.911..22 rows=99999 loops=1)\n                        -> Table scan on Tree  (cost=10068 rows=99801) (actual time=0.911..15.9 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Tree": 100000
+      },
+      "load_seconds": 0.818,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_three_passes",
+          "status": "ok",
+          "median_s": 0.6194837349999887,
+          "times_s": [
+            0.6194837349999887,
+            0.6073250270000017,
+            0.6732121130000053
+          ],
+          "result_rows": 100000,
+          "result_digest": "e0c9279dea92b332ea90156b72c4eb9e57680bd7",
+          "explain_analyze": "-> Append  (cost=493e+6 rows=4.93e+9) (actual time=0.0171..279 rows=100000 loops=1)\n    -> Stream results  (cost=1.09 rows=1) (actual time=0.0165..0.0191 rows=1 loops=1)\n        -> Filter: (Tree.p_id is null)  (cost=1.09 rows=1) (actual time=0.0126..0.0151 rows=1 loops=1)\n            -> Covering index lookup on Tree using idx_tree_p_id (p_id=NULL)  (cost=1.09 rows=1) (actual time=0.012..0.0144 rows=1 loops=1)\n    -> Stream results  (cost=493e+6 rows=4.93e+9) (actual time=34.6..126 rows=50102 loops=1)\n        -> Nested loop inner join  (cost=493e+6 rows=4.93e+9) (actual time=34.6..121 rows=50102 loops=1)\n            -> Filter: (Tree.p_id is not null)  (cost=9984 rows=49644) (actual time=0.492..23.9 rows=99999 loops=1)\n                -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=9984 rows=49644) (actual time=0.492..17.7 rows=99999 loops=1)\n            -> Single-row index lookup on <subquery3> using <auto_distinct_key> (p_id=Tree.id)  (cost=19946..19946 rows=1) (actual time=800e-6..844e-6 rows=0.501 loops=99999)\n                -> Materialize with deduplication  (cost=19946..19946 rows=99289) (actual time=34.1..34.1 rows=50103 loops=1)\n                    -> Filter: (Tree.p_id is not null)  (cost=10017 rows=99289) (actual time=0.715..18.6 rows=99999 loops=1)\n                        -> Covering index scan on Tree using idx_tree_p_id  (cost=10017 rows=99289) (actual time=0.713..12.5 rows=100000 loops=1)\n    -> Stream results  (cost=9984 rows=49644) (actual time=36.4..147 rows=49897 loops=1)\n        -> Filter: ((Tree.p_id is not null) and <in_optimizer>(Tree.id,Tree.id in (select #5) is false))  (cost=9984 rows=49644) (actual time=35.4..141 rows=49897 loops=1)\n            -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=9984 rows=49644) (actual time=0.475..16.5 rows=99999 loops=1)\n            -> Select #5 (subquery in condition; run only once)\n                -> Filter: ((Tree.id = `<materialized_subquery>`.p_id))  (cost=14948..14948 rows=1) (actual time=0.00106..0.00106 rows=0.501 loops=100000)\n                    -> Limit: 1 row(s)  (cost=14948..14948 rows=1) (actual time=932e-6..932e-6 rows=0.501 loops=100000)\n                        -> Index lookup on <materialized_subquery> using <auto_distinct_key> (p_id=Tree.id)  (actual time=812e-6..812e-6 rows=0.501 loops=100000)\n                            -> Materialize with deduplication  (cost=14948..14948 rows=49644) (actual time=34.9..34.9 rows=50103 loops=1)\n                                -> Filter: (Tree.p_id is not null)  (cost=9984 rows=49644) (actual time=0.33..19.6 rows=99999 loops=1)\n                                    -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=9984 rows=49644) (actual time=0.33..13.5 rows=99999 loops=1)\n"
+        },
+        {
+          "solution": "02_case_correlated_exists",
+          "status": "ok",
+          "median_s": 0.672334817999996,
+          "times_s": [
+            0.6816620740000019,
+            0.6688253389999943,
+            0.672334817999996
+          ],
+          "result_rows": 100000,
+          "result_digest": "e0c9279dea92b332ea90156b72c4eb9e57680bd7",
+          "explain_analyze": "-> Covering index scan on t using idx_tree_p_id  (cost=10017 rows=99289) (actual time=0.989..15.4 rows=100000 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Limit: 1 row(s)  (cost=1.19 rows=1) (actual time=0.00151..0.00152 rows=0.501 loops=99999)\n        -> Covering index lookup on c using idx_tree_p_id (p_id=t.id)  (cost=1.19 rows=1.95) (actual time=0.00139..0.00139 rows=0.501 loops=99999)\n"
+        },
+        {
+          "solution": "03_left_join_parent_set",
+          "status": "ok",
+          "median_s": 0.5841286779999848,
+          "times_s": [
+            0.6427629880000154,
+            0.5826035890000014,
+            0.5841286779999848
+          ],
+          "result_rows": 100000,
+          "result_digest": "e0c9279dea92b332ea90156b72c4eb9e57680bd7",
+          "explain_analyze": "-> Nested loop left join  (cost=493e+6 rows=4.93e+9) (actual time=60.1..167 rows=100000 loops=1)\n    -> Covering index scan on t using idx_tree_p_id  (cost=10017 rows=99289) (actual time=0.997..16.9 rows=100000 loops=1)\n    -> Covering index lookup on par using <auto_key0> (p_id=t.id)  (cost=19913..19915 rows=10) (actual time=0.00129..0.00135 rows=0.501 loops=100000)\n        -> Materialize CTE parents  (cost=19913..19913 rows=49644) (actual time=59.1..59.1 rows=50103 loops=1)\n            -> Group (no aggregates)  (cost=14948 rows=49644) (actual time=0.454..27.6 rows=50103 loops=1)\n                -> Filter: (Tree.p_id is not null)  (cost=9984 rows=49644) (actual time=0.451..21.1 rows=99999 loops=1)\n                    -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=9984 rows=49644) (actual time=0.45..14.9 rows=99999 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Tree": 1000000
+      },
+      "load_seconds": 8.848,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_three_passes",
+          "status": "ok",
+          "median_s": 10.208703432999982,
+          "times_s": [
+            10.208703432999982,
+            10.209568133999994,
+            10.071081872999997
+          ],
+          "result_rows": 1000000,
+          "result_digest": "8b797cdb4e4821ab2e9875f0796222115b41e7e6",
+          "explain_analyze": "-> Append  (cost=90.7e+9 rows=907e+9) (actual time=114..6618 rows=1e+6 loops=1)\n    -> Stream results  (cost=100973 rows=100372) (actual time=114..191 rows=1 loops=1)\n        -> Filter: (Tree.p_id is null)  (cost=100973 rows=100372) (actual time=114..191 rows=1 loops=1)\n            -> Table scan on Tree  (cost=100973 rows=1e+6) (actual time=1.5..157 rows=1e+6 loops=1)\n    -> Stream results  (cost=90.7e+9 rows=907e+9) (actual time=1512..3074 rows=500999 loops=1)\n        -> Nested loop inner join  (cost=90.7e+9 rows=907e+9) (actual time=1512..3018 rows=500999 loops=1)\n            -> Filter: (Tree.p_id is not null)  (cost=100973 rows=903352) (actual time=1.45..260 rows=999999 loops=1)\n                -> Table scan on Tree  (cost=100973 rows=1e+6) (actual time=1.45..197 rows=1e+6 loops=1)\n            -> Single-row index lookup on <subquery3> using <auto_distinct_key> (p_id=Tree.id)  (cost=201346..201346 rows=1) (actual time=0.00259..0.00263 rows=0.501 loops=999999)\n                -> Materialize with deduplication  (cost=201346..201346 rows=1e+6) (actual time=1511..1511 rows=501000 loops=1)\n                    -> Filter: (Tree.p_id is not null)  (cost=100973 rows=1e+6) (actual time=1.15..213 rows=999999 loops=1)\n                        -> Table scan on Tree  (cost=100973 rows=1e+6) (actual time=1.15..151 rows=1e+6 loops=1)\n    -> Stream results  (cost=100973 rows=903352) (actual time=1438..3286 rows=499000 loops=1)\n        -> Filter: ((Tree.p_id is not null) and <in_optimizer>(Tree.id,Tree.id in (select #5) is false))  (cost=100973 rows=903352) (actual time=1438..3213 rows=499000 loops=1)\n            -> Table scan on Tree  (cost=100973 rows=1e+6) (actual time=1.47..183 rows=1e+6 loops=1)\n            -> Select #5 (subquery in condition; run only once)\n                -> Filter: ((Tree.id = `<materialized_subquery>`.p_id))  (cost=191308..191308 rows=1) (actual time=0.00281..0.00281 rows=0.501 loops=1e+6)\n                    -> Limit: 1 row(s)  (cost=191308..191308 rows=1) (actual time=0.00268..0.00268 rows=0.501 loops=1e+6)\n                        -> Index lookup on <materialized_subquery> using <auto_distinct_key> (p_id=Tree.id)  (actual time=0.00256..0.00256 rows=0.501 loops=1e+6)\n                            -> Materialize with deduplication  (cost=191308..191308 rows=903352) (actual time=1436..1436 rows=501000 loops=1)\n                                -> Filter: (Tree.p_id is not null)  (cost=100973 rows=903352) (actual time=1.07..217 rows=999999 loops=1)\n                                    -> Table scan on Tree  (cost=100973 rows=1e+6) (actual time=1.07..153 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "02_case_correlated_exists",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "03_left_join_parent_set",
+          "status": "ok",
+          "median_s": 8.43348624699999,
+          "times_s": [
+            8.814769748000003,
+            8.43348624699999,
+            8.382226967000008
+          ],
+          "result_rows": 1000000,
+          "result_digest": "8b797cdb4e4821ab2e9875f0796222115b41e7e6",
+          "explain_analyze": "-> Nested loop left join  (cost=90.7e+9 rows=907e+9) (actual time=2396..4140 rows=1e+6 loops=1)\n    -> Table scan on t  (cost=100973 rows=1e+6) (actual time=1.63..199 rows=1e+6 loops=1)\n    -> Covering index lookup on par using <auto_key0> (p_id=t.id)  (cost=292938..292940 rows=10) (actual time=0.0037..0.00379 rows=0.501 loops=1e+6)\n        -> Materialize CTE parents  (cost=292938..292938 rows=903352) (actual time=2394..2394 rows=501000 loops=1)\n            -> Table scan on <temporary>  (cost=191308..202603 rows=903352) (actual time=1514..1622 rows=501000 loops=1)\n                -> Temporary table with deduplication  (cost=191308..191308 rows=903352) (actual time=1514..1514 rows=501000 loops=1)\n                    -> Filter: (Tree.p_id is not null)  (cost=100973 rows=903352) (actual time=1.46..230 rows=999999 loops=1)\n                        -> Table scan on Tree  (cost=100973 rows=1e+6) (actual time=1.46..167 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Tree": 1000000
+      },
+      "load_seconds": 8.848,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_union_three_passes",
+          "status": "ok",
+          "median_s": 8.401639597000042,
+          "times_s": [
+            8.178527121000002,
+            8.482957859999999,
+            8.401639597000042
+          ],
+          "result_rows": 1000000,
+          "result_digest": "8b797cdb4e4821ab2e9875f0796222115b41e7e6",
+          "explain_analyze": "-> Append  (cost=451660 rows=750053) (actual time=0.0167..4875 rows=1e+6 loops=1)\n    -> Stream results  (cost=1.1 rows=1) (actual time=0.0161..0.0186 rows=1 loops=1)\n        -> Filter: (Tree.p_id is null)  (cost=1.1 rows=1) (actual time=0.013..0.0154 rows=1 loops=1)\n            -> Covering index lookup on Tree using idx_tree_p_id (p_id=NULL)  (cost=1.1 rows=1) (actual time=0.0121..0.0144 rows=1 loops=1)\n    -> Stream results  (cost=351115 rows=250084) (actual time=1.03..1689 rows=500999 loops=1)\n        -> Nested loop inner join  (cost=351115 rows=250084) (actual time=1.03..1632 rows=500999 loops=1)\n            -> Remove duplicates from input sorted on idx_tree_p_id  (cost=51115 rows=500169) (actual time=1.02..280 rows=501000 loops=1)\n                -> Filter: (Tree.p_id is not null)  (cost=51115 rows=500169) (actual time=1.02..224 rows=999999 loops=1)\n                    -> Covering index scan on Tree using idx_tree_p_id  (cost=51115 rows=999936) (actual time=1.02..162 rows=1e+6 loops=1)\n            -> Filter: (Tree.p_id is not null)  (cost=249984 rows=0.5) (actual time=0.00246..0.00255 rows=1 loops=501000)\n                -> Single-row index lookup on Tree using PRIMARY (id=Tree.p_id)  (cost=249984 rows=1) (actual time=0.00233..0.00236 rows=1 loops=501000)\n    -> Stream results  (cost=100543 rows=499968) (actual time=902..3119 rows=499000 loops=1)\n        -> Filter: ((Tree.p_id is not null) and <in_optimizer>(Tree.id,Tree.id in (select #5) is false))  (cost=100543 rows=499968) (actual time=902..3047 rows=499000 loops=1)\n            -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=100543 rows=499968) (actual time=1.47..182 rows=999999 loops=1)\n            -> Select #5 (subquery in condition; run only once)\n                -> Filter: ((Tree.id = `<materialized_subquery>`.p_id))  (cost=150540..150540 rows=1) (actual time=0.00264..0.00264 rows=0.501 loops=1e+6)\n                    -> Limit: 1 row(s)  (cost=150540..150540 rows=1) (actual time=0.00251..0.00251 rows=0.501 loops=1e+6)\n                        -> Index lookup on <materialized_subquery> using <auto_distinct_key> (p_id=Tree.id)  (actual time=0.00239..0.00239 rows=0.501 loops=1e+6)\n                            -> Materialize with deduplication  (cost=150540..150540 rows=499968) (actual time=900..900 rows=501000 loops=1)\n                                -> Filter: (Tree.p_id is not null)  (cost=100543 rows=499968) (actual time=0.974..209 rows=999999 loops=1)\n                                    -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=100543 rows=499968) (actual time=0.973..147 rows=999999 loops=1)\n"
+        },
+        {
+          "solution": "02_case_correlated_exists",
+          "status": "ok",
+          "median_s": 7.2176520600000345,
+          "times_s": [
+            7.2176520600000345,
+            7.276045917000033,
+            7.203357439999991
+          ],
+          "result_rows": 1000000,
+          "result_digest": "8b797cdb4e4821ab2e9875f0796222115b41e7e6",
+          "explain_analyze": "-> Covering index scan on t using idx_tree_p_id  (cost=100594 rows=999936) (actual time=1.26..168 rows=1e+6 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Limit: 1 row(s)  (cost=1.2 rows=1) (actual time=0.00239..0.0024 rows=0.501 loops=999999)\n        -> Covering index lookup on c using idx_tree_p_id (p_id=t.id)  (cost=1.2 rows=2) (actual time=0.00227..0.00227 rows=0.501 loops=999999)\n"
+        },
+        {
+          "solution": "03_left_join_parent_set",
+          "status": "ok",
+          "median_s": 7.7407146400000215,
+          "times_s": [
+            7.786839510999982,
+            7.688732141000003,
+            7.7407146400000215
+          ],
+          "result_rows": 1000000,
+          "result_digest": "8b797cdb4e4821ab2e9875f0796222115b41e7e6",
+          "explain_analyze": "-> Nested loop left join  (cost=50e+9 rows=500e+9) (actual time=1021..3602 rows=1e+6 loops=1)\n    -> Covering index scan on t using idx_tree_p_id  (cost=100665 rows=999936) (actual time=1.24..186 rows=1e+6 loops=1)\n    -> Covering index lookup on par using <auto_key0> (p_id=t.id)  (cost=200537..200539 rows=10) (actual time=0.00317..0.00326 rows=0.501 loops=1e+6)\n        -> Materialize CTE parents  (cost=200537..200537 rows=499968) (actual time=1020..1020 rows=501000 loops=1)\n            -> Group (no aggregates)  (cost=150540 rows=499968) (actual time=1.18..288 rows=501000 loops=1)\n                -> Filter: (Tree.p_id is not null)  (cost=100543 rows=499968) (actual time=1.17..220 rows=999999 loops=1)\n                    -> Covering index range scan on Tree using idx_tree_p_id over (NULL < p_id)  (cost=100543 rows=499968) (actual time=1.17..157 rows=999999 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

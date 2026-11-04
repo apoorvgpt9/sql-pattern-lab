@@ -1,0 +1,336 @@
+{
+  "problem": "32-human-traffic-of-stadium",
+  "generated_at": "2026-11-04T15:15:27+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_triple_self_join",
+    "02_lag_lead_neighbours",
+    "03_id_minus_row_number"
+  ],
+  "optimal": "03_id_minus_row_number",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "mem_total": "8121092 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Stadium": 1000
+      },
+      "load_seconds": 0.02,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_triple_self_join",
+          "status": "ok",
+          "median_s": 0.18609611400000148,
+          "times_s": [
+            0.1954460369999964,
+            0.18609611400000148,
+            0.17899830500000036
+          ],
+          "result_rows": 578,
+          "result_digest": "fb636a83159b5444074b209eaf236aa23b195f4f",
+          "explain_analyze": "-> Sort: s1.visit_date  (actual time=224..224 rows=578 loops=1)\n    -> Table scan on <temporary>  (cost=30191..30471 rows=22185) (actual time=224..224 rows=578 loops=1)\n        -> Temporary table with deduplication  (cost=30191..30191 rows=22185) (actual time=224..224 rows=578 loops=1)\n            -> Filter: (((s2.id = (s1.id + 1)) and (s3.id = (s1.id + 2))) or ((s2.id = (s1.id - 1)) and (s3.id = (s1.id + 1))) or ((s2.id = (s1.id - 2)) and (s3.id = (s1.id - 1))))  (cost=27972 rows=22185) (actual time=57.5..223 rows=1020 loops=1)\n                -> Inner hash join (no condition)  (cost=27972 rows=22185) (actual time=56.5..97.7 rows=1e+6 loops=1)\n                    -> Filter: (s3.people >= 100)  (cost=0.00797 rows=90.3) (actual time=0.00399..0.417 rows=694 loops=1)\n                        -> Table scan on s3  (cost=0.00797 rows=1000) (actual time=0.0027..0.347 rows=1000 loops=1)\n                    -> Hash\n                        -> Filter: ((s2.id = (s1.id + 1)) or (s2.id = (s1.id - 1)) or (s2.id = (s1.id - 2)))  (cost=3180 rows=2719) (actual time=0.494..56.4 rows=1442 loops=1)\n                            -> Inner hash join (no condition)  (cost=3180 rows=2719) (actual time=0.384..17.5 rows=481636 loops=1)\n                                -> Filter: (s2.people >= 100)  (cost=0.233 rows=90.3) (actual time=0.00205..0.365 rows=694 loops=1)\n                                    -> Table scan on s2  (cost=0.233 rows=1000) (actual time=0.00152..0.305 rows=1000 loops=1)\n                                -> Hash\n                                    -> Filter: (s1.people >= 100)  (cost=101 rows=333) (actual time=0.0125..0.342 rows=694 loops=1)\n                                        -> Table scan on s1  (cost=101 rows=1000) (actual time=0.0101..0.288 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_lag_lead_neighbours",
+          "status": "ok",
+          "median_s": 0.004581854999997859,
+          "times_s": [
+            0.004681359999999302,
+            0.004581854999997859,
+            0.004505422000001147
+          ],
+          "result_rows": 578,
+          "result_digest": "fb636a83159b5444074b209eaf236aa23b195f4f",
+          "explain_analyze": "-> Sort: busy.visit_date  (cost=2.6..2.6 rows=0) (actual time=1.81..1.84 rows=578 loops=1)\n    -> Filter: (((busy.next1 = (busy.id + 1)) and (busy.next2 = (busy.id + 2))) or ((busy.prev1 = (busy.id - 1)) and (busy.next1 = (busy.id + 1))) or ((busy.prev2 = (busy.id - 2)) and (busy.prev1 = (busy.id - 1))))  (cost=2.5..2.5 rows=0) (actual time=1.61..1.74 rows=578 loops=1)\n        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=1.61..1.66 rows=694 loops=1)\n            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=1.61..1.61 rows=694 loops=1)\n                -> Window aggregate with buffering: lag(Stadium.id,2) OVER w, lag(Stadium.id,1) OVER w, lead(Stadium.id,1) OVER w, lead(Stadium.id,2) OVER w  (actual time=0.609..1.51 rows=694 loops=1)\n                    -> Sort: Stadium.id  (cost=101 rows=1000) (actual time=0.417..0.441 rows=694 loops=1)\n                        -> Filter: (Stadium.people >= 100)  (cost=101 rows=1000) (actual time=0.0113..0.345 rows=694 loops=1)\n                            -> Table scan on Stadium  (cost=101 rows=1000) (actual time=0.00909..0.292 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_id_minus_row_number",
+          "status": "ok",
+          "median_s": 0.0038996599999947534,
+          "times_s": [
+            0.0038996599999947534,
+            0.0039332369999982575,
+            0.003894999999999982
+          ],
+          "result_rows": 578,
+          "result_digest": "fb636a83159b5444074b209eaf236aa23b195f4f",
+          "explain_analyze": "-> Sort: sized.visit_date  (cost=2.6..2.6 rows=0) (actual time=1.34..1.36 rows=578 loops=1)\n    -> Filter: (sized.island_size >= 3)  (cost=2.5..2.5 rows=0) (actual time=1.21..1.29 rows=578 loops=1)\n        -> Table scan on sized  (cost=2.5..2.5 rows=0) (actual time=1.21..1.26 rows=694 loops=1)\n            -> Materialize CTE sized  (cost=0..0 rows=0) (actual time=1.21..1.21 rows=694 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY busy.island )   (actual time=0.748..1.13 rows=694 loops=1)\n                    -> Sort: busy.island  (cost=2.6..2.6 rows=0) (actual time=0.743..0.77 rows=694 loops=1)\n                        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=0.63..0.677 rows=694 loops=1)\n                            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=0.629..0.629 rows=694 loops=1)\n                                -> Window aggregate: row_number() OVER (ORDER BY Stadium.id )   (actual time=0.42..0.555 rows=694 loops=1)\n                                    -> Sort: Stadium.id  (cost=101 rows=1000) (actual time=0.417..0.441 rows=694 loops=1)\n                                        -> Filter: (Stadium.people >= 100)  (cost=101 rows=1000) (actual time=0.0108..0.345 rows=694 loops=1)\n                                            -> Table scan on Stadium  (cost=101 rows=1000) (actual time=0.00858..0.291 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Stadium": 1000
+      },
+      "load_seconds": 0.02,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_triple_self_join",
+          "status": "ok",
+          "median_s": 0.009878626999999085,
+          "times_s": [
+            0.01092470200000406,
+            0.009878626999999085,
+            0.009717094999999176
+          ],
+          "result_rows": 578,
+          "result_digest": "fb636a83159b5444074b209eaf236aa23b195f4f",
+          "explain_analyze": "-> Sort: s1.visit_date  (actual time=8.08..8.1 rows=578 loops=1)\n    -> Table scan on <temporary>  (cost=70082..70461 rows=30105) (actual time=7.99..8.03 rows=578 loops=1)\n        -> Temporary table with deduplication  (cost=70082..70082 rows=30105) (actual time=7.99..7.99 rows=578 loops=1)\n            -> Nested loop inner join  (cost=67071 rows=30105) (actual time=0.0834..7.75 rows=1020 loops=1)\n                -> Nested loop inner join  (cost=33504 rows=30105) (actual time=0.0489..2.88 rows=1442 loops=1)\n                    -> Filter: (s1.people >= 100)  (cost=103 rows=333) (actual time=0.0332..0.238 rows=694 loops=1)\n                        -> Table scan on s1  (cost=103 rows=1000) (actual time=0.0319..0.177 rows=1000 loops=1)\n                    -> Filter: (((s2.id = (s1.id + 1)) or (s2.id = (s1.id - 1)) or (s2.id = (s1.id - 2))) and (s2.people >= 100))  (cost=0.239 rows=90.3) (actual time=0.00257..0.00364 rows=2.08 loops=694)\n                        -> Index range scan on s2 (re-planned for each iteration)  (cost=0.239 rows=1000) (actual time=0.00206..0.00315 rows=2.91 loops=694)\n                -> Limit: 1 row(s)  (cost=0.0082 rows=1) (actual time=0.00322..0.00323 rows=0.707 loops=1442)\n                    -> Filter: ((((s2.id = (s1.id + 1)) and (s3.id = (s1.id + 2))) or ((s2.id = (s1.id - 1)) and (s3.id = (s1.id + 1))) or ((s2.id = (s1.id - 2)) and (s3.id = (s1.id - 1)))) and (s3.people >= 100))  (cost=0.0082 rows=90.3) (actual time=0.00312..0.00312 rows=0.707 loops=1442)\n                        -> Index range scan on s3 (re-planned for each iteration)  (cost=0.0082 rows=1000) (actual time=0.00207..0.00268 rows=2.24 loops=1442)\n"
+        },
+        {
+          "solution": "02_lag_lead_neighbours",
+          "status": "ok",
+          "median_s": 0.004378262999999549,
+          "times_s": [
+            0.004378262999999549,
+            0.004365253999999652,
+            0.004413485000000605
+          ],
+          "result_rows": 578,
+          "result_digest": "fb636a83159b5444074b209eaf236aa23b195f4f",
+          "explain_analyze": "-> Sort: busy.visit_date  (cost=2.6..2.6 rows=0) (actual time=1.57..1.59 rows=578 loops=1)\n    -> Filter: (((busy.next1 = (busy.id + 1)) and (busy.next2 = (busy.id + 2))) or ((busy.prev1 = (busy.id - 1)) and (busy.next1 = (busy.id + 1))) or ((busy.prev2 = (busy.id - 2)) and (busy.prev1 = (busy.id - 1))))  (cost=2.5..2.5 rows=0) (actual time=1.38..1.51 rows=578 loops=1)\n        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=1.38..1.43 rows=694 loops=1)\n            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=1.38..1.38 rows=694 loops=1)\n                -> Window aggregate with buffering: lag(Stadium.id,2) OVER w, lag(Stadium.id,1) OVER w, lead(Stadium.id,1) OVER w, lead(Stadium.id,2) OVER w  (actual time=0.439..1.27 rows=694 loops=1)\n                    -> Sort: Stadium.id  (cost=103 rows=1000) (actual time=0.246..0.269 rows=694 loops=1)\n                        -> Filter: (Stadium.people >= 100)  (cost=103 rows=1000) (actual time=0.0341..0.183 rows=694 loops=1)\n                            -> Table scan on Stadium  (cost=103 rows=1000) (actual time=0.0328..0.132 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_id_minus_row_number",
+          "status": "ok",
+          "median_s": 0.003799569000001668,
+          "times_s": [
+            0.003799569000001668,
+            0.003803605000001653,
+            0.0036821610000004057
+          ],
+          "result_rows": 578,
+          "result_digest": "fb636a83159b5444074b209eaf236aa23b195f4f",
+          "explain_analyze": "-> Sort: sized.visit_date  (cost=2.6..2.6 rows=0) (actual time=1.17..1.19 rows=578 loops=1)\n    -> Filter: (sized.island_size >= 3)  (cost=2.5..2.5 rows=0) (actual time=1.04..1.12 rows=578 loops=1)\n        -> Table scan on sized  (cost=2.5..2.5 rows=0) (actual time=1.04..1.08 rows=694 loops=1)\n            -> Materialize CTE sized  (cost=0..0 rows=0) (actual time=1.04..1.04 rows=694 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY busy.island )   (actual time=0.581..0.956 rows=694 loops=1)\n                    -> Sort: busy.island  (cost=2.6..2.6 rows=0) (actual time=0.576..0.602 rows=694 loops=1)\n                        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=0.466..0.513 rows=694 loops=1)\n                            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=0.465..0.465 rows=694 loops=1)\n                                -> Window aggregate: row_number() OVER (ORDER BY Stadium.id )   (actual time=0.246..0.388 rows=694 loops=1)\n                                    -> Sort: Stadium.id  (cost=103 rows=1000) (actual time=0.243..0.266 rows=694 loops=1)\n                                        -> Filter: (Stadium.people >= 100)  (cost=103 rows=1000) (actual time=0.0329..0.18 rows=694 loops=1)\n                                            -> Table scan on Stadium  (cost=103 rows=1000) (actual time=0.0317..0.129 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Stadium": 100000
+      },
+      "load_seconds": 0.824,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_triple_self_join",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_lag_lead_neighbours",
+          "status": "ok",
+          "median_s": 0.4254147099999983,
+          "times_s": [
+            0.4264168349999977,
+            0.42021164499999486,
+            0.4254147099999983
+          ],
+          "result_rows": 61169,
+          "result_digest": "5c4eeec434b905e07a56ec1447e67d73d99df48b",
+          "explain_analyze": "-> Sort: busy.visit_date  (cost=2.6..2.6 rows=0) (actual time=189..192 rows=61169 loops=1)\n    -> Filter: (((busy.next1 = (busy.id + 1)) and (busy.next2 = (busy.id + 2))) or ((busy.prev1 = (busy.id - 1)) and (busy.next1 = (busy.id + 1))) or ((busy.prev2 = (busy.id - 2)) and (busy.prev1 = (busy.id - 1))))  (cost=2.5..2.5 rows=0) (actual time=164..177 rows=61169 loops=1)\n        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=164..169 rows=71589 loops=1)\n            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=164..164 rows=71589 loops=1)\n                -> Window aggregate with buffering: lag(Stadium.id,2) OVER w, lag(Stadium.id,1) OVER w, lead(Stadium.id,1) OVER w, lead(Stadium.id,2) OVER w  (actual time=62.7..153 rows=71589 loops=1)\n                    -> Sort: Stadium.id  (cost=9847 rows=97749) (actual time=43.5..46.1 rows=71589 loops=1)\n                        -> Filter: (Stadium.people >= 100)  (cost=9847 rows=97749) (actual time=0.0298..33.6 rows=71589 loops=1)\n                            -> Table scan on Stadium  (cost=9847 rows=97749) (actual time=0.0251..28.3 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_id_minus_row_number",
+          "status": "ok",
+          "median_s": 0.3613481720000067,
+          "times_s": [
+            0.3659133689999976,
+            0.3599029499999915,
+            0.3613481720000067
+          ],
+          "result_rows": 61169,
+          "result_digest": "5c4eeec434b905e07a56ec1447e67d73d99df48b",
+          "explain_analyze": "-> Sort: sized.visit_date  (cost=2.6..2.6 rows=0) (actual time=139..141 rows=61169 loops=1)\n    -> Filter: (sized.island_size >= 3)  (cost=2.5..2.5 rows=0) (actual time=123..132 rows=61169 loops=1)\n        -> Table scan on sized  (cost=2.5..2.5 rows=0) (actual time=123..128 rows=71589 loops=1)\n            -> Materialize CTE sized  (cost=0..0 rows=0) (actual time=123..123 rows=71589 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY busy.island )   (actual time=79.7..115 rows=71589 loops=1)\n                    -> Sort: busy.island  (cost=2.6..2.6 rows=0) (actual time=79.7..82.7 rows=71589 loops=1)\n                        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=64.8..69.7 rows=71589 loops=1)\n                            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=64.8..64.8 rows=71589 loops=1)\n                                -> Window aggregate: row_number() OVER (ORDER BY Stadium.id )   (actual time=43.5..57.4 rows=71589 loops=1)\n                                    -> Sort: Stadium.id  (cost=9847 rows=97749) (actual time=43.5..46 rows=71589 loops=1)\n                                        -> Filter: (Stadium.people >= 100)  (cost=9847 rows=97749) (actual time=0.0308..33.4 rows=71589 loops=1)\n                                            -> Table scan on Stadium  (cost=9847 rows=97749) (actual time=0.0252..28.1 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Stadium": 100000
+      },
+      "load_seconds": 0.824,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_triple_self_join",
+          "status": "ok",
+          "median_s": 0.9499097799999987,
+          "times_s": [
+            0.9499097799999987,
+            0.950724486999988,
+            0.9476989519999961
+          ],
+          "result_rows": 61169,
+          "result_digest": "5c4eeec434b905e07a56ec1447e67d73d99df48b",
+          "explain_analyze": "-> Sort: s1.visit_date  (actual time=846..848 rows=61169 loops=1)\n    -> Table scan on <temporary>  (cost=869e+6..873e+6 rows=302e+6) (actual time=835..839 rows=61169 loops=1)\n        -> Temporary table with deduplication  (cost=869e+6..869e+6 rows=302e+6) (actual time=835..835 rows=61169 loops=1)\n            -> Nested loop inner join  (cost=839e+6 rows=302e+6) (actual time=0.781..797 rows=113721 loops=1)\n                -> Nested loop inner join  (cost=335e+6 rows=302e+6) (actual time=0.744..283 rows=154866 loops=1)\n                    -> Filter: (s1.people >= 100)  (cost=10312 rows=33409) (actual time=0.715..24 rows=71589 loops=1)\n                        -> Table scan on s1  (cost=10312 rows=100238) (actual time=0.712..17.4 rows=100000 loops=1)\n                    -> Filter: (((s2.id = (s1.id + 1)) or (s2.id = (s1.id - 1)) or (s2.id = (s1.id - 2))) and (s2.people >= 100))  (cost=0.555 rows=9054) (actual time=0.0024..0.00344 rows=2.16 loops=71589)\n                        -> Index range scan on s2 (re-planned for each iteration)  (cost=0.555 rows=100238) (actual time=0.00194..0.00295 rows=2.94 loops=71589)\n                -> Limit: 1 row(s)  (cost=0.558 rows=1) (actual time=0.00315..0.00317 rows=0.734 loops=154866)\n                    -> Filter: ((((s2.id = (s1.id + 1)) and (s3.id = (s1.id + 2))) or ((s2.id = (s1.id - 1)) and (s3.id = (s1.id + 1))) or ((s2.id = (s1.id - 2)) and (s3.id = (s1.id - 1)))) and (s3.people >= 100))  (cost=0.558 rows=9054) (actual time=0.00307..0.00307 rows=0.734 loops=154866)\n                        -> Index range scan on s3 (re-planned for each iteration)  (cost=0.558 rows=100238) (actual time=0.00203..0.00263 rows=2.23 loops=154866)\n"
+        },
+        {
+          "solution": "02_lag_lead_neighbours",
+          "status": "ok",
+          "median_s": 0.3989662330000101,
+          "times_s": [
+            0.3989662330000101,
+            0.3977532889999935,
+            0.40365675700000736
+          ],
+          "result_rows": 61169,
+          "result_digest": "5c4eeec434b905e07a56ec1447e67d73d99df48b",
+          "explain_analyze": "-> Sort: busy.visit_date  (cost=2.6..2.6 rows=0) (actual time=166..169 rows=61169 loops=1)\n    -> Filter: (((busy.next1 = (busy.id + 1)) and (busy.next2 = (busy.id + 2))) or ((busy.prev1 = (busy.id - 1)) and (busy.next1 = (busy.id + 1))) or ((busy.prev2 = (busy.id - 2)) and (busy.prev1 = (busy.id - 1))))  (cost=2.5..2.5 rows=0) (actual time=141..155 rows=61169 loops=1)\n        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=141..146 rows=71589 loops=1)\n            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=141..141 rows=71589 loops=1)\n                -> Window aggregate with buffering: lag(Stadium.id,2) OVER w, lag(Stadium.id,1) OVER w, lead(Stadium.id,1) OVER w, lead(Stadium.id,2) OVER w  (actual time=44.3..130 rows=71589 loops=1)\n                    -> Sort: Stadium.id  (cost=10312 rows=100238) (actual time=25.5..28 rows=71589 loops=1)\n                        -> Filter: (Stadium.people >= 100)  (cost=10312 rows=100238) (actual time=0.733..16.8 rows=71589 loops=1)\n                            -> Table scan on Stadium  (cost=10312 rows=100238) (actual time=0.73..11.7 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_id_minus_row_number",
+          "status": "ok",
+          "median_s": 0.34446978799999783,
+          "times_s": [
+            0.34656879499999604,
+            0.3425063880000039,
+            0.34446978799999783
+          ],
+          "result_rows": 61169,
+          "result_digest": "5c4eeec434b905e07a56ec1447e67d73d99df48b",
+          "explain_analyze": "-> Sort: sized.visit_date  (cost=2.6..2.6 rows=0) (actual time=123..126 rows=61169 loops=1)\n    -> Filter: (sized.island_size >= 3)  (cost=2.5..2.5 rows=0) (actual time=107..116 rows=61169 loops=1)\n        -> Table scan on sized  (cost=2.5..2.5 rows=0) (actual time=107..112 rows=71589 loops=1)\n            -> Materialize CTE sized  (cost=0..0 rows=0) (actual time=107..107 rows=71589 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY busy.island )   (actual time=63.5..99.3 rows=71589 loops=1)\n                    -> Sort: busy.island  (cost=2.6..2.6 rows=0) (actual time=63.5..66.2 rows=71589 loops=1)\n                        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=49.3..54.3 rows=71589 loops=1)\n                            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=49.2..49.2 rows=71589 loops=1)\n                                -> Window aggregate: row_number() OVER (ORDER BY Stadium.id )   (actual time=26.6..41.3 rows=71589 loops=1)\n                                    -> Sort: Stadium.id  (cost=10312 rows=100238) (actual time=26.6..29.2 rows=71589 loops=1)\n                                        -> Filter: (Stadium.people >= 100)  (cost=10312 rows=100238) (actual time=0.722..17.5 rows=71589 loops=1)\n                                            -> Table scan on Stadium  (cost=10312 rows=100238) (actual time=0.719..12.2 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Stadium": 1000000
+      },
+      "load_seconds": 6.944,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_triple_self_join",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_lag_lead_neighbours",
+          "status": "ok",
+          "median_s": 10.857582408000013,
+          "times_s": [
+            10.876149558999998,
+            10.857582408000013,
+            10.800258500000012
+          ],
+          "result_rows": 608269,
+          "result_digest": "6e22a16cac8ee382c55c5218688f2fdd028ea24c",
+          "explain_analyze": "-> Sort: busy.visit_date  (cost=2.6..2.6 rows=0) (actual time=8560..8591 rows=608269 loops=1)\n    -> Filter: (((busy.next1 = (busy.id + 1)) and (busy.next2 = (busy.id + 2))) or ((busy.prev1 = (busy.id - 1)) and (busy.next1 = (busy.id + 1))) or ((busy.prev2 = (busy.id - 2)) and (busy.prev1 = (busy.id - 1))))  (cost=2.5..2.5 rows=0) (actual time=8181..8422 rows=608269 loops=1)\n        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=8181..8335 rows=714524 loops=1)\n            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=8181..8181 rows=714524 loops=1)\n                -> Window aggregate with buffering: lag(Stadium.id,2) OVER w, lag(Stadium.id,1) OVER w, lead(Stadium.id,1) OVER w, lead(Stadium.id,2) OVER w  (actual time=843..7838 rows=714524 loops=1)\n                    -> Sort: Stadium.id  (cost=100622 rows=998103) (actual time=460..487 rows=714524 loops=1)\n                        -> Filter: (Stadium.people >= 100)  (cost=100622 rows=998103) (actual time=0.0324..346 rows=714524 loops=1)\n                            -> Table scan on Stadium  (cost=100622 rows=998103) (actual time=0.0275..291 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_id_minus_row_number",
+          "status": "ok",
+          "median_s": 5.0603899660000025,
+          "times_s": [
+            5.0603899660000025,
+            5.1018226740000046,
+            4.998217703999984
+          ],
+          "result_rows": 608269,
+          "result_digest": "6e22a16cac8ee382c55c5218688f2fdd028ea24c",
+          "explain_analyze": "-> Sort: sized.visit_date  (cost=2.6..2.6 rows=0) (actual time=2774..2796 rows=608269 loops=1)\n    -> Filter: (sized.island_size >= 3)  (cost=2.5..2.5 rows=0) (actual time=2520..2680 rows=608269 loops=1)\n        -> Table scan on sized  (cost=2.5..2.5 rows=0) (actual time=2520..2643 rows=714524 loops=1)\n            -> Materialize CTE sized  (cost=0..0 rows=0) (actual time=2520..2520 rows=714524 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY busy.island )   (actual time=1088..2269 rows=714524 loops=1)\n                    -> Sort: busy.island  (cost=2.6..2.6 rows=0) (actual time=1088..1122 rows=714524 loops=1)\n                        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=832..952 rows=714524 loops=1)\n                            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=832..832 rows=714524 loops=1)\n                                -> Window aggregate: row_number() OVER (ORDER BY Stadium.id )   (actual time=457..599 rows=714524 loops=1)\n                                    -> Sort: Stadium.id  (cost=100622 rows=998103) (actual time=457..483 rows=714524 loops=1)\n                                        -> Filter: (Stadium.people >= 100)  (cost=100622 rows=998103) (actual time=0.0706..343 rows=714524 loops=1)\n                                            -> Table scan on Stadium  (cost=100622 rows=998103) (actual time=0.0661..290 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Stadium": 1000000
+      },
+      "load_seconds": 6.944,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_triple_self_join",
+          "status": "ok",
+          "median_s": 13.227040784999986,
+          "times_s": [
+            13.227040784999986,
+            13.124723451000023,
+            13.328207295000027
+          ],
+          "result_rows": 608269,
+          "result_digest": "6e22a16cac8ee382c55c5218688f2fdd028ea24c",
+          "explain_analyze": "-> Sort: s1.visit_date  (actual time=11903..11924 rows=608269 loops=1)\n    -> Table scan on <temporary>  (cost=235e+9..235e+9 rows=30e+9) (actual time=11730..11819 rows=608269 loops=1)\n        -> Temporary table with deduplication  (cost=235e+9..235e+9 rows=30e+9) (actual time=11730..11730 rows=608269 loops=1)\n            -> Nested loop inner join  (cost=232e+9 rows=30e+9) (actual time=0.882..10710 rows=1.13e+6 loops=1)\n                -> Nested loop inner join  (cost=33.2e+9 rows=30e+9) (actual time=0.843..3640 rows=1.54e+6 loops=1)\n                    -> Filter: (s1.people >= 100)  (cost=102168 rows=332732) (actual time=0.799..241 rows=714524 loops=1)\n                        -> Table scan on s1  (cost=102168 rows=998295) (actual time=0.796..177 rows=1e+6 loops=1)\n                    -> Filter: (((s2.id = (s1.id + 1)) or (s2.id = (s1.id - 1)) or (s2.id = (s1.id - 2))) and (s2.people >= 100))  (cost=3.39 rows=90170) (actual time=0.00315..0.00458 rows=2.16 loops=714524)\n                        -> Index range scan on s2 (re-planned for each iteration)  (cost=3.39 rows=998295) (actual time=0.00228..0.00407 rows=2.94 loops=714524)\n                -> Limit: 1 row(s)  (cost=5.52 rows=1) (actual time=0.00442..0.00443 rows=0.732 loops=1.54e+6)\n                    -> Filter: ((((s2.id = (s1.id + 1)) and (s3.id = (s1.id + 2))) or ((s2.id = (s1.id - 1)) and (s3.id = (s1.id + 1))) or ((s2.id = (s1.id - 2)) and (s3.id = (s1.id - 1)))) and (s3.people >= 100))  (cost=5.52 rows=90170) (actual time=0.00433..0.00433 rows=0.732 loops=1.54e+6)\n                        -> Index range scan on s3 (re-planned for each iteration)  (cost=5.52 rows=998295) (actual time=0.00232..0.00388 rows=2.24 loops=1.54e+6)\n"
+        },
+        {
+          "solution": "02_lag_lead_neighbours",
+          "status": "ok",
+          "median_s": 10.702140139999983,
+          "times_s": [
+            10.702140139999983,
+            11.151492294000036,
+            10.68793275500002
+          ],
+          "result_rows": 608269,
+          "result_digest": "6e22a16cac8ee382c55c5218688f2fdd028ea24c",
+          "explain_analyze": "-> Sort: busy.visit_date  (cost=2.6..2.6 rows=0) (actual time=8278..8307 rows=608269 loops=1)\n    -> Filter: (((busy.next1 = (busy.id + 1)) and (busy.next2 = (busy.id + 2))) or ((busy.prev1 = (busy.id - 1)) and (busy.next1 = (busy.id + 1))) or ((busy.prev2 = (busy.id - 2)) and (busy.prev1 = (busy.id - 1))))  (cost=2.5..2.5 rows=0) (actual time=7894..8138 rows=608269 loops=1)\n        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=7894..8050 rows=714524 loops=1)\n            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=7894..7894 rows=714524 loops=1)\n                -> Window aggregate with buffering: lag(Stadium.id,2) OVER w, lag(Stadium.id,1) OVER w, lead(Stadium.id,1) OVER w, lead(Stadium.id,2) OVER w  (actual time=666..7550 rows=714524 loops=1)\n                    -> Sort: Stadium.id  (cost=102168 rows=998295) (actual time=274..301 rows=714524 loops=1)\n                        -> Filter: (Stadium.people >= 100)  (cost=102168 rows=998295) (actual time=0.941..173 rows=714524 loops=1)\n                            -> Table scan on Stadium  (cost=102168 rows=998295) (actual time=0.938..121 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_id_minus_row_number",
+          "status": "ok",
+          "median_s": 4.854557594000028,
+          "times_s": [
+            4.851394491999997,
+            4.854557594000028,
+            4.865196575000027
+          ],
+          "result_rows": 608269,
+          "result_digest": "6e22a16cac8ee382c55c5218688f2fdd028ea24c",
+          "explain_analyze": "-> Sort: sized.visit_date  (cost=2.6..2.6 rows=0) (actual time=2595..2618 rows=608269 loops=1)\n    -> Filter: (sized.island_size >= 3)  (cost=2.5..2.5 rows=0) (actual time=2338..2500 rows=608269 loops=1)\n        -> Table scan on sized  (cost=2.5..2.5 rows=0) (actual time=2338..2463 rows=714524 loops=1)\n            -> Materialize CTE sized  (cost=0..0 rows=0) (actual time=2338..2338 rows=714524 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY busy.island )   (actual time=889..2086 rows=714524 loops=1)\n                    -> Sort: busy.island  (cost=2.6..2.6 rows=0) (actual time=889..919 rows=714524 loops=1)\n                        -> Table scan on busy  (cost=2.5..2.5 rows=0) (actual time=654..778 rows=714524 loops=1)\n                            -> Materialize CTE busy  (cost=0..0 rows=0) (actual time=654..654 rows=714524 loops=1)\n                                -> Window aggregate: row_number() OVER (ORDER BY Stadium.id )   (actual time=275..419 rows=714524 loops=1)\n                                    -> Sort: Stadium.id  (cost=102168 rows=998295) (actual time=274..301 rows=714524 loops=1)\n                                        -> Filter: (Stadium.people >= 100)  (cost=102168 rows=998295) (actual time=0.912..173 rows=714524 loops=1)\n                                            -> Table scan on Stadium  (cost=102168 rows=998295) (actual time=0.909..122 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

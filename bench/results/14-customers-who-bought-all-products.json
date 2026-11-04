@@ -1,0 +1,342 @@
+{
+  "problem": "14-customers-who-bought-all-products",
+  "generated_at": "2026-11-04T15:30:51+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_double_not_exists",
+    "02_grid_with_holes",
+    "03_count_distinct_equals_total"
+  ],
+  "optimal": "03_count_distinct_equals_total",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "mem_total": "8121092 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Product": 12,
+        "Customer": 1000
+      },
+      "load_seconds": 0.037,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "ok",
+          "median_s": 0.08300934700014295,
+          "times_s": [
+            0.08094738600016171,
+            0.08799843799988594,
+            0.08300934700014295
+          ],
+          "result_rows": 12,
+          "result_digest": "53378336b019dd4f2a467f515eae4878ab9c770d",
+          "explain_analyze": "-> Filter: exists(select #3) is false  (cost=316..115 rows=1000) (actual time=8.73..101 rows=12 loops=1)\n    -> Table scan on c  (cost=316..331 rows=1000) (actual time=0.587..0.603 rows=156 loops=1)\n        -> Materialize  (cost=316..316 rows=1000) (actual time=0.587..0.587 rows=156 loops=1)\n            -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.567..0.577 rows=156 loops=1)\n                -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.566..0.566 rows=156 loops=1)\n                    -> Table scan on Customer  (cost=101 rows=1000) (actual time=0.00997..0.399 rows=1000 loops=1)\n    -> Select #3 (subquery in condition; dependent)\n        -> Nested loop antijoin  (cost=1203 rows=12000) (actual time=0.637..0.642 rows=7.19 loops=156)\n            -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.00167..0.00303 rows=12 loops=156)\n            -> Single-row index lookup on <subquery4> using <auto_distinct_key> (customer_id=c.customer_id, product_key=p.product_key)  (cost=201..201 rows=1) (actual time=0.0531..0.0531 rows=0.401 loops=1872)\n                -> Materialize with deduplication  (cost=201..201 rows=1000) (actual time=0.634..0.634 rows=751 loops=156)\n                    -> Filter: ((x.customer_id is not null) and (x.product_key is not null))  (cost=101 rows=1000) (actual time=0.00107..0.453 rows=995 loops=156)\n                        -> Table scan on x  (cost=101 rows=1000) (actual time=935e-6..0.394 rows=1000 loops=156)\n"
+        },
+        {
+          "solution": "02_grid_with_holes",
+          "status": "ok",
+          "median_s": 0.003216173000055278,
+          "times_s": [
+            0.003216173000055278,
+            0.003246190000027127,
+            0.003100580999898739
+          ],
+          "result_rows": 12,
+          "result_digest": "53378336b019dd4f2a467f515eae4878ab9c770d",
+          "explain_analyze": "-> Filter: (`count(b.product_key)` = `count(0)`)  (actual time=3.19..3.21 rows=12 loops=1)\n    -> Table scan on <temporary>  (actual time=3.19..3.2 rows=156 loops=1)\n        -> Aggregate using temporary table  (actual time=3.19..3.19 rows=156 loops=1)\n            -> Nested loop left join  (cost=1.23e+6 rows=12e+6) (actual time=1.51..2.75 rows=1872 loops=1)\n                -> Inner hash join (no condition)  (cost=1216 rows=12000) (actual time=0.584..0.664 rows=1872 loops=1)\n                    -> Table scan on c  (cost=316..331 rows=1000) (actual time=0.568..0.579 rows=156 loops=1)\n                        -> Materialize  (cost=316..316 rows=1000) (actual time=0.568..0.568 rows=156 loops=1)\n                            -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.544..0.557 rows=156 loops=1)\n                                -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.543..0.543 rows=156 loops=1)\n                                    -> Table scan on Customer  (cost=101 rows=1000) (actual time=0.0027..0.393 rows=1000 loops=1)\n                    -> Hash\n                        -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.00835..0.0104 rows=12 loops=1)\n                -> Covering index lookup on b using <auto_key0> (customer_id=c.customer_id, product_key=p.product_key)  (cost=316..319 rows=10) (actual time=962e-6..0.00101 rows=0.401 loops=1872)\n                    -> Materialize CTE bought  (cost=316..316 rows=1000) (actual time=0.92..0.92 rows=756 loops=1)\n                        -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.587..0.635 rows=756 loops=1)\n                            -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.587..0.587 rows=756 loops=1)\n                                -> Table scan on Customer  (cost=101 rows=1000) (actual time=0.00174..0.4 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_count_distinct_equals_total",
+          "status": "ok",
+          "median_s": 0.001371059999883073,
+          "times_s": [
+            0.0013757350000105362,
+            0.001371059999883073,
+            0.001314585000045554
+          ],
+          "result_rows": 12,
+          "result_digest": "53378336b019dd4f2a467f515eae4878ab9c770d",
+          "explain_analyze": "-> Filter: (count(distinct Customer.product_key) = (select #2))  (cost=201 rows=31.6) (actual time=0.73..0.85 rows=12 loops=1)\n    -> Group aggregate: count(distinct Customer.product_key)  (cost=201 rows=31.6) (actual time=0.465..0.593 rows=156 loops=1)\n        -> Sort: Customer.customer_id  (cost=101 rows=1000) (actual time=0.462..0.49 rows=1000 loops=1)\n            -> Table scan on Customer  (cost=101 rows=1000) (actual time=0.00916..0.353 rows=1000 loops=1)\n    -> Select #2 (subquery in condition; run only once)\n        -> Count rows in Product  (actual time=0.24..0.24 rows=1 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Product": 12,
+        "Customer": 1000
+      },
+      "load_seconds": 0.037,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "ok",
+          "median_s": 0.0026248700000905956,
+          "times_s": [
+            0.0026248700000905956,
+            0.002643471000055797,
+            0.0025397060001068894
+          ],
+          "result_rows": 12,
+          "result_digest": "53378336b019dd4f2a467f515eae4878ab9c770d",
+          "explain_analyze": "-> Filter: exists(select #3) is false  (cost=63.8..20.2 rows=157) (actual time=0.433..2.42 rows=12 loops=1)\n    -> Table scan on c  (cost=64.1..68.5 rows=157) (actual time=0.265..0.278 rows=156 loops=1)\n        -> Materialize  (cost=64.1..64.1 rows=157) (actual time=0.264..0.264 rows=156 loops=1)\n            -> Covering index skip scan for deduplication on Customer using idx_customer_cust_prod  (cost=48.4 rows=157) (actual time=0.0101..0.251 rows=156 loops=1)\n    -> Select #3 (subquery in condition; dependent)\n        -> Nested loop antijoin  (cost=10.3 rows=76.9) (actual time=0.00877..0.013 rows=7.19 loops=156)\n            -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.00148..0.00277 rows=12 loops=156)\n            -> Single-row index lookup on <subquery4> using <auto_distinct_key> (customer_id=c.customer_id, product_key=p.product_key)  (cost=2.12..2.12 rows=1) (actual time=766e-6..766e-6 rows=0.401 loops=1872)\n                -> Materialize with deduplication  (cost=1.91..1.91 rows=6.41) (actual time=0.00597..0.00597 rows=4.81 loops=156)\n                    -> Filter: ((x.customer_id is not null) and (x.product_key is not null))  (cost=1.27 rows=6.41) (actual time=0.00199..0.00484 rows=6.38 loops=156)\n                        -> Covering index lookup on x using idx_customer_cust_prod (customer_id=c.customer_id)  (cost=1.27 rows=6.41) (actual time=0.00187..0.00439 rows=6.41 loops=156)\n"
+        },
+        {
+          "solution": "02_grid_with_holes",
+          "status": "ok",
+          "median_s": 0.002890969999953086,
+          "times_s": [
+            0.00288614700002654,
+            0.002890969999953086,
+            0.002903837999838288
+          ],
+          "result_rows": 12,
+          "result_digest": "53378336b019dd4f2a467f515eae4878ab9c770d",
+          "explain_analyze": "-> Filter: (`count(b.product_key)` = `count(0)`)  (actual time=2.82..2.83 rows=12 loops=1)\n    -> Table scan on <temporary>  (actual time=2.82..2.82 rows=156 loops=1)\n        -> Aggregate using temporary table  (actual time=2.81..2.81 rows=156 loops=1)\n            -> Nested loop left join  (cost=147335 rows=1.42e+6) (actual time=1.13..2.37 rows=1872 loops=1)\n                -> Inner hash join (no condition)  (cost=194 rows=1884) (actual time=0.272..0.361 rows=1872 loops=1)\n                    -> Table scan on c  (cost=64.1..68.5 rows=157) (actual time=0.257..0.268 rows=156 loops=1)\n                        -> Materialize  (cost=64.1..64.1 rows=157) (actual time=0.256..0.256 rows=156 loops=1)\n                            -> Covering index skip scan for deduplication on Customer using idx_customer_cust_prod  (cost=48.4 rows=157) (actual time=0.00873..0.24 rows=156 loops=1)\n                    -> Hash\n                        -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.00747..0.00945 rows=12 loops=1)\n                -> Covering index lookup on b using <auto_key0> (customer_id=c.customer_id, product_key=p.product_key)  (cost=277..279 rows=10) (actual time=921e-6..969e-6 rows=0.401 loops=1872)\n                    -> Materialize CTE bought  (cost=277..277 rows=756) (actual time=0.852..0.852 rows=756 loops=1)\n                        -> Group (no aggregates)  (cost=201 rows=756) (actual time=0.00332..0.484 rows=756 loops=1)\n                            -> Covering index scan on Customer using idx_customer_cust_prod  (cost=101 rows=1000) (actual time=0.00161..0.391 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_count_distinct_equals_total",
+          "status": "ok",
+          "median_s": 0.001290186000005633,
+          "times_s": [
+            0.001290186000005633,
+            0.0012367430001631874,
+            0.001732411999910255
+          ],
+          "result_rows": 12,
+          "result_digest": "53378336b019dd4f2a467f515eae4878ab9c770d",
+          "explain_analyze": "-> Filter: (count(distinct Customer.product_key) = (select #2))  (cost=151 rows=156) (actual time=0.323..0.728 rows=12 loops=1)\n    -> Group aggregate: count(distinct Customer.product_key)  (cost=151 rows=156) (actual time=0.0144..0.461 rows=156 loops=1)\n        -> Covering index skip scan for deduplication on Customer using idx_customer_cust_prod  (cost=75.7 rows=757) (actual time=0.00995..0.407 rows=756 loops=1)\n    -> Select #2 (subquery in condition; run only once)\n        -> Count rows in Product  (actual time=0.252..0.252 rows=1 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Product": 12,
+        "Customer": 100000
+      },
+      "load_seconds": 0.517,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_grid_with_holes",
+          "status": "ok",
+          "median_s": 0.2978182570000172,
+          "times_s": [
+            0.3016396309999436,
+            0.2978182570000172,
+            0.296107161000009
+          ],
+          "result_rows": 1290,
+          "result_digest": "2ec3f2911bed97fde11e36e917d7ba3d22797d9b",
+          "explain_analyze": "-> Filter: (`count(b.product_key)` = `count(0)`)  (actual time=369..371 rows=1290 loops=1)\n    -> Table scan on <temporary>  (actual time=369..370 rows=15492 loops=1)\n        -> Aggregate using temporary table  (actual time=369..369 rows=15492 loops=1)\n            -> Nested loop left join  (cost=12.4e+9 rows=121e+9) (actual time=176..326 rows=185904 loops=1)\n                -> Inner hash join (no condition)  (cost=121511 rows=1.2e+6) (actual time=54.2..62.2 rows=185904 loops=1)\n                    -> Table scan on c  (cost=31375..32630 rows=100212) (actual time=54.2..55.3 rows=15492 loops=1)\n                        -> Materialize  (cost=31375..31375 rows=100212) (actual time=54.2..54.2 rows=15492 loops=1)\n                            -> Table scan on <temporary>  (cost=20099..21354 rows=100212) (actual time=52.4..53.4 rows=15492 loops=1)\n                                -> Temporary table with deduplication  (cost=20099..20099 rows=100212) (actual time=52.4..52.4 rows=15492 loops=1)\n                                    -> Table scan on Customer  (cost=10077 rows=100212) (actual time=0.00522..37.1 rows=100000 loops=1)\n                    -> Hash\n                        -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.0177..0.0207 rows=12 loops=1)\n                -> Covering index lookup on b using <auto_key0> (customer_id=c.customer_id, product_key=p.product_key)  (cost=31375..31626 rows=1002) (actual time=0.00125..0.0013 rows=0.401 loops=185904)\n                    -> Materialize CTE bought  (cost=31375..31375 rows=100212) (actual time=122..122 rows=75085 loops=1)\n                        -> Table scan on <temporary>  (cost=20099..21354 rows=100212) (actual time=67.4..73.5 rows=75085 loops=1)\n                            -> Temporary table with deduplication  (cost=20099..20099 rows=100212) (actual time=67.4..67.4 rows=75085 loops=1)\n                                -> Table scan on Customer  (cost=10077 rows=100212) (actual time=0.0105..39.3 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_count_distinct_equals_total",
+          "status": "ok",
+          "median_s": 0.05919692900010887,
+          "times_s": [
+            0.05929770300008386,
+            0.059149636000029204,
+            0.05919692900010887
+          ],
+          "result_rows": 1290,
+          "result_digest": "2ec3f2911bed97fde11e36e917d7ba3d22797d9b",
+          "explain_analyze": "-> Filter: (count(distinct Customer.product_key) = (select #2))  (cost=20099 rows=317) (actual time=48.6..61.9 rows=1290 loops=1)\n    -> Group aggregate: count(distinct Customer.product_key)  (cost=20099 rows=317) (actual time=48.1..60.4 rows=15492 loops=1)\n        -> Sort: Customer.customer_id  (cost=10077 rows=100212) (actual time=48.1..51 rows=100000 loops=1)\n            -> Table scan on Customer  (cost=10077 rows=100212) (actual time=0.0202..34 rows=100000 loops=1)\n    -> Select #2 (subquery in condition; run only once)\n        -> Count rows in Product  (actual time=0.399..0.399 rows=1 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Product": 12,
+        "Customer": 100000
+      },
+      "load_seconds": 0.517,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "ok",
+          "median_s": 0.18972304699991582,
+          "times_s": [
+            0.19057561500017073,
+            0.18972304699991582,
+            0.1891885249999632
+          ],
+          "result_rows": 1290,
+          "result_digest": "2ec3f2911bed97fde11e36e917d7ba3d22797d9b",
+          "explain_analyze": "-> Filter: exists(select #3) is false  (cost=6502..1780 rows=15799) (actual time=29.8..242 rows=1290 loops=1)\n    -> Table scan on c  (cost=6503..6703 rows=15799) (actual time=29.6..30.9 rows=15492 loops=1)\n        -> Materialize  (cost=6503..6503 rows=15799) (actual time=29.6..29.6 rows=15492 loops=1)\n            -> Covering index skip scan for deduplication on Customer using idx_customer_cust_prod  (cost=4923 rows=15799) (actual time=0.0218..28.5 rows=15492 loops=1)\n    -> Select #3 (subquery in condition; dependent)\n        -> Nested loop antijoin  (cost=10.3 rows=76.1) (actual time=0.0088..0.0129 rows=7.19 loops=15492)\n            -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.00147..0.00277 rows=12 loops=15492)\n            -> Single-row index lookup on <subquery4> using <auto_distinct_key> (customer_id=c.customer_id, product_key=p.product_key)  (cost=2.48..2.48 rows=1) (actual time=759e-6..759e-6 rows=0.401 loops=185904)\n                -> Materialize with deduplication  (cost=2.27..2.27 rows=6.34) (actual time=0.00597..0.00597 rows=4.81 loops=15492)\n                    -> Filter: ((x.customer_id is not null) and (x.product_key is not null))  (cost=1.64 rows=6.34) (actual time=0.00181..0.00481 rows=6.42 loops=15492)\n                        -> Covering index lookup on x using idx_customer_cust_prod (customer_id=c.customer_id)  (cost=1.64 rows=6.34) (actual time=0.00168..0.00434 rows=6.45 loops=15492)\n"
+        },
+        {
+          "solution": "02_grid_with_holes",
+          "status": "ok",
+          "median_s": 0.2624994440000137,
+          "times_s": [
+            0.26549543700002687,
+            0.2616522140001507,
+            0.2624994440000137
+          ],
+          "result_rows": 1290,
+          "result_digest": "2ec3f2911bed97fde11e36e917d7ba3d22797d9b",
+          "explain_analyze": "-> Filter: (`count(b.product_key)` = `count(0)`)  (actual time=321..323 rows=1290 loops=1)\n    -> Table scan on <temporary>  (actual time=321..322 rows=15492 loops=1)\n        -> Aggregate using temporary table  (actual time=321..321 rows=15492 loops=1)\n            -> Nested loop left join  (cost=1.48e+9 rows=14.3e+9) (actual time=127..276 rows=185904 loops=1)\n                -> Inner hash join (no condition)  (cost=19160 rows=189588) (actual time=26.6..34.7 rows=185904 loops=1)\n                    -> Table scan on c  (cost=6503..6703 rows=15799) (actual time=26.6..27.7 rows=15492 loops=1)\n                        -> Materialize  (cost=6503..6503 rows=15799) (actual time=26.6..26.6 rows=15492 loops=1)\n                            -> Covering index skip scan for deduplication on Customer using idx_customer_cust_prod  (cost=4923 rows=15799) (actual time=0.00955..25.5 rows=15492 loops=1)\n                    -> Hash\n                        -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.0182..0.021 rows=12 loops=1)\n                -> Covering index lookup on b using <auto_key0> (customer_id=c.customer_id, product_key=p.product_key)  (cost=27623..27873 rows=1001) (actual time=0.00114..0.00119 rows=0.401 loops=185904)\n                    -> Materialize CTE bought  (cost=27622..27622 rows=75368) (actual time=101..101 rows=75085 loops=1)\n                        -> Group (no aggregates)  (cost=20085 rows=75368) (actual time=0.0182..47.6 rows=75085 loops=1)\n                            -> Covering index scan on Customer using idx_customer_cust_prod  (cost=10071 rows=100146) (actual time=0.0116..38.1 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_count_distinct_equals_total",
+          "status": "ok",
+          "median_s": 0.047582827000042016,
+          "times_s": [
+            0.047582827000042016,
+            0.047884834000115006,
+            0.04721337000000858
+          ],
+          "result_rows": 1290,
+          "result_digest": "2ec3f2911bed97fde11e36e917d7ba3d22797d9b",
+          "explain_analyze": "-> Filter: (count(distinct Customer.product_key) = (select #2))  (cost=15074 rows=15798) (actual time=0.405..46 rows=1290 loops=1)\n    -> Group aggregate: count(distinct Customer.product_key)  (cost=15074 rows=15798) (actual time=0.0297..44.4 rows=15492 loops=1)\n        -> Covering index skip scan for deduplication on Customer using idx_customer_cust_prod  (cost=7537 rows=75369) (actual time=0.0228..40 rows=75085 loops=1)\n    -> Select #2 (subquery in condition; run only once)\n        -> Count rows in Product  (actual time=0.327..0.327 rows=1 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Product": 12,
+        "Customer": 1000000
+      },
+      "load_seconds": 5.022,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_grid_with_holes",
+          "status": "ok",
+          "median_s": 7.180848506000075,
+          "times_s": [
+            7.127125855000031,
+            7.180848506000075,
+            7.232383084000048
+          ],
+          "result_rows": 12952,
+          "result_digest": "3a350ac321708235326142212daec523234bfdee",
+          "explain_analyze": "-> Filter: (`count(b.product_key)` = `count(0)`)  (actual time=7771..7787 rows=12952 loops=1)\n    -> Table scan on <temporary>  (actual time=7771..7780 rows=155431 loops=1)\n        -> Aggregate using temporary table  (actual time=7771..7771 rows=155431 loops=1)\n            -> Nested loop left join  (cost=1.16e+12 rows=11.4e+12) (actual time=3674..7194 rows=1.87e+6 loops=1)\n                -> Inner hash join (no condition)  (cost=1.18e+6 rows=11.7e+6) (actual time=572..662 rows=1.87e+6 loops=1)\n                    -> Table scan on c  (cost=304817..316984 rows=973173) (actual time=572..585 rows=155431 loops=1)\n                        -> Materialize  (cost=304817..304817 rows=973173) (actual time=572..572 rows=155431 loops=1)\n                            -> Table scan on <temporary>  (cost=195333..207500 rows=973173) (actual time=553..564 rows=155431 loops=1)\n                                -> Temporary table with deduplication  (cost=195333..195333 rows=973173) (actual time=553..553 rows=155431 loops=1)\n                                    -> Table scan on Customer  (cost=98016 rows=973173) (actual time=0.00644..370 rows=1e+6 loops=1)\n                    -> Hash\n                        -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.0204..0.0245 rows=12 loops=1)\n                -> Covering index lookup on b using <auto_key0> (customer_id=c.customer_id, product_key=p.product_key)  (cost=304818..307250 rows=9732) (actual time=0.00329..0.00338 rows=0.399 loops=1.87e+6)\n                    -> Materialize CTE bought  (cost=304817..304817 rows=973173) (actual time=3103..3103 rows=751001 loops=1)\n                        -> Table scan on <temporary>  (cost=195333..207500 rows=973173) (actual time=1708..1869 rows=751001 loops=1)\n                            -> Temporary table with deduplication  (cost=195333..195333 rows=973173) (actual time=1708..1708 rows=751001 loops=1)\n                                -> Table scan on Customer  (cost=98016 rows=973173) (actual time=0.0194..404 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_count_distinct_equals_total",
+          "status": "ok",
+          "median_s": 0.5880623680000099,
+          "times_s": [
+            0.5880623680000099,
+            0.5857560720000947,
+            0.589116998999998
+          ],
+          "result_rows": 12952,
+          "result_digest": "3a350ac321708235326142212daec523234bfdee",
+          "explain_analyze": "-> Filter: (count(distinct Customer.product_key) = (select #2))  (cost=195333 rows=986) (actual time=498..633 rows=12952 loops=1)\n    -> Group aggregate: count(distinct Customer.product_key)  (cost=195333 rows=986) (actual time=498..623 rows=155431 loops=1)\n        -> Sort: Customer.customer_id  (cost=98016 rows=973173) (actual time=498..529 rows=1e+6 loops=1)\n            -> Table scan on Customer  (cost=98016 rows=973173) (actual time=0.0199..339 rows=1e+6 loops=1)\n    -> Select #2 (subquery in condition; run only once)\n        -> Count rows in Product  (actual time=0.422..0.422 rows=1 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Product": 12,
+        "Customer": 1000000
+      },
+      "load_seconds": 5.022,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "ok",
+          "median_s": 1.9961153839999497,
+          "times_s": [
+            1.9961153839999497,
+            2.03321877999997,
+            1.984298937999938
+          ],
+          "result_rows": 12952,
+          "result_digest": "3a350ac321708235326142212daec523234bfdee",
+          "explain_analyze": "-> Filter: exists(select #3) is false  (cost=70882..17267 rows=153464) (actual time=365..2588 rows=12952 loops=1)\n    -> Table scan on c  (cost=70883..72804 rows=153464) (actual time=365..377 rows=155431 loops=1)\n        -> Materialize  (cost=70883..70883 rows=153464) (actual time=365..365 rows=155431 loops=1)\n            -> Covering index skip scan for deduplication on Customer using idx_customer_cust_prod  (cost=55536 rows=153464) (actual time=0.0257..352 rows=155431 loops=1)\n    -> Select #3 (subquery in condition; dependent)\n        -> Nested loop antijoin  (cost=10.5 rows=78) (actual time=0.00923..0.0135 rows=7.21 loops=155431)\n            -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.0015..0.00285 rows=12 loops=155431)\n            -> Single-row index lookup on <subquery4> using <auto_distinct_key> (customer_id=c.customer_id, product_key=p.product_key)  (cost=2.51..2.51 rows=1) (actual time=801e-6..801e-6 rows=0.399 loops=1.87e+6)\n                -> Materialize with deduplication  (cost=2.31..2.31 rows=6.5) (actual time=0.00629..0.00629 rows=4.79 loops=155431)\n                    -> Filter: ((x.customer_id is not null) and (x.product_key is not null))  (cost=1.66 rows=6.5) (actual time=0.00215..0.00512 rows=6.39 loops=155431)\n                        -> Covering index lookup on x using idx_customer_cust_prod (customer_id=c.customer_id)  (cost=1.66 rows=6.5) (actual time=0.00202..0.00462 rows=6.43 loops=155431)\n"
+        },
+        {
+          "solution": "02_grid_with_holes",
+          "status": "ok",
+          "median_s": 5.639852985000061,
+          "times_s": [
+            5.64034698699993,
+            5.639852985000061,
+            5.615965210000013
+          ],
+          "result_rows": 12952,
+          "result_digest": "3a350ac321708235326142212daec523234bfdee",
+          "explain_analyze": "-> Filter: (`count(b.product_key)` = `count(0)`)  (actual time=6106..6122 rows=12952 loops=1)\n    -> Table scan on <temporary>  (actual time=6106..6116 rows=155431 loops=1)\n        -> Aggregate using temporary table  (actual time=6106..6106 rows=155431 loops=1)\n            -> Nested loop left join  (cost=143e+9 rows=1.39e+12) (actual time=2112..5542 rows=1.87e+6 loops=1)\n                -> Inner hash join (no condition)  (cost=186079 rows=1.84e+6) (actual time=329..415 rows=1.87e+6 loops=1)\n                    -> Table scan on c  (cost=70883..72804 rows=153464) (actual time=329..342 rows=155431 loops=1)\n                        -> Materialize  (cost=70883..70883 rows=153464) (actual time=329..329 rows=155431 loops=1)\n                            -> Covering index skip scan for deduplication on Customer using idx_customer_cust_prod  (cost=55536 rows=153464) (actual time=0.0116..318 rows=155431 loops=1)\n                    -> Hash\n                        -> Covering index scan on p using PRIMARY  (cost=1.45 rows=12) (actual time=0.0204..0.0236 rows=12 loops=1)\n                -> Covering index lookup on b using <auto_key0> (customer_id=c.customer_id, product_key=p.product_key)  (cost=275645..278140 rows=9979) (actual time=0.00256..0.00264 rows=0.399 loops=1.87e+6)\n                    -> Materialize CTE bought  (cost=275645..275645 rows=753573) (actual time=1784..1784 rows=751001 loops=1)\n                        -> Group (no aggregates)  (cost=200287 rows=753573) (actual time=0.0143..505 rows=751001 loops=1)\n                            -> Covering index scan on Customer using idx_customer_cust_prod  (cost=100493 rows=997946) (actual time=0.0088..399 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_count_distinct_equals_total",
+          "status": "ok",
+          "median_s": 0.46098368000002665,
+          "times_s": [
+            0.49643227699993986,
+            0.4572624200000064,
+            0.46098368000002665
+          ],
+          "result_rows": 12952,
+          "result_digest": "3a350ac321708235326142212daec523234bfdee",
+          "explain_analyze": "-> Filter: (count(distinct Customer.product_key) = (select #2))  (cost=150715 rows=153463) (actual time=1.89..451 rows=12952 loops=1)\n    -> Group aggregate: count(distinct Customer.product_key)  (cost=150715 rows=153463) (actual time=0.0346..438 rows=155431 loops=1)\n        -> Covering index skip scan for deduplication on Customer using idx_customer_cust_prod  (cost=75357 rows=753574) (actual time=0.0276..394 rows=751001 loops=1)\n    -> Select #2 (subquery in condition; run only once)\n        -> Count rows in Product  (actual time=1.81..1.81 rows=1 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

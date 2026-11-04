@@ -1,0 +1,357 @@
+{
+  "problem": "18-find-stores-with-inventory-imbalance",
+  "generated_at": "2026-11-04T15:20:31+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_not_exists_two_ends",
+    "02_two_rankings_joined",
+    "03_one_scan_pivot"
+  ],
+  "optimal": "03_one_scan_pivot",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "stores": 194,
+        "inventory": 1000
+      },
+      "load_seconds": 0.039,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_not_exists_two_ends",
+          "status": "ok",
+          "median_s": 0.009374660999981188,
+          "times_s": [
+            0.009374660999981188,
+            0.009444751999978962,
+            0.009296855000002324
+          ],
+          "result_rows": 64,
+          "result_digest": "6a1a06ec195360fe47bbdf6ec5f4b732827d3fc4",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=8.77..8.78 rows=64 loops=1)\n    -> Stream results  (cost=12898 rows=45649) (actual time=0.12..8.73 rows=64 loops=1)\n        -> Nested loop antijoin  (cost=12898 rows=45649) (actual time=0.117..8.68 rows=64 loops=1)\n            -> Nested loop inner join  (cost=6119 rows=8856) (actual time=0.101..7.2 rows=268 loops=1)\n                -> Nested loop antijoin  (cost=2174 rows=5155) (actual time=0.0356..6.27 rows=151 loops=1)\n                    -> Nested loop inner join  (cost=370 rows=1000) (actual time=0.0275..1.52 rows=930 loops=1)\n                        -> Filter: ((select #4) >= 3)  (cost=19.7 rows=194) (actual time=0.0218..0.632 rows=151 loops=1)\n                            -> Table scan on s  (cost=19.7 rows=194) (actual time=0.00976..0.0561 rows=194 loops=1)\n                            -> Select #4 (subquery in condition; dependent)\n                                -> Aggregate: count(0)  (cost=1.33 rows=1) (actual time=0.00246..0.00249 rows=1 loops=194)\n                                    -> Covering index lookup on c using store_id (store_id=s.store_id)  (cost=0.817 rows=5.15) (actual time=0.00139..0.00206 rows=5.15 loops=194)\n                        -> Index lookup on hi using store_id (store_id=s.store_id)  (cost=1.29 rows=5.15) (actual time=0.0038..0.00524 rows=6.16 loops=151)\n                    -> Filter: ((x.price > hi.price) or ((x.price = hi.price) and (x.quantity > hi.quantity)) or ((x.quantity = hi.quantity) and (x.price = hi.price) and (x.product_name < hi.product_name)))  (cost=6.65 rows=5.15) (actual time=0.00501..0.00501 rows=0.838 loops=930)\n                        -> Index lookup on x using store_id (store_id=s.store_id)  (cost=6.65 rows=5.15) (actual time=0.00396..0.00429 rows=2.63 loops=930)\n                -> Filter: (hi.quantity < lo.quantity)  (cost=1.29 rows=1.72) (actual time=0.00457..0.00591 rows=1.77 loops=151)\n                    -> Index lookup on lo using store_id (store_id=s.store_id)  (cost=1.29 rows=5.15) (actual time=0.00374..0.00533 rows=6.16 loops=151)\n            -> Filter: ((y.price < lo.price) or ((y.price = lo.price) and (y.quantity > lo.quantity)) or ((y.quantity = lo.quantity) and (y.price = lo.price) and (y.product_name < lo.product_name)))  (cost=6.64 rows=5.15) (actual time=0.0054..0.0054 rows=0.761 loops=268)\n                -> Index lookup on y using store_id (store_id=s.store_id)  (cost=6.64 rows=5.15) (actual time=0.00404..0.00451 rows=3.32 loops=268)\n"
+        },
+        {
+          "solution": "02_two_rankings_joined",
+          "status": "ok",
+          "median_s": 0.005179018999967866,
+          "times_s": [
+            0.006250883000006979,
+            0.0051296070000148575,
+            0.005179018999967866
+          ],
+          "result_rows": 64,
+          "result_digest": "6a1a06ec195360fe47bbdf6ec5f4b732827d3fc4",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=4.55..4.55 rows=64 loops=1)\n    -> Stream results  (cost=248 rows=12.2) (actual time=3.95..4.52 rows=64 loops=1)\n        -> Nested loop inner join  (cost=248 rows=12.2) (actual time=3.94..4.47 rows=64 loops=1)\n            -> Nested loop inner join  (cost=243 rows=12.2) (actual time=3.94..4.41 rows=64 loops=1)\n                -> Filter: ((hi.rn = 1) and (hi.n_products >= 3))  (cost=3.45..115 rows=33.3) (actual time=2.45..2.62 rows=151 loops=1)\n                    -> Table scan on hi  (cost=2.5..2.5 rows=0) (actual time=2.45..2.57 rows=1000 loops=1)\n                        -> Materialize CTE top_priced  (cost=0..0 rows=0) (actual time=2.45..2.45 rows=1000 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=1.92..2.22 rows=1000 loops=1)\n                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=1.92..1.97 rows=1000 loops=1)\n                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=1.42..1.54 rows=1000 loops=1)\n                                        -> Temporary table  (cost=0..0 rows=0) (actual time=1.42..1.42 rows=1000 loops=1)\n                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=0.358..1.34 rows=1000 loops=1)\n                                                -> Sort: inventory.store_id  (cost=101 rows=1000) (actual time=0.345..0.393 rows=1000 loops=1)\n                                                    -> Table scan on inventory  (cost=101 rows=1000) (actual time=0.0216..0.216 rows=1000 loops=1)\n                -> Filter: ((lo.rn = 1) and (hi.quantity < lo.quantity))  (cost=2.75..2.75 rows=0.367) (actual time=0.0116..0.0117 rows=0.424 loops=151)\n                    -> Index lookup on lo using <auto_key0> (store_id=hi.store_id)  (cost=0.25..2.75 rows=11) (actual time=0.0103..0.0113 rows=6.16 loops=151)\n                        -> Materialize CTE low_priced  (cost=0..0 rows=0) (actual time=1.48..1.48 rows=1000 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=0.652..0.947 rows=1000 loops=1)\n                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (cost=101 rows=1000) (actual time=0.65..0.701 rows=1000 loops=1)\n                                    -> Table scan on inventory  (cost=101 rows=1000) (actual time=0.0268..0.264 rows=1000 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=hi.store_id)  (cost=0.258 rows=1) (actual time=792e-6..821e-6 rows=1 loops=64)\n"
+        },
+        {
+          "solution": "03_one_scan_pivot",
+          "status": "ok",
+          "median_s": 0.0049491499999589905,
+          "times_s": [
+            0.005046975999960068,
+            0.004882270999985394,
+            0.0049491499999589905
+          ],
+          "result_rows": 64,
+          "result_digest": "6a1a06ec195360fe47bbdf6ec5f4b732827d3fc4",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=4.2..4.21 rows=64 loops=1)\n    -> Stream results  (cost=18.2 rows=0) (actual time=4.07..4.17 rows=64 loops=1)\n        -> Nested loop inner join  (cost=18.2 rows=0) (actual time=4.07..4.13 rows=64 loops=1)\n            -> Table scan on e  (cost=2.5..2.5 rows=0) (actual time=4.07..4.07 rows=64 loops=1)\n                -> Materialize CTE ends  (cost=0..0 rows=0) (actual time=4.07..4.07 rows=64 loops=1)\n                    -> Filter: (hi_qty < lo_qty)  (actual time=4.02..4.05 rows=64 loops=1)\n                        -> Table scan on <temporary>  (actual time=4.02..4.04 rows=151 loops=1)\n                            -> Aggregate using temporary table  (actual time=4.02..4.02 rows=151 loops=1)\n                                -> Filter: ((ranked.n_products >= 3) and ((ranked.rn_hi = 1) or (ranked.rn_lo = 1)))  (cost=1.82..115 rows=63.3) (actual time=3.68..3.89 rows=292 loops=1)\n                                    -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=3.68..3.8 rows=1000 loops=1)\n                                        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=3.68..3.68 rows=1000 loops=1)\n                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=3.06..3.42 rows=1000 loops=1)\n                                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (actual time=3.06..3.12 rows=1000 loops=1)\n                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=2.58..2.71 rows=1000 loops=1)\n                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=2.58..2.58 rows=1000 loops=1)\n                                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=2.14..2.5 rows=1000 loops=1)\n                                                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=2.14..2.2 rows=1000 loops=1)\n                                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=1.66..1.78 rows=1000 loops=1)\n                                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=1.66..1.66 rows=1000 loops=1)\n                                                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=0.338..1.58 rows=1000 loops=1)\n                                                                                -> Sort: inventory.store_id  (cost=101 rows=1000) (actual time=0.328..0.375 rows=1000 loops=1)\n                                                                                    -> Table scan on inventory  (cost=101 rows=1000) (actual time=0.0217..0.217 rows=1000 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=e.store_id)  (cost=0.252 rows=1) (actual time=739e-6..768e-6 rows=1 loops=64)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "stores": 194,
+        "inventory": 1000
+      },
+      "load_seconds": 0.039,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_not_exists_two_ends",
+          "status": "ok",
+          "median_s": 0.006452490000015132,
+          "times_s": [
+            0.006452490000015132,
+            0.006566158999987692,
+            0.006438746000014817
+          ],
+          "result_rows": 64,
+          "result_digest": "6a1a06ec195360fe47bbdf6ec5f4b732827d3fc4",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=8.89..8.89 rows=64 loops=1)\n    -> Stream results  (cost=10810 rows=45649) (actual time=0.101..8.82 rows=64 loops=1)\n        -> Nested loop antijoin  (cost=10810 rows=45649) (actual time=0.098..8.73 rows=64 loops=1)\n            -> Nested loop inner join  (cost=4948 rows=8856) (actual time=0.0881..7.67 rows=268 loops=1)\n                -> Nested loop antijoin  (cost=1536 rows=5155) (actual time=0.0359..6.93 rows=151 loops=1)\n                    -> Nested loop inner join  (cost=266 rows=1000) (actual time=0.0242..1.77 rows=930 loops=1)\n                        -> Filter: ((select #4) >= 3)  (cost=19.7 rows=194) (actual time=0.0204..1.07 rows=151 loops=1)\n                            -> Table scan on s  (cost=19.7 rows=194) (actual time=0.00882..0.0824 rows=194 loops=1)\n                            -> Select #4 (subquery in condition; dependent)\n                                -> Aggregate: count(0)  (cost=1.33 rows=1) (actual time=0.00397..0.00401 rows=1 loops=194)\n                                    -> Covering index lookup on c using store_id (store_id=s.store_id)  (cost=0.817 rows=5.15) (actual time=0.00231..0.00331 rows=5.15 loops=194)\n                        -> Covering index lookup on hi using idx_inventory_store_price (store_id=s.store_id)  (cost=0.757 rows=5.15) (actual time=0.0025..0.00408 rows=6.16 loops=151)\n                    -> Filter: ((x.price > hi.price) or ((x.price = hi.price) and (x.quantity > hi.quantity)) or ((x.quantity = hi.quantity) and (x.price = hi.price) and (x.product_name < hi.product_name)))  (cost=3.89 rows=5.15) (actual time=0.00544..0.00544 rows=0.838 loops=930)\n                        -> Covering index lookup on x using idx_inventory_store_price (store_id=s.store_id)  (cost=3.89 rows=5.15) (actual time=0.0027..0.00359 rows=4.92 loops=930)\n                -> Filter: (hi.quantity < lo.quantity)  (cost=0.755 rows=1.72) (actual time=0.00333..0.00468 rows=1.77 loops=151)\n                    -> Covering index lookup on lo using idx_inventory_store_price (store_id=s.store_id)  (cost=0.755 rows=5.15) (actual time=0.00237..0.00405 rows=6.16 loops=151)\n            -> Filter: ((y.price < lo.price) or ((y.price = lo.price) and (y.quantity > lo.quantity)) or ((y.quantity = lo.quantity) and (y.price = lo.price) and (y.product_name < lo.product_name)))  (cost=3.89 rows=5.15) (actual time=0.00381..0.00381 rows=0.761 loops=268)\n                -> Covering index lookup on y using idx_inventory_store_price (store_id=s.store_id)  (cost=3.89 rows=5.15) (actual time=0.00248..0.00288 rows=2.29 loops=268)\n"
+        },
+        {
+          "solution": "02_two_rankings_joined",
+          "status": "ok",
+          "median_s": 0.005119019999995089,
+          "times_s": [
+            0.005119019999995089,
+            0.0051730779999843435,
+            0.005077399000015248
+          ],
+          "result_rows": 64,
+          "result_digest": "6a1a06ec195360fe47bbdf6ec5f4b732827d3fc4",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=4.69..4.69 rows=64 loops=1)\n    -> Stream results  (cost=248 rows=12.2) (actual time=4.06..4.66 rows=64 loops=1)\n        -> Nested loop inner join  (cost=248 rows=12.2) (actual time=4.05..4.62 rows=64 loops=1)\n            -> Nested loop inner join  (cost=243 rows=12.2) (actual time=4.05..4.55 rows=64 loops=1)\n                -> Filter: ((hi.rn = 1) and (hi.n_products >= 3))  (cost=3.45..115 rows=33.3) (actual time=2.65..2.84 rows=151 loops=1)\n                    -> Table scan on hi  (cost=2.5..2.5 rows=0) (actual time=2.65..2.79 rows=1000 loops=1)\n                        -> Materialize CTE top_priced  (cost=0..0 rows=0) (actual time=2.65..2.65 rows=1000 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=2.09..2.42 rows=1000 loops=1)\n                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=2.09..2.14 rows=1000 loops=1)\n                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=1.62..1.74 rows=1000 loops=1)\n                                        -> Temporary table  (cost=0..0 rows=0) (actual time=1.62..1.62 rows=1000 loops=1)\n                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=0.425..1.53 rows=1000 loops=1)\n                                                -> Sort: inventory.store_id  (cost=101 rows=1000) (actual time=0.416..0.467 rows=1000 loops=1)\n                                                    -> Index scan on inventory using idx_inventory_store_price  (cost=101 rows=1000) (actual time=0.022..0.29 rows=1000 loops=1)\n                -> Filter: ((lo.rn = 1) and (hi.quantity < lo.quantity))  (cost=2.75..2.75 rows=0.367) (actual time=0.011..0.0112 rows=0.424 loops=151)\n                    -> Index lookup on lo using <auto_key0> (store_id=hi.store_id)  (cost=0.25..2.75 rows=11) (actual time=0.00979..0.0108 rows=6.16 loops=151)\n                        -> Materialize CTE low_priced  (cost=0..0 rows=0) (actual time=1.39..1.39 rows=1000 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=0.583..0.856 rows=1000 loops=1)\n                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (cost=101 rows=1000) (actual time=0.581..0.635 rows=1000 loops=1)\n                                    -> Index scan on inventory using idx_inventory_store_price  (cost=101 rows=1000) (actual time=0.0209..0.214 rows=1000 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=hi.store_id)  (cost=0.258 rows=1) (actual time=813e-6..842e-6 rows=1 loops=64)\n"
+        },
+        {
+          "solution": "03_one_scan_pivot",
+          "status": "ok",
+          "median_s": 0.004895840000017415,
+          "times_s": [
+            0.004950602000008075,
+            0.004752933000020221,
+            0.004895840000017415
+          ],
+          "result_rows": 64,
+          "result_digest": "6a1a06ec195360fe47bbdf6ec5f4b732827d3fc4",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=4.25..4.25 rows=64 loops=1)\n    -> Stream results  (cost=18.2 rows=0) (actual time=4.12..4.22 rows=64 loops=1)\n        -> Nested loop inner join  (cost=18.2 rows=0) (actual time=4.12..4.18 rows=64 loops=1)\n            -> Table scan on e  (cost=2.5..2.5 rows=0) (actual time=4.12..4.12 rows=64 loops=1)\n                -> Materialize CTE ends  (cost=0..0 rows=0) (actual time=4.12..4.12 rows=64 loops=1)\n                    -> Filter: (hi_qty < lo_qty)  (actual time=4.07..4.1 rows=64 loops=1)\n                        -> Table scan on <temporary>  (actual time=4.07..4.09 rows=151 loops=1)\n                            -> Aggregate using temporary table  (actual time=4.07..4.07 rows=151 loops=1)\n                                -> Filter: ((ranked.n_products >= 3) and ((ranked.rn_hi = 1) or (ranked.rn_lo = 1)))  (cost=1.82..115 rows=63.3) (actual time=3.71..3.93 rows=292 loops=1)\n                                    -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=3.71..3.83 rows=1000 loops=1)\n                                        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=3.71..3.71 rows=1000 loops=1)\n                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=3.11..3.47 rows=1000 loops=1)\n                                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (actual time=3.11..3.17 rows=1000 loops=1)\n                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=2.59..2.72 rows=1000 loops=1)\n                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=2.59..2.59 rows=1000 loops=1)\n                                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=2.19..2.51 rows=1000 loops=1)\n                                                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=2.19..2.24 rows=1000 loops=1)\n                                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=1.68..1.8 rows=1000 loops=1)\n                                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=1.68..1.68 rows=1000 loops=1)\n                                                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=0.421..1.58 rows=1000 loops=1)\n                                                                                -> Sort: inventory.store_id  (cost=101 rows=1000) (actual time=0.411..0.458 rows=1000 loops=1)\n                                                                                    -> Index scan on inventory using idx_inventory_store_price  (cost=101 rows=1000) (actual time=0.0216..0.275 rows=1000 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=e.store_id)  (cost=0.252 rows=1) (actual time=741e-6..769e-6 rows=1 loops=64)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "stores": 18962,
+        "inventory": 100000
+      },
+      "load_seconds": 1.664,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_not_exists_two_ends",
+          "status": "ok",
+          "median_s": 0.8982930369999735,
+          "times_s": [
+            0.8920856889999982,
+            0.901615038999978,
+            0.8982930369999735
+          ],
+          "result_rows": 6924,
+          "result_digest": "844ac2adff41c5cb44fe583fcb11c4e7f3cb665d",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=951..952 rows=6924 loops=1)\n    -> Stream results  (cost=1.23e+6 rows=4.33e+6) (actual time=0.153..945 rows=6924 loops=1)\n        -> Nested loop antijoin  (cost=1.23e+6 rows=4.33e+6) (actual time=0.148..939 rows=6924 loops=1)\n            -> Nested loop inner join  (cost=589567 rows=848077) (actual time=0.132..777 rows=27610 loops=1)\n                -> Nested loop antijoin  (cost=210527 rows=498365) (actual time=0.0646..682 rows=15155 loops=1)\n                    -> Nested loop inner join  (cost=36100 rows=97610) (actual time=0.0557..165 rows=93877 loops=1)\n                        -> Filter: ((select #4) >= 3)  (cost=1936 rows=19118) (actual time=0.049..64.7 rows=15155 loops=1)\n                            -> Table scan on s  (cost=1936 rows=19118) (actual time=0.0308..4.78 rows=18962 loops=1)\n                            -> Select #4 (subquery in condition; dependent)\n                                -> Aggregate: count(0)  (cost=1.32 rows=1) (actual time=0.00265..0.00268 rows=1 loops=18962)\n                                    -> Covering index lookup on c using store_id (store_id=s.store_id)  (cost=0.812 rows=5.11) (actual time=0.00152..0.00224 rows=5.27 loops=18962)\n                        -> Index lookup on hi using store_id (store_id=s.store_id)  (cost=1.28 rows=5.11) (actual time=0.00438..0.00613 rows=6.19 loops=15155)\n                    -> Filter: ((x.price > hi.price) or ((x.price = hi.price) and (x.quantity > hi.quantity)) or ((x.quantity = hi.quantity) and (x.price = hi.price) and (x.product_name < hi.product_name)))  (cost=6.52 rows=5.11) (actual time=0.0054..0.0054 rows=0.839 loops=93877)\n                        -> Index lookup on x using store_id (store_id=s.store_id)  (cost=6.52 rows=5.11) (actual time=0.00421..0.00461 rows=2.78 loops=93877)\n                -> Filter: (hi.quantity < lo.quantity)  (cost=1.28 rows=1.7) (actual time=0.0048..0.00609 rows=1.82 loops=15155)\n                    -> Index lookup on lo using store_id (store_id=s.store_id)  (cost=1.28 rows=5.11) (actual time=0.00393..0.00551 rows=6.19 loops=15155)\n            -> Filter: ((y.price < lo.price) or ((y.price = lo.price) and (y.quantity > lo.quantity)) or ((y.quantity = lo.quantity) and (y.price = lo.price) and (y.product_name < lo.product_name)))  (cost=6.52 rows=5.11) (actual time=0.00576..0.00576 rows=0.749 loops=27610)\n                -> Index lookup on y using store_id (store_id=s.store_id)  (cost=6.52 rows=5.11) (actual time=0.00425..0.00481 rows=3.39 loops=27610)\n"
+        },
+        {
+          "solution": "02_two_rankings_joined",
+          "status": "ok",
+          "median_s": 0.7457262669999523,
+          "times_s": [
+            0.7457262669999523,
+            0.7412335399999961,
+            0.7503682029999936
+          ],
+          "result_rows": 6924,
+          "result_digest": "844ac2adff41c5cb44fe583fcb11c4e7f3cb665d",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=766..767 rows=6924 loops=1)\n    -> Stream results  (cost=32401 rows=1947) (actual time=607..762 rows=6924 loops=1)\n        -> Nested loop inner join  (cost=32401 rows=1947) (actual time=607..757 rows=6924 loops=1)\n            -> Nested loop inner join  (cost=31719 rows=1947) (actual time=607..749 rows=6924 loops=1)\n                -> Filter: ((hi.rn = 1) and (hi.n_products >= 3))  (cost=3.38..11271 rows=3338) (actual time=317..349 rows=15155 loops=1)\n                    -> Table scan on hi  (cost=2.5..2.5 rows=0) (actual time=317..343 rows=100000 loops=1)\n                        -> Materialize CTE top_priced  (cost=0..0 rows=0) (actual time=317..317 rows=100000 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=223..254 rows=100000 loops=1)\n                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=223..229 rows=100000 loops=1)\n                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=162..174 rows=100000 loops=1)\n                                        -> Temporary table  (cost=0..0 rows=0) (actual time=162..162 rows=100000 loops=1)\n                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=41.3..146 rows=100000 loops=1)\n                                                -> Sort: inventory.store_id  (cost=10089 rows=100163) (actual time=41.3..46.8 rows=100000 loops=1)\n                                                    -> Table scan on inventory  (cost=10089 rows=100163) (actual time=0.0767..21.4 rows=100000 loops=1)\n                -> Filter: ((lo.rn = 1) and (hi.quantity < lo.quantity))  (cost=4.38..4.38 rows=0.583) (actual time=0.0239..0.0263 rows=0.457 loops=15155)\n                    -> Index lookup on lo using <auto_key1> (store_id=hi.store_id)  (cost=0.25..4.38 rows=17.5) (actual time=0.0211..0.0258 rows=6.19 loops=15155)\n                        -> Materialize CTE low_priced  (cost=0..0 rows=0) (actual time=290..290 rows=100000 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=70.2..101 rows=100000 loops=1)\n                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (cost=10089 rows=100163) (actual time=70.2..76 rows=100000 loops=1)\n                                    -> Table scan on inventory  (cost=10089 rows=100163) (actual time=0.06..21.7 rows=100000 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=hi.store_id)  (cost=0.25 rows=1) (actual time=944e-6..972e-6 rows=1 loops=6924)\n"
+        },
+        {
+          "solution": "03_one_scan_pivot",
+          "status": "ok",
+          "median_s": 0.6113644659999977,
+          "times_s": [
+            0.6111020920000101,
+            0.6200752899999884,
+            0.6113644659999977
+          ],
+          "result_rows": 6924,
+          "result_digest": "844ac2adff41c5cb44fe583fcb11c4e7f3cb665d",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=628..629 rows=6924 loops=1)\n    -> Stream results  (cost=1588 rows=0) (actual time=612..624 rows=6924 loops=1)\n        -> Nested loop inner join  (cost=1588 rows=0) (actual time=612..620 rows=6924 loops=1)\n            -> Table scan on e  (cost=2.5..2.5 rows=0) (actual time=612..613 rows=6924 loops=1)\n                -> Materialize CTE ends  (cost=0..0 rows=0) (actual time=612..612 rows=6924 loops=1)\n                    -> Filter: (hi_qty < lo_qty)  (actual time=607..610 rows=6924 loops=1)\n                        -> Table scan on <temporary>  (actual time=607..609 rows=15155 loops=1)\n                            -> Aggregate using temporary table  (actual time=607..607 rows=15155 loops=1)\n                                -> Filter: ((ranked.n_products >= 3) and ((ranked.rn_hi = 1) or (ranked.rn_lo = 1)))  (cost=1.78..11271 rows=6343) (actual time=554..592 rows=29494 loops=1)\n                                    -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=554..583 rows=100000 loops=1)\n                                        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=554..554 rows=100000 loops=1)\n                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=456..494 rows=100000 loops=1)\n                                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (actual time=456..462 rows=100000 loops=1)\n                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=372..402 rows=100000 loops=1)\n                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=372..372 rows=100000 loops=1)\n                                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=292..326 rows=100000 loops=1)\n                                                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=292..298 rows=100000 loops=1)\n                                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=210..239 rows=100000 loops=1)\n                                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=210..210 rows=100000 loops=1)\n                                                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=41.1..166 rows=100000 loops=1)\n                                                                                -> Sort: inventory.store_id  (cost=10089 rows=100163) (actual time=41.1..46.7 rows=100000 loops=1)\n                                                                                    -> Table scan on inventory  (cost=10089 rows=100163) (actual time=0.0762..21.2 rows=100000 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=e.store_id)  (cost=0.25 rows=1) (actual time=853e-6..883e-6 rows=1 loops=6924)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "stores": 18962,
+        "inventory": 100000
+      },
+      "load_seconds": 1.664,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_not_exists_two_ends",
+          "status": "ok",
+          "median_s": 0.5555598170000167,
+          "times_s": [
+            0.5555598170000167,
+            0.5477937500000394,
+            0.5931886529999701
+          ],
+          "result_rows": 6924,
+          "result_digest": "844ac2adff41c5cb44fe583fcb11c4e7f3cb665d",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=578..578 rows=6924 loops=1)\n    -> Stream results  (cost=1.25e+6 rows=4.6e+6) (actual time=0.201..573 rows=6924 loops=1)\n        -> Nested loop antijoin  (cost=1.25e+6 rows=4.6e+6) (actual time=0.197..568 rows=6924 loops=1)\n            -> Nested loop inner join  (cost=584550 rows=882694) (actual time=0.176..495 rows=27610 loops=1)\n                -> Nested loop antijoin  (cost=202313 rows=507761) (actual time=0.0611..444 rows=15155 loops=1)\n                    -> Nested loop inner join  (cost=34135 rows=97352) (actual time=0.0487..110 rows=93877 loops=1)\n                        -> Filter: ((select #4) >= 3)  (cost=1891 rows=18665) (actual time=0.0437..61.9 rows=15155 loops=1)\n                            -> Table scan on s  (cost=1891 rows=18665) (actual time=0.0278..4.4 rows=18962 loops=1)\n                            -> Select #4 (subquery in condition; dependent)\n                                -> Aggregate: count(0)  (cost=1.46 rows=1) (actual time=0.00259..0.00262 rows=1 loops=18962)\n                                    -> Covering index lookup on c using store_id (store_id=s.store_id)  (cost=0.886 rows=5.77) (actual time=0.00151..0.0022 rows=5.27 loops=18962)\n                        -> Covering index lookup on hi using idx_inventory_store_price (store_id=s.store_id)  (cost=1.21 rows=5.22) (actual time=0.00162..0.00268 rows=6.19 loops=15155)\n                    -> Filter: ((x.price > hi.price) or ((x.price = hi.price) and (x.quantity > hi.quantity)) or ((x.quantity = hi.quantity) and (x.price = hi.price) and (x.product_name < hi.product_name)))  (cost=6.29 rows=5.22) (actual time=0.00346..0.00346 rows=0.839 loops=93877)\n                        -> Covering index lookup on x using idx_inventory_store_price (store_id=s.store_id)  (cost=6.29 rows=5.22) (actual time=0.00155..0.00217 rows=4.96 loops=93877)\n                -> Filter: (hi.quantity < lo.quantity)  (cost=1.21 rows=1.74) (actual time=0.0022..0.00317 rows=1.82 loops=15155)\n                    -> Covering index lookup on lo using idx_inventory_store_price (store_id=s.store_id)  (cost=1.21 rows=5.22) (actual time=0.00151..0.00263 rows=6.19 loops=15155)\n            -> Filter: ((y.price < lo.price) or ((y.price = lo.price) and (y.quantity > lo.quantity)) or ((y.quantity = lo.quantity) and (y.price = lo.price) and (y.product_name < lo.product_name)))  (cost=6.29 rows=5.22) (actual time=0.00252..0.00252 rows=0.749 loops=27610)\n                -> Covering index lookup on y using idx_inventory_store_price (store_id=s.store_id)  (cost=6.29 rows=5.22) (actual time=0.00158..0.00189 rows=2.4 loops=27610)\n"
+        },
+        {
+          "solution": "02_two_rankings_joined",
+          "status": "ok",
+          "median_s": 0.7372723569999948,
+          "times_s": [
+            0.7391635549999478,
+            0.7372723569999948,
+            0.7363015089999863
+          ],
+          "result_rows": 6924,
+          "result_digest": "844ac2adff41c5cb44fe583fcb11c4e7f3cb665d",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=763..764 rows=6924 loops=1)\n    -> Stream results  (cost=32401 rows=1947) (actual time=601..759 rows=6924 loops=1)\n        -> Nested loop inner join  (cost=32401 rows=1947) (actual time=601..754 rows=6924 loops=1)\n            -> Nested loop inner join  (cost=31719 rows=1947) (actual time=601..746 rows=6924 loops=1)\n                -> Filter: ((hi.rn = 1) and (hi.n_products >= 3))  (cost=3.38..11271 rows=3338) (actual time=315..347 rows=15155 loops=1)\n                    -> Table scan on hi  (cost=2.5..2.5 rows=0) (actual time=315..341 rows=100000 loops=1)\n                        -> Materialize CTE top_priced  (cost=0..0 rows=0) (actual time=315..315 rows=100000 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=217..248 rows=100000 loops=1)\n                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=217..223 rows=100000 loops=1)\n                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=157..168 rows=100000 loops=1)\n                                        -> Temporary table  (cost=0..0 rows=0) (actual time=157..157 rows=100000 loops=1)\n                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=40..142 rows=100000 loops=1)\n                                                -> Sort: inventory.store_id  (cost=10089 rows=100163) (actual time=40..45.3 rows=100000 loops=1)\n                                                    -> Index scan on inventory using idx_inventory_store_price  (cost=10089 rows=100163) (actual time=0.0708..20.4 rows=100000 loops=1)\n                -> Filter: ((lo.rn = 1) and (hi.quantity < lo.quantity))  (cost=4.38..4.38 rows=0.583) (actual time=0.0238..0.0262 rows=0.457 loops=15155)\n                    -> Index lookup on lo using <auto_key1> (store_id=hi.store_id)  (cost=0.25..4.38 rows=17.5) (actual time=0.0208..0.0257 rows=6.19 loops=15155)\n                        -> Materialize CTE low_priced  (cost=0..0 rows=0) (actual time=286..286 rows=100000 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=69..97.8 rows=100000 loops=1)\n                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (cost=10089 rows=100163) (actual time=69..74.4 rows=100000 loops=1)\n                                    -> Index scan on inventory using idx_inventory_store_price  (cost=10089 rows=100163) (actual time=0.0679..21.1 rows=100000 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=hi.store_id)  (cost=0.25 rows=1) (actual time=0.001..0.00103 rows=1 loops=6924)\n"
+        },
+        {
+          "solution": "03_one_scan_pivot",
+          "status": "ok",
+          "median_s": 0.6117856810000148,
+          "times_s": [
+            0.6117856810000148,
+            0.6124122639999996,
+            0.6075292329999797
+          ],
+          "result_rows": 6924,
+          "result_digest": "844ac2adff41c5cb44fe583fcb11c4e7f3cb665d",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=623..623 rows=6924 loops=1)\n    -> Stream results  (cost=1588 rows=0) (actual time=606..618 rows=6924 loops=1)\n        -> Nested loop inner join  (cost=1588 rows=0) (actual time=606..614 rows=6924 loops=1)\n            -> Table scan on e  (cost=2.5..2.5 rows=0) (actual time=606..607 rows=6924 loops=1)\n                -> Materialize CTE ends  (cost=0..0 rows=0) (actual time=606..606 rows=6924 loops=1)\n                    -> Filter: (hi_qty < lo_qty)  (actual time=602..604 rows=6924 loops=1)\n                        -> Table scan on <temporary>  (actual time=602..603 rows=15155 loops=1)\n                            -> Aggregate using temporary table  (actual time=602..602 rows=15155 loops=1)\n                                -> Filter: ((ranked.n_products >= 3) and ((ranked.rn_hi = 1) or (ranked.rn_lo = 1)))  (cost=1.78..11271 rows=6343) (actual time=548..586 rows=29494 loops=1)\n                                    -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=548..577 rows=100000 loops=1)\n                                        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=548..548 rows=100000 loops=1)\n                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=449..488 rows=100000 loops=1)\n                                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (actual time=449..455 rows=100000 loops=1)\n                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=365..395 rows=100000 loops=1)\n                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=365..365 rows=100000 loops=1)\n                                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=285..319 rows=100000 loops=1)\n                                                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=285..291 rows=100000 loops=1)\n                                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=204..232 rows=100000 loops=1)\n                                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=204..204 rows=100000 loops=1)\n                                                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=40.3..160 rows=100000 loops=1)\n                                                                                -> Sort: inventory.store_id  (cost=10089 rows=100163) (actual time=40.3..45.7 rows=100000 loops=1)\n                                                                                    -> Index scan on inventory using idx_inventory_store_price  (cost=10089 rows=100163) (actual time=0.0736..20.6 rows=100000 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=e.store_id)  (cost=0.25 rows=1) (actual time=864e-6..892e-6 rows=1 loops=6924)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "stores": 189188,
+        "inventory": 1000000
+      },
+      "load_seconds": 15.674,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_not_exists_two_ends",
+          "status": "ok",
+          "median_s": 12.583991783999977,
+          "times_s": [
+            12.67950350000001,
+            12.583991783999977,
+            12.527028006000023
+          ],
+          "result_rows": 69090,
+          "result_digest": "dae0090f2a770570e8f10a008276463125d1b8af",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=14122..14126 rows=69090 loops=1)\n    -> Stream results  (cost=23.8e+6 rows=107e+6) (actual time=0.24..14059 rows=69090 loops=1)\n        -> Nested loop antijoin  (cost=23.8e+6 rows=107e+6) (actual time=0.234..13992 rows=69090 loops=1)\n            -> Nested loop inner join  (cost=9.24e+6 rows=15.6e+6) (actual time=0.215..12113 rows=276068 loops=1)\n                -> Nested loop antijoin  (cost=2.84e+6 rows=6.84e+6) (actual time=0.172..11056 rows=151367 loops=1)\n                    -> Nested loop inner join  (cost=449578 rows=997442) (actual time=0.157..4302 rows=939411 loops=1)\n                        -> Table scan on hi  (cost=100473 rows=997442) (actual time=0.124..279 rows=1e+6 loops=1)\n                        -> Filter: ((select #4) >= 3)  (cost=0.25 rows=1) (actual time=0.00378..0.00386 rows=0.939 loops=1e+6)\n                            -> Single-row index lookup on s using PRIMARY (store_id=hi.store_id)  (cost=0.25 rows=1) (actual time=336e-6..364e-6 rows=1 loops=1e+6)\n                            -> Select #4 (subquery in condition; dependent)\n                                -> Aggregate: count(0)  (cost=1.69 rows=1) (actual time=0.00292..0.00295 rows=1 loops=1e+6)\n                                    -> Covering index lookup on c using store_id (store_id=s.store_id)  (cost=1.01 rows=6.85) (actual time=0.00161..0.00247 rows=6.93 loops=1e+6)\n                    -> Filter: ((x.price > hi.price) or ((x.price = hi.price) and (x.quantity > hi.quantity)) or ((x.quantity = hi.quantity) and (x.price = hi.price) and (x.product_name < hi.product_name)))  (cost=11.7 rows=6.85) (actual time=0.00708..0.00708 rows=0.839 loops=939411)\n                        -> Index lookup on x using store_id (store_id=hi.store_id)  (cost=11.7 rows=6.85) (actual time=0.00586..0.00626 rows=2.78 loops=939411)\n                -> Filter: (hi.quantity < lo.quantity)  (cost=1.71 rows=2.28) (actual time=0.00563..0.00676 rows=1.82 loops=151367)\n                    -> Index lookup on lo using store_id (store_id=hi.store_id)  (cost=1.71 rows=6.85) (actual time=0.00481..0.00619 rows=6.21 loops=151367)\n            -> Filter: ((y.price < lo.price) or ((y.price = lo.price) and (y.quantity > lo.quantity)) or ((y.quantity = lo.quantity) and (y.price = lo.price) and (y.product_name < lo.product_name)))  (cost=11.7 rows=6.85) (actual time=0.00669..0.00669 rows=0.75 loops=276068)\n                -> Index lookup on y using store_id (store_id=hi.store_id)  (cost=11.7 rows=6.85) (actual time=0.00523..0.00573 rows=3.39 loops=276068)\n"
+        },
+        {
+          "solution": "02_two_rankings_joined",
+          "status": "ok",
+          "median_s": 10.659689990000004,
+          "times_s": [
+            10.756114059000026,
+            10.585852195999962,
+            10.659689990000004
+          ],
+          "result_rows": 69090,
+          "result_digest": "dae0090f2a770570e8f10a008276463125d1b8af",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=10910..10915 rows=69090 loops=1)\n    -> Stream results  (cost=322626 rows=19391) (actual time=9064..10860 rows=69090 loops=1)\n        -> Nested loop inner join  (cost=322626 rows=19391) (actual time=9064..10813 rows=69090 loops=1)\n            -> Nested loop inner join  (cost=315839 rows=19391) (actual time=9064..10689 rows=69090 loops=1)\n                -> Filter: ((hi.rn = 1) and (hi.n_products >= 3))  (cost=3.38..112215 rows=33245) (actual time=6344..6661 rows=151367 loops=1)\n                    -> Table scan on hi  (cost=2.5..2.5 rows=0) (actual time=6344..6603 rows=1e+6 loops=1)\n                        -> Materialize CTE top_priced  (cost=0..0 rows=0) (actual time=6344..6344 rows=1e+6 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=5404..5731 rows=1e+6 loops=1)\n                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=5404..5464 rows=1e+6 loops=1)\n                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=4574..4841 rows=1e+6 loops=1)\n                                        -> Temporary table  (cost=0..0 rows=0) (actual time=4574..4574 rows=1e+6 loops=1)\n                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=490..4113 rows=1e+6 loops=1)\n                                                -> Sort: inventory.store_id  (cost=102659 rows=997442) (actual time=490..552 rows=1e+6 loops=1)\n                                                    -> Table scan on inventory  (cost=102659 rows=997442) (actual time=0.131..263 rows=1e+6 loops=1)\n                -> Filter: ((lo.rn = 1) and (hi.quantity < lo.quantity))  (cost=4.38..4.38 rows=0.583) (actual time=0.0237..0.0265 rows=0.456 loops=151367)\n                    -> Index lookup on lo using <auto_key1> (store_id=hi.store_id)  (cost=0.25..4.38 rows=17.5) (actual time=0.0202..0.026 rows=6.21 loops=151367)\n                        -> Materialize CTE low_priced  (cost=0..0 rows=0) (actual time=2719..2719 rows=1e+6 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=790..1133 rows=1e+6 loops=1)\n                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (cost=102659 rows=997442) (actual time=790..851 rows=1e+6 loops=1)\n                                    -> Table scan on inventory  (cost=102659 rows=997442) (actual time=0.21..263 rows=1e+6 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=hi.store_id)  (cost=0.25 rows=1) (actual time=0.00161..0.00164 rows=1 loops=69090)\n"
+        },
+        {
+          "solution": "03_one_scan_pivot",
+          "status": "ok",
+          "median_s": 10.244653622999977,
+          "times_s": [
+            10.244653622999977,
+            10.184786600999985,
+            10.363692477999962
+          ],
+          "result_rows": 69090,
+          "result_digest": "dae0090f2a770570e8f10a008276463125d1b8af",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=10456..10461 rows=69090 loops=1)\n    -> Stream results  (cost=15794 rows=0) (actual time=10248..10407 rows=69090 loops=1)\n        -> Nested loop inner join  (cost=15794 rows=0) (actual time=10248..10365 rows=69090 loops=1)\n            -> Table scan on e  (cost=2.5..2.5 rows=0) (actual time=10248..10258 rows=69090 loops=1)\n                -> Materialize CTE ends  (cost=0..0 rows=0) (actual time=10248..10248 rows=69090 loops=1)\n                    -> Filter: (hi_qty < lo_qty)  (actual time=10182..10229 rows=69090 loops=1)\n                        -> Table scan on <temporary>  (actual time=10182..10220 rows=151367 loops=1)\n                            -> Aggregate using temporary table  (actual time=10182..10182 rows=151366 loops=1)\n                                -> Filter: ((ranked.n_products >= 3) and ((ranked.rn_hi = 1) or (ranked.rn_lo = 1)))  (cost=1.78..112215 rows=63165) (actual time=8694..9085 rows=294648 loops=1)\n                                    -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=8694..8988 rows=1e+6 loops=1)\n                                        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=8694..8694 rows=1e+6 loops=1)\n                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=7608..8022 rows=1e+6 loops=1)\n                                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (actual time=7608..7681 rows=1e+6 loops=1)\n                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=6729..7032 rows=1e+6 loops=1)\n                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=6729..6729 rows=1e+6 loops=1)\n                                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=5867..6246 rows=1e+6 loops=1)\n                                                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=5867..5938 rows=1e+6 loops=1)\n                                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=5012..5298 rows=1e+6 loops=1)\n                                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=5012..5012 rows=1e+6 loops=1)\n                                                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=477..4507 rows=1e+6 loops=1)\n                                                                                -> Sort: inventory.store_id  (cost=102659 rows=997442) (actual time=477..539 rows=1e+6 loops=1)\n                                                                                    -> Table scan on inventory  (cost=102659 rows=997442) (actual time=0.124..245 rows=1e+6 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=e.store_id)  (cost=0.25 rows=1) (actual time=0.00136..0.00139 rows=1 loops=69090)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "stores": 189188,
+        "inventory": 1000000
+      },
+      "load_seconds": 15.674,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_not_exists_two_ends",
+          "status": "ok",
+          "median_s": 5.540671125000017,
+          "times_s": [
+            5.541479647000074,
+            5.540671125000017,
+            5.527607947999968
+          ],
+          "result_rows": 69090,
+          "result_digest": "dae0090f2a770570e8f10a008276463125d1b8af",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=5909..5913 rows=69090 loops=1)\n    -> Stream results  (cost=12.3e+6 rows=44.6e+6) (actual time=0.162..5854 rows=69090 loops=1)\n        -> Nested loop antijoin  (cost=12.3e+6 rows=44.6e+6) (actual time=0.156..5801 rows=69090 loops=1)\n            -> Nested loop inner join  (cost=5.79e+6 rows=8.64e+6) (actual time=0.145..5063 rows=276068 loops=1)\n                -> Nested loop antijoin  (cost=2.02e+6 rows=5.03e+6) (actual time=0.0904..4536 rows=151367 loops=1)\n                    -> Nested loop inner join  (cost=344651 rows=974667) (actual time=0.0748..1115 rows=939411 loops=1)\n                        -> Filter: ((select #4) >= 3)  (cost=19047 rows=188943) (actual time=0.0702..630 rows=151367 loops=1)\n                            -> Table scan on s  (cost=19047 rows=188943) (actual time=0.047..44.3 rows=189188 loops=1)\n                            -> Select #4 (subquery in condition; dependent)\n                                -> Aggregate: count(0)  (cost=2.24 rows=1) (actual time=0.00263..0.00266 rows=1 loops=189188)\n                                    -> Covering index lookup on c using idx_inventory_store_price (store_id=s.store_id)  (cost=1.72 rows=5.16) (actual time=0.00152..0.00225 rows=5.29 loops=189188)\n                        -> Covering index lookup on hi using idx_inventory_store_price (store_id=s.store_id)  (cost=1.21 rows=5.16) (actual time=0.00162..0.00273 rows=6.21 loops=151367)\n                    -> Filter: ((x.price > hi.price) or ((x.price = hi.price) and (x.quantity > hi.quantity)) or ((x.quantity = hi.quantity) and (x.price = hi.price) and (x.product_name < hi.product_name)))  (cost=6.23 rows=5.16) (actual time=0.00354..0.00354 rows=0.839 loops=939411)\n                        -> Covering index lookup on x using idx_inventory_store_price (store_id=s.store_id)  (cost=6.23 rows=5.16) (actual time=0.0016..0.00222 rows=4.95 loops=939411)\n                -> Filter: (hi.quantity < lo.quantity)  (cost=1.21 rows=1.72) (actual time=0.00228..0.00326 rows=1.82 loops=151367)\n                    -> Covering index lookup on lo using idx_inventory_store_price (store_id=s.store_id)  (cost=1.21 rows=5.16) (actual time=0.00157..0.00272 rows=6.21 loops=151367)\n            -> Filter: ((y.price < lo.price) or ((y.price = lo.price) and (y.quantity > lo.quantity)) or ((y.quantity = lo.quantity) and (y.price = lo.price) and (y.product_name < lo.product_name)))  (cost=6.23 rows=5.16) (actual time=0.00256..0.00256 rows=0.75 loops=276068)\n                -> Covering index lookup on y using idx_inventory_store_price (store_id=s.store_id)  (cost=6.23 rows=5.16) (actual time=0.00162..0.00192 rows=2.4 loops=276068)\n"
+        },
+        {
+          "solution": "02_two_rankings_joined",
+          "status": "ok",
+          "median_s": 10.584537482999963,
+          "times_s": [
+            10.584537482999963,
+            10.565441905999933,
+            11.214645478999955
+          ],
+          "result_rows": 69090,
+          "result_digest": "dae0090f2a770570e8f10a008276463125d1b8af",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=10916..10921 rows=69090 loops=1)\n    -> Stream results  (cost=322626 rows=19391) (actual time=9077..10867 rows=69090 loops=1)\n        -> Nested loop inner join  (cost=322626 rows=19391) (actual time=9077..10819 rows=69090 loops=1)\n            -> Nested loop inner join  (cost=315839 rows=19391) (actual time=9077..10697 rows=69090 loops=1)\n                -> Filter: ((hi.rn = 1) and (hi.n_products >= 3))  (cost=3.38..112215 rows=33245) (actual time=6290..6606 rows=151367 loops=1)\n                    -> Table scan on hi  (cost=2.5..2.5 rows=0) (actual time=6290..6548 rows=1e+6 loops=1)\n                        -> Materialize CTE top_priced  (cost=0..0 rows=0) (actual time=6290..6290 rows=1e+6 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=5344..5672 rows=1e+6 loops=1)\n                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=5344..5403 rows=1e+6 loops=1)\n                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=4516..4782 rows=1e+6 loops=1)\n                                        -> Temporary table  (cost=0..0 rows=0) (actual time=4516..4516 rows=1e+6 loops=1)\n                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=456..4048 rows=1e+6 loops=1)\n                                                -> Sort: inventory.store_id  (cost=102659 rows=997442) (actual time=456..517 rows=1e+6 loops=1)\n                                                    -> Index scan on inventory using idx_inventory_store_price  (cost=102659 rows=997442) (actual time=0.123..228 rows=1e+6 loops=1)\n                -> Filter: ((lo.rn = 1) and (hi.quantity < lo.quantity))  (cost=4.38..4.38 rows=0.583) (actual time=0.0241..0.0269 rows=0.456 loops=151367)\n                    -> Index lookup on lo using <auto_key1> (store_id=hi.store_id)  (cost=0.25..4.38 rows=17.5) (actual time=0.0207..0.0264 rows=6.21 loops=151367)\n                        -> Materialize CTE low_priced  (cost=0..0 rows=0) (actual time=2786..2786 rows=1e+6 loops=1)\n                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=794..1147 rows=1e+6 loops=1)\n                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (cost=102659 rows=997442) (actual time=793..857 rows=1e+6 loops=1)\n                                    -> Index scan on inventory using idx_inventory_store_price  (cost=102659 rows=997442) (actual time=0.169..270 rows=1e+6 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=hi.store_id)  (cost=0.25 rows=1) (actual time=0.00158..0.00161 rows=1 loops=69090)\n"
+        },
+        {
+          "solution": "03_one_scan_pivot",
+          "status": "ok",
+          "median_s": 10.242722534999984,
+          "times_s": [
+            10.242722534999984,
+            10.24241227799996,
+            10.75881984900002
+          ],
+          "result_rows": 69090,
+          "result_digest": "dae0090f2a770570e8f10a008276463125d1b8af",
+          "explain_analyze": "-> Sort: imbalance_ratio DESC, s.store_name  (actual time=10390..10395 rows=69090 loops=1)\n    -> Stream results  (cost=15794 rows=0) (actual time=10187..10340 rows=69090 loops=1)\n        -> Nested loop inner join  (cost=15794 rows=0) (actual time=10187..10300 rows=69090 loops=1)\n            -> Table scan on e  (cost=2.5..2.5 rows=0) (actual time=10187..10197 rows=69090 loops=1)\n                -> Materialize CTE ends  (cost=0..0 rows=0) (actual time=10187..10187 rows=69090 loops=1)\n                    -> Filter: (hi_qty < lo_qty)  (actual time=10121..10168 rows=69090 loops=1)\n                        -> Table scan on <temporary>  (actual time=10121..10159 rows=151367 loops=1)\n                            -> Aggregate using temporary table  (actual time=10121..10121 rows=151366 loops=1)\n                                -> Filter: ((ranked.n_products >= 3) and ((ranked.rn_hi = 1) or (ranked.rn_lo = 1)))  (cost=1.78..112215 rows=63165) (actual time=8541..8954 rows=294648 loops=1)\n                                    -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=8541..8849 rows=1e+6 loops=1)\n                                        -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=8541..8541 rows=1e+6 loops=1)\n                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price,inventory.quantity desc,inventory.product_name )   (actual time=7451..7873 rows=1e+6 loops=1)\n                                                -> Sort: inventory.store_id, inventory.price, inventory.quantity DESC, inventory.product_name  (actual time=7451..7525 rows=1e+6 loops=1)\n                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=6569..6872 rows=1e+6 loops=1)\n                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=6569..6569 rows=1e+6 loops=1)\n                                                            -> Window aggregate: row_number() OVER (PARTITION BY inventory.store_id ORDER BY inventory.price desc,inventory.quantity desc,inventory.product_name )   (actual time=5738..6102 rows=1e+6 loops=1)\n                                                                -> Sort: inventory.store_id, inventory.price DESC, inventory.quantity DESC, inventory.product_name  (actual time=5738..5804 rows=1e+6 loops=1)\n                                                                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=4845..5146 rows=1e+6 loops=1)\n                                                                        -> Temporary table  (cost=0..0 rows=0) (actual time=4845..4845 rows=1e+6 loops=1)\n                                                                            -> Window aggregate with buffering: count(0) OVER (PARTITION BY inventory.store_id )   (actual time=457..4385 rows=1e+6 loops=1)\n                                                                                -> Sort: inventory.store_id  (cost=102659 rows=997442) (actual time=457..518 rows=1e+6 loops=1)\n                                                                                    -> Index scan on inventory using idx_inventory_store_price  (cost=102659 rows=997442) (actual time=0.117..221 rows=1e+6 loops=1)\n            -> Single-row index lookup on s using PRIMARY (store_id=e.store_id)  (cost=0.25 rows=1) (actual time=0.0013..0.00133 rows=1 loops=69090)\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,336 @@
+{
+  "problem": "06-find-golden-hour-customers",
+  "generated_at": "2026-11-04T15:29:26+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subqueries",
+    "02_totals_and_peak_join",
+    "03_per_customer_cte"
+  ],
+  "optimal": "03_per_customer_cte",
+  "machine": {
+    "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "python": "3.11.18",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "mem_total": "8122100 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261101.186.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "restaurant_orders": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.11573253000005934,
+          "times_s": [
+            0.12004452899986973,
+            0.11573253000005934,
+            0.11520315500001743
+          ],
+          "result_rows": 20,
+          "result_digest": "854f49c02ccf3df9dd393088c43eed60f3edf8e2",
+          "explain_analyze": "-> Sort: average_rating DESC, x.customer_id DESC  (cost=1643..1643 rows=1000) (actual time=160..160 rows=20 loops=1)\n    -> Filter: ((x.total_orders >= 3) and ((5 * x.peak_orders) >= (3 * x.total_orders)) and ((2 * x.rated_orders) >= x.total_orders) and (x.avg_rating >= 4.0000))  (cost=431..546 rows=1000) (actual time=160..160 rows=20 loops=1)\n        -> Table scan on x  (cost=431..446 rows=1000) (actual time=160..160 rows=187 loops=1)\n            -> Materialize  (cost=431..431 rows=1000) (actual time=160..160 rows=187 loops=1)\n                -> Table scan on c  (cost=316..331 rows=1000) (actual time=0.38..0.425 rows=187 loops=1)\n                    -> Materialize  (cost=316..316 rows=1000) (actual time=0.38..0.38 rows=187 loops=1)\n                        -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.348..0.367 rows=187 loops=1)\n                            -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.347..0.347 rows=187 loops=1)\n                                -> Table scan on restaurant_orders  (cost=101 rows=1000) (actual time=0.0551..0.188 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_totals_and_peak_join",
+          "status": "ok",
+          "median_s": 0.0020040259998950205,
+          "times_s": [
+            0.002083894999941549,
+            0.0020040259998950205,
+            0.0019044650000523689
+          ],
+          "result_rows": 20,
+          "result_digest": "854f49c02ccf3df9dd393088c43eed60f3edf8e2",
+          "explain_analyze": "-> Nested loop inner join  (cost=2503 rows=0) (actual time=1.18..1.21 rows=20 loops=1)\n    -> Sort: average_rating DESC, t.customer_id DESC  (cost=2.6..2.6 rows=0) (actual time=0.541..0.543 rows=35 loops=1)\n        -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=0.522..0.525 rows=35 loops=1)\n            -> Materialize CTE totals  (cost=0..0 rows=0) (actual time=0.522..0.522 rows=35 loops=1)\n                -> Filter: ((total_orders >= 3) and ((2 * rated_orders) >= total_orders) and (avg_rating >= 4))  (actual time=0.465..0.508 rows=35 loops=1)\n                    -> Table scan on <temporary>  (actual time=0.461..0.48 rows=187 loops=1)\n                        -> Aggregate using temporary table  (actual time=0.461..0.461 rows=187 loops=1)\n                            -> Table scan on restaurant_orders  (cost=101 rows=1000) (actual time=0.0202..0.203 rows=1000 loops=1)\n    -> Filter: ((5 * p.peak_orders) >= (3 * t.total_orders))  (cost=0.25..2.5 rows=10) (actual time=0.0189..0.019 rows=0.571 loops=35)\n        -> Index lookup on p using <auto_key0> (customer_id=t.customer_id)  (cost=0.25..2.5 rows=10) (actual time=0.0186..0.0188 rows=0.886 loops=35)\n            -> Materialize CTE peak  (cost=0..0 rows=0) (actual time=0.635..0.635 rows=135 loops=1)\n                -> Table scan on <temporary>  (actual time=0.579..0.592 rows=135 loops=1)\n                    -> Aggregate using temporary table  (actual time=0.578..0.578 rows=135 loops=1)\n                        -> Filter: ((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00'))  (cost=101 rows=1000) (actual time=0.0371..0.479 rows=491 loops=1)\n                            -> Table scan on restaurant_orders  (cost=101 rows=1000) (actual time=0.0339..0.182 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_per_customer_cte",
+          "status": "ok",
+          "median_s": 0.0017090509998070047,
+          "times_s": [
+            0.001728690999925675,
+            0.0017090509998070047,
+            0.00164863999998488
+          ],
+          "result_rows": 20,
+          "result_digest": "854f49c02ccf3df9dd393088c43eed60f3edf8e2",
+          "explain_analyze": "-> Sort: average_rating DESC, per_customer.customer_id DESC  (cost=2.6..2.6 rows=0) (actual time=1.01..1.01 rows=20 loops=1)\n    -> Table scan on per_customer  (cost=2.5..2.5 rows=0) (actual time=0.999..1 rows=20 loops=1)\n        -> Materialize CTE per_customer  (cost=0..0 rows=0) (actual time=0.999..0.999 rows=20 loops=1)\n            -> Filter: ((total_orders >= 3) and ((5 * peak_orders) >= (3 * total_orders)) and ((2 * rated_orders) >= total_orders) and (avg_rating >= 4))  (actual time=0.94..0.987 rows=20 loops=1)\n                -> Table scan on <temporary>  (actual time=0.935..0.953 rows=187 loops=1)\n                    -> Aggregate using temporary table  (actual time=0.934..0.934 rows=187 loops=1)\n                        -> Table scan on restaurant_orders  (cost=101 rows=1000) (actual time=0.0208..0.276 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "restaurant_orders": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.0038603379998676246,
+          "times_s": [
+            0.004333589999987453,
+            0.0038179339999260264,
+            0.0038603379998676246
+          ],
+          "result_rows": 20,
+          "result_digest": "854f49c02ccf3df9dd393088c43eed60f3edf8e2",
+          "explain_analyze": "-> Sort: average_rating DESC, x.customer_id DESC  (cost=285..285 rows=188) (actual time=3.4..3.4 rows=20 loops=1)\n    -> Filter: ((x.total_orders >= 3) and ((5 * x.peak_orders) >= (3 * x.total_orders)) and ((2 * x.rated_orders) >= x.total_orders) and (x.avg_rating >= 4.0000))  (cost=101..124 rows=188) (actual time=3.34..3.38 rows=20 loops=1)\n        -> Table scan on x  (cost=101..106 rows=188) (actual time=3.34..3.36 rows=187 loops=1)\n            -> Materialize  (cost=101..101 rows=188) (actual time=3.34..3.34 rows=187 loops=1)\n                -> Table scan on c  (cost=77.1..81.9 rows=188) (actual time=0.352..0.381 rows=187 loops=1)\n                    -> Materialize  (cost=77.1..77.1 rows=188) (actual time=0.351..0.351 rows=187 loops=1)\n                        -> Covering index skip scan for deduplication on restaurant_orders using idx_orders_customer_ts_rating  (cost=58.3 rows=188) (actual time=0.0138..0.31 rows=187 loops=1)\n"
+        },
+        {
+          "solution": "02_totals_and_peak_join",
+          "status": "ok",
+          "median_s": 0.0016838340000049357,
+          "times_s": [
+            0.0016838340000049357,
+            0.0016337380000095436,
+            0.0016899319998628926
+          ],
+          "result_rows": 20,
+          "result_digest": "854f49c02ccf3df9dd393088c43eed60f3edf8e2",
+          "explain_analyze": "-> Nested loop inner join  (cost=3072 rows=1870) (actual time=0.91..0.944 rows=20 loops=1)\n    -> Sort: average_rating DESC, t.customer_id DESC  (cost=385..385 rows=187) (actual time=0.342..0.344 rows=35 loops=1)\n        -> Table scan on t  (cost=220..225 rows=187) (actual time=0.324..0.327 rows=35 loops=1)\n            -> Materialize CTE totals  (cost=220..220 rows=187) (actual time=0.323..0.323 rows=35 loops=1)\n                -> Filter: ((count(0) >= 3) and ((2 * count(restaurant_orders.order_rating)) >= count(0)) and (avg(restaurant_orders.order_rating) >= 4))  (cost=201 rows=187) (actual time=0.0256..0.308 rows=35 loops=1)\n                    -> Group aggregate: count(0), count(restaurant_orders.order_rating), avg(restaurant_orders.order_rating)  (cost=201 rows=187) (actual time=0.0219..0.282 rows=187 loops=1)\n                        -> Covering index scan on restaurant_orders using idx_orders_customer_ts_rating  (cost=101 rows=1000) (actual time=0.0187..0.183 rows=1000 loops=1)\n    -> Filter: ((5 * p.peak_orders) >= (3 * t.total_orders))  (cost=198..2.5 rows=10) (actual time=0.0168..0.017 rows=0.571 loops=35)\n        -> Index lookup on p using <auto_key0> (customer_id=t.customer_id)  (cost=220..222 rows=10) (actual time=0.0166..0.0167 rows=0.886 loops=35)\n            -> Materialize CTE peak  (cost=220..220 rows=187) (actual time=0.564..0.564 rows=135 loops=1)\n                -> Group aggregate: count(0)  (cost=201 rows=187) (actual time=0.0352..0.516 rows=135 loops=1)\n                    -> Filter: ((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00'))  (cost=101 rows=1000) (actual time=0.0331..0.48 rows=491 loops=1)\n                        -> Covering index scan on restaurant_orders using idx_orders_customer_ts_rating  (cost=101 rows=1000) (actual time=0.0305..0.195 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_per_customer_cte",
+          "status": "ok",
+          "median_s": 0.0014462260000982496,
+          "times_s": [
+            0.0014494210001885222,
+            0.0014462260000982496,
+            0.001405033999844818
+          ],
+          "result_rows": 20,
+          "result_digest": "854f49c02ccf3df9dd393088c43eed60f3edf8e2",
+          "explain_analyze": "-> Sort: average_rating DESC, per_customer.customer_id DESC  (cost=385..385 rows=187) (actual time=0.658..0.659 rows=20 loops=1)\n    -> Table scan on per_customer  (cost=220..225 rows=187) (actual time=0.644..0.646 rows=20 loops=1)\n        -> Materialize CTE per_customer  (cost=220..220 rows=187) (actual time=0.643..0.643 rows=20 loops=1)\n            -> Filter: ((count(0) >= 3) and ((5 * sum(((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00')))) >= (3 * count(0))) and ((2 * count(restaurant_orders.order_rating)) >= count(0)) and (avg(restaurant_orders.order_rating) >= 4))  (cost=201 rows=187) (actual time=0.0416..0.629 rows=20 loops=1)\n                -> Group aggregate: count(0), sum(((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00'))), count(restaurant_orders.order_rating), avg(restaurant_orders.order_rating)  (cost=201 rows=187) (actual time=0.0261..0.593 rows=187 loops=1)\n                    -> Covering index scan on restaurant_orders using idx_orders_customer_ts_rating  (cost=101 rows=1000) (actual time=0.0197..0.201 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "restaurant_orders": 100000
+      },
+      "load_seconds": 1.327,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_totals_and_peak_join",
+          "status": "ok",
+          "median_s": 0.114358472000049,
+          "times_s": [
+            0.114358472000049,
+            0.11691753199988852,
+            0.11359473400011666
+          ],
+          "result_rows": 1866,
+          "result_digest": "9a3b61d1f97282299b3a31aec15f69613133d2f1",
+          "explain_analyze": "-> Nested loop inner join  (cost=250068 rows=0) (actual time=115..120 rows=1866 loops=1)\n    -> Sort: average_rating DESC, t.customer_id DESC  (cost=2.6..2.6 rows=0) (actual time=49.6..50 rows=3895 loops=1)\n        -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=48..48.4 rows=3895 loops=1)\n            -> Materialize CTE totals  (cost=0..0 rows=0) (actual time=48..48 rows=3895 loops=1)\n                -> Filter: ((total_orders >= 3) and ((2 * rated_orders) >= total_orders) and (avg_rating >= 4))  (actual time=42.9..47.1 rows=3895 loops=1)\n                    -> Table scan on <temporary>  (actual time=42.9..44.7 rows=18137 loops=1)\n                        -> Aggregate using temporary table  (actual time=42.9..42.9 rows=18137 loops=1)\n                            -> Table scan on restaurant_orders  (cost=10090 rows=100018) (actual time=0.282..18.6 rows=100000 loops=1)\n    -> Filter: ((5 * p.peak_orders) >= (3 * t.total_orders))  (cost=0.25..2.5 rows=10) (actual time=0.0177..0.0178 rows=0.479 loops=3895)\n        -> Index lookup on p using <auto_key0> (customer_id=t.customer_id)  (cost=0.25..2.5 rows=10) (actual time=0.0175..0.0176 rows=0.783 loops=3895)\n            -> Materialize CTE peak  (cost=0..0 rows=0) (actual time=65.7..65.7 rows=12870 loops=1)\n                -> Table scan on <temporary>  (actual time=57.1..58.4 rows=12870 loops=1)\n                    -> Aggregate using temporary table  (actual time=57.1..57.1 rows=12870 loops=1)\n                        -> Filter: ((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00'))  (cost=10090 rows=100018) (actual time=1.02..46.4 rows=51465 loops=1)\n                            -> Table scan on restaurant_orders  (cost=10090 rows=100018) (actual time=1.01..17.5 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_per_customer_cte",
+          "status": "ok",
+          "median_s": 0.09938907299988387,
+          "times_s": [
+            0.09938123200004156,
+            0.09938907299988387,
+            0.14350043099989307
+          ],
+          "result_rows": 1866,
+          "result_digest": "9a3b61d1f97282299b3a31aec15f69613133d2f1",
+          "explain_analyze": "-> Sort: average_rating DESC, per_customer.customer_id DESC  (cost=2.6..2.6 rows=0) (actual time=92.2..92.3 rows=1866 loops=1)\n    -> Table scan on per_customer  (cost=2.5..2.5 rows=0) (actual time=91.4..91.6 rows=1866 loops=1)\n        -> Materialize CTE per_customer  (cost=0..0 rows=0) (actual time=91.4..91.4 rows=1866 loops=1)\n            -> Filter: ((total_orders >= 3) and ((5 * peak_orders) >= (3 * total_orders)) and ((2 * rated_orders) >= total_orders) and (avg_rating >= 4))  (actual time=86.2..90.9 rows=1866 loops=1)\n                -> Table scan on <temporary>  (actual time=86.2..88 rows=18137 loops=1)\n                    -> Aggregate using temporary table  (actual time=86.2..86.2 rows=18137 loops=1)\n                        -> Table scan on restaurant_orders  (cost=10090 rows=100018) (actual time=0.267..20.7 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "restaurant_orders": 100000
+      },
+      "load_seconds": 1.327,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.28104525300000205,
+          "times_s": [
+            0.28104525300000205,
+            0.28180691900001875,
+            0.2798332100001062
+          ],
+          "result_rows": 1866,
+          "result_digest": "9a3b61d1f97282299b3a31aec15f69613133d2f1",
+          "explain_analyze": "-> Sort: average_rating DESC, x.customer_id DESC  (cost=37892..37892 rows=17638) (actual time=316..316 rows=1866 loops=1)\n    -> Filter: ((x.total_orders >= 3) and ((5 * x.peak_orders) >= (3 * x.total_orders)) and ((2 * x.rated_orders) >= x.total_orders) and (x.avg_rating >= 4.0000))  (cost=9261..11248 rows=17638) (actual time=311..315 rows=1866 loops=1)\n        -> Table scan on x  (cost=9261..9484 rows=17638) (actual time=311..313 rows=18137 loops=1)\n            -> Materialize  (cost=9261..9261 rows=17638) (actual time=311..311 rows=18137 loops=1)\n                -> Table scan on c  (cost=7274..7497 rows=17638) (actual time=34.3..37.2 rows=18137 loops=1)\n                    -> Materialize  (cost=7274..7274 rows=17638) (actual time=34.3..34.3 rows=18137 loops=1)\n                        -> Covering index skip scan for deduplication on restaurant_orders using idx_orders_customer_ts_rating  (cost=5510 rows=17638) (actual time=0.0645..32.9 rows=18137 loops=1)\n"
+        },
+        {
+          "solution": "02_totals_and_peak_join",
+          "status": "ok",
+          "median_s": 0.08689579900010358,
+          "times_s": [
+            0.08694150800010902,
+            0.08640298799991797,
+            0.08689579900010358
+          ],
+          "result_rows": 1866,
+          "result_digest": "9a3b61d1f97282299b3a31aec15f69613133d2f1",
+          "explain_analyze": "-> Nested loop inner join  (cost=316970 rows=176377) (actual time=89..93.9 rows=1866 loops=1)\n    -> Sort: average_rating DESC, t.customer_id DESC  (cost=48763..48763 rows=17637) (actual time=31.9..32.3 rows=3895 loops=1)\n        -> Table scan on t  (cost=21897..22120 rows=17637) (actual time=30.3..30.7 rows=3895 loops=1)\n            -> Materialize CTE totals  (cost=21897..21897 rows=17637) (actual time=30.3..30.3 rows=3895 loops=1)\n                -> Filter: ((count(0) >= 3) and ((2 * count(restaurant_orders.order_rating)) >= count(0)) and (avg(restaurant_orders.order_rating) >= 4))  (cost=20133 rows=17637) (actual time=0.229..29.3 rows=3895 loops=1)\n                    -> Group aggregate: count(0), count(restaurant_orders.order_rating), avg(restaurant_orders.order_rating)  (cost=20133 rows=17637) (actual time=0.222..27 rows=18137 loops=1)\n                        -> Covering index scan on restaurant_orders using idx_orders_customer_ts_rating  (cost=10111 rows=100224) (actual time=0.216..17.3 rows=100000 loops=1)\n    -> Filter: ((5 * p.peak_orders) >= (3 * t.total_orders))  (cost=19707..2.5 rows=10) (actual time=0.0156..0.0157 rows=0.479 loops=3895)\n        -> Index lookup on p using <auto_key0> (customer_id=t.customer_id)  (cost=21897..21899 rows=10) (actual time=0.0154..0.0155 rows=0.783 loops=3895)\n            -> Materialize CTE peak  (cost=21897..21897 rows=17637) (actual time=57.1..57.1 rows=12870 loops=1)\n                -> Group aggregate: count(0)  (cost=20133 rows=17637) (actual time=0.921..49.5 rows=12870 loops=1)\n                    -> Filter: ((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00'))  (cost=10111 rows=100224) (actual time=0.918..45.9 rows=51465 loops=1)\n                        -> Covering index scan on restaurant_orders using idx_orders_customer_ts_rating  (cost=10111 rows=100224) (actual time=0.907..16.9 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_per_customer_cte",
+          "status": "ok",
+          "median_s": 0.06832677500005957,
+          "times_s": [
+            0.06862007700010508,
+            0.06832677500005957,
+            0.06823724099990613
+          ],
+          "result_rows": 1866,
+          "result_digest": "9a3b61d1f97282299b3a31aec15f69613133d2f1",
+          "explain_analyze": "-> Sort: average_rating DESC, per_customer.customer_id DESC  (cost=48763..48763 rows=17637) (actual time=66.4..66.5 rows=1866 loops=1)\n    -> Table scan on per_customer  (cost=21897..22120 rows=17637) (actual time=65.6..65.8 rows=1866 loops=1)\n        -> Materialize CTE per_customer  (cost=21897..21897 rows=17637) (actual time=65.6..65.6 rows=1866 loops=1)\n            -> Filter: ((count(0) >= 3) and ((5 * sum(((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00')))) >= (3 * count(0))) and ((2 * count(restaurant_orders.order_rating)) >= count(0)) and (avg(restaurant_orders.order_rating) >= 4))  (cost=20133 rows=17637) (actual time=0.277..64.9 rows=1866 loops=1)\n                -> Group aggregate: count(0), sum(((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00'))), count(restaurant_orders.order_rating), avg(restaurant_orders.order_rating)  (cost=20133 rows=17637) (actual time=0.258..61.5 rows=18137 loops=1)\n                    -> Covering index scan on restaurant_orders using idx_orders_customer_ts_rating  (cost=10111 rows=100224) (actual time=0.244..20.4 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "restaurant_orders": 1000000
+      },
+      "load_seconds": 12.671,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_totals_and_peak_join",
+          "status": "ok",
+          "median_s": 1.8643645099998594,
+          "times_s": [
+            1.8643645099998594,
+            1.9037871599998653,
+            1.8490750139999363
+          ],
+          "result_rows": 18527,
+          "result_digest": "9ae8d9565399d9f8e4b97f5ad2f7d56f3b07455e",
+          "explain_analyze": "-> Nested loop inner join  (cost=2.49e+6 rows=0) (actual time=1866..1923 rows=18527 loops=1)\n    -> Sort: average_rating DESC, t.customer_id DESC  (cost=2.6..2.6 rows=0) (actual time=1166..1168 rows=38768 loops=1)\n        -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=1149..1153 rows=38768 loops=1)\n            -> Materialize CTE totals  (cost=0..0 rows=0) (actual time=1149..1149 rows=38768 loops=1)\n                -> Filter: ((total_orders >= 3) and ((2 * rated_orders) >= total_orders) and (avg_rating >= 4))  (actual time=1074..1140 rows=38768 loops=1)\n                    -> Table scan on <temporary>  (actual time=1074..1115 rows=181896 loops=1)\n                        -> Aggregate using temporary table  (actual time=1074..1074 rows=181895 loops=1)\n                            -> Table scan on restaurant_orders  (cost=100433 rows=996880) (actual time=0.244..194 rows=1e+6 loops=1)\n    -> Filter: ((5 * p.peak_orders) >= (3 * t.total_orders))  (cost=0.25..2.5 rows=10) (actual time=0.0192..0.0193 rows=0.478 loops=38768)\n        -> Index lookup on p using <auto_key0> (customer_id=t.customer_id)  (cost=0.25..2.5 rows=10) (actual time=0.019..0.0191 rows=0.779 loops=38768)\n            -> Materialize CTE peak  (cost=0..0 rows=0) (actual time=699..699 rows=129263 loops=1)\n                -> Table scan on <temporary>  (actual time=600..613 rows=129263 loops=1)\n                    -> Aggregate using temporary table  (actual time=600..600 rows=129263 loops=1)\n                        -> Filter: ((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00'))  (cost=100433 rows=996880) (actual time=1.09..466 rows=516355 loops=1)\n                            -> Table scan on restaurant_orders  (cost=100433 rows=996880) (actual time=1.08..176 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_per_customer_cte",
+          "status": "ok",
+          "median_s": 1.8424824640001134,
+          "times_s": [
+            1.8424824640001134,
+            1.8422110709998378,
+            1.921374854000078
+          ],
+          "result_rows": 18527,
+          "result_digest": "9ae8d9565399d9f8e4b97f5ad2f7d56f3b07455e",
+          "explain_analyze": "-> Sort: average_rating DESC, per_customer.customer_id DESC  (cost=2.6..2.6 rows=0) (actual time=1772..1773 rows=18527 loops=1)\n    -> Table scan on per_customer  (cost=2.5..2.5 rows=0) (actual time=1763..1765 rows=18527 loops=1)\n        -> Materialize CTE per_customer  (cost=0..0 rows=0) (actual time=1763..1763 rows=18527 loops=1)\n            -> Filter: ((total_orders >= 3) and ((5 * peak_orders) >= (3 * total_orders)) and ((2 * rated_orders) >= total_orders) and (avg_rating >= 4))  (actual time=1683..1758 rows=18527 loops=1)\n                -> Table scan on <temporary>  (actual time=1683..1728 rows=181896 loops=1)\n                    -> Aggregate using temporary table  (actual time=1683..1683 rows=181895 loops=1)\n                        -> Table scan on restaurant_orders  (cost=100492 rows=997466) (actual time=0.298..211 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "restaurant_orders": 1000000
+      },
+      "load_seconds": 12.671,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 3.0128650829999515,
+          "times_s": [
+            3.056443156000114,
+            2.977295391000098,
+            3.0128650829999515
+          ],
+          "result_rows": 18527,
+          "result_digest": "9ae8d9565399d9f8e4b97f5ad2f7d56f3b07455e",
+          "explain_analyze": "-> Sort: average_rating DESC, x.customer_id DESC  (cost=463003..463003 rows=182655) (actual time=3460..3461 rows=18527 loops=1)\n    -> Filter: ((x.total_orders >= 3) and ((5 * x.peak_orders) >= (3 * x.total_orders)) and ((2 * x.rated_orders) >= x.total_orders) and (x.avg_rating >= 4.0000))  (cost=104928..125479 rows=182655) (actual time=3416..3453 rows=18527 loops=1)\n        -> Table scan on x  (cost=104928..107213 rows=182655) (actual time=3416..3434 rows=181896 loops=1)\n            -> Materialize  (cost=104928..104928 rows=182655) (actual time=3416..3416 rows=181896 loops=1)\n                -> Table scan on c  (cost=84377..86662 rows=182655) (actual time=440..472 rows=181896 loops=1)\n                    -> Materialize  (cost=84377..84377 rows=182655) (actual time=440..440 rows=181896 loops=1)\n                        -> Covering index skip scan for deduplication on restaurant_orders using idx_orders_customer_ts_rating  (cost=66111 rows=182655) (actual time=0.0339..424 rows=181896 loops=1)\n"
+        },
+        {
+          "solution": "02_totals_and_peak_join",
+          "status": "ok",
+          "median_s": 0.9073969139999463,
+          "times_s": [
+            0.8826053029999912,
+            0.9073969139999463,
+            0.9869488150000052
+          ],
+          "result_rows": 18527,
+          "result_digest": "9ae8d9565399d9f8e4b97f5ad2f7d56f3b07455e",
+          "explain_analyze": "-> Nested loop inner join  (cost=3.23e+6 rows=1.83e+6) (actual time=929..996 rows=18527 loops=1)\n    -> Sort: average_rating DESC, t.customer_id DESC  (cost=557901..557901 rows=182654) (actual time=317..319 rows=38768 loops=1)\n        -> Table scan on t  (cost=218093..220379 rows=182654) (actual time=300..304 rows=38768 loops=1)\n            -> Materialize CTE totals  (cost=218093..218093 rows=182654) (actual time=300..300 rows=38768 loops=1)\n                -> Filter: ((count(0) >= 3) and ((2 * count(restaurant_orders.order_rating)) >= count(0)) and (avg(restaurant_orders.order_rating) >= 4))  (cost=199828 rows=182654) (actual time=0.234..290 rows=38768 loops=1)\n                    -> Group aggregate: count(0), count(restaurant_orders.order_rating), avg(restaurant_orders.order_rating)  (cost=199828 rows=182654) (actual time=0.227..267 rows=181896 loops=1)\n                        -> Covering index scan on restaurant_orders using idx_orders_customer_ts_rating  (cost=100287 rows=995414) (actual time=0.219..171 rows=1e+6 loops=1)\n    -> Filter: ((5 * p.peak_orders) >= (3 * t.total_orders))  (cost=196284..2.5 rows=10) (actual time=0.0172..0.0173 rows=0.478 loops=38768)\n        -> Index lookup on p using <auto_key0> (customer_id=t.customer_id)  (cost=218094..218096 rows=10) (actual time=0.017..0.0171 rows=0.779 loops=38768)\n            -> Materialize CTE peak  (cost=218093..218093 rows=182654) (actual time=612..612 rows=129263 loops=1)\n                -> Group aggregate: count(0)  (cost=199828 rows=182654) (actual time=1.02..513 rows=129263 loops=1)\n                    -> Filter: ((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00'))  (cost=100287 rows=995414) (actual time=1.01..475 rows=516355 loops=1)\n                        -> Covering index scan on restaurant_orders using idx_orders_customer_ts_rating  (cost=100287 rows=995414) (actual time=0.997..175 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_per_customer_cte",
+          "status": "ok",
+          "median_s": 0.6859124669999801,
+          "times_s": [
+            0.686045728000181,
+            0.6859124669999801,
+            0.6817361169999003
+          ],
+          "result_rows": 18527,
+          "result_digest": "9ae8d9565399d9f8e4b97f5ad2f7d56f3b07455e",
+          "explain_analyze": "-> Sort: average_rating DESC, per_customer.customer_id DESC  (cost=557901..557901 rows=182654) (actual time=645..646 rows=18527 loops=1)\n    -> Table scan on per_customer  (cost=218093..220379 rows=182654) (actual time=635..637 rows=18527 loops=1)\n        -> Materialize CTE per_customer  (cost=218093..218093 rows=182654) (actual time=635..635 rows=18527 loops=1)\n            -> Filter: ((count(0) >= 3) and ((5 * sum(((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00')))) >= (3 * count(0))) and ((2 * count(restaurant_orders.order_rating)) >= count(0)) and (avg(restaurant_orders.order_rating) >= 4))  (cost=199828 rows=182654) (actual time=0.284..628 rows=18527 loops=1)\n                -> Group aggregate: count(0), sum(((cast(restaurant_orders.order_timestamp as time) between '11:00:00' and '14:00:00') or (cast(restaurant_orders.order_timestamp as time) between '18:00:00' and '21:00:00'))), count(restaurant_orders.order_rating), avg(restaurant_orders.order_rating)  (cost=199828 rows=182654) (actual time=0.265..596 rows=181896 loops=1)\n                    -> Covering index scan on restaurant_orders using idx_orders_customer_ts_rating  (cost=100287 rows=995414) (actual time=0.251..202 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

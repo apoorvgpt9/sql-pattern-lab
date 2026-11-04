@@ -1,0 +1,185 @@
+{
+  "problem": "31-consecutive-numbers",
+  "generated_at": "2026-11-04T15:32:11+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes"
+    ]
+  },
+  "solutions": [
+    "01_next_id_self_join",
+    "02_lead_two_ahead",
+    "03_islands_row_number_diff"
+  ],
+  "optimal": "03_islands_row_number_diff",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Logs": 1000
+      },
+      "load_seconds": 0.019,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_next_id_self_join",
+          "status": "ok",
+          "median_s": 0.45360860599998887,
+          "times_s": [
+            0.45360860599998887,
+            0.45672463699997934,
+            0.450691949999964
+          ],
+          "result_rows": 29,
+          "result_digest": "c5d29741f389d74d8be598eee68d94fa6e26d6d3",
+          "explain_analyze": "-> Table scan on <temporary>  (cost=487..490 rows=10) (actual time=858..858 rows=29 loops=1)\n    -> Temporary table with deduplication  (cost=487..487 rows=10) (actual time=858..858 rows=29 loops=1)\n        -> Nested loop inner join  (cost=486 rows=10) (actual time=8.89..858 rows=108 loops=1)\n            -> Nested loop inner join  (cost=451 rows=100) (actual time=1.63..643 rows=338 loops=1)\n                -> Table scan on l1  (cost=101 rows=1000) (actual time=0.0185..0.322 rows=1000 loops=1)\n                -> Filter: ((l2.num = l1.num) and (l2.id = (select #2)))  (cost=0.25 rows=0.1) (actual time=0.643..0.643 rows=0.338 loops=1000)\n                    -> Single-row index lookup on l2 using PRIMARY (id=(select #2))  (cost=0.25 rows=1) (actual time=0.55..0.55 rows=0.999 loops=1000)\n                    -> Select #2 (subquery in condition; dependent)\n                        -> Aggregate: min(x.id)  (cost=67.7 rows=1) (actual time=0.274..0.274 rows=1 loops=2337)\n                            -> Filter: (x.id > l1.id)  (cost=34.3 rows=333) (actual time=0.145..0.248 rows=500 loops=2337)\n                                -> Index range scan on x (re-planned for each iteration)  (cost=34.3 rows=1000) (actual time=0.0648..0.196 rows=1000 loops=2337)\n            -> Limit: 1 row(s)  (cost=0.25 rows=0.1) (actual time=0.635..0.635 rows=0.32 loops=338)\n                -> Filter: ((l3.num = l1.num) and (l3.id = (select #3)))  (cost=0.25 rows=0.1) (actual time=0.635..0.635 rows=0.32 loops=338)\n                    -> Single-row index lookup on l3 using PRIMARY (id=(select #3))  (cost=0.25 rows=1) (actual time=0.547..0.547 rows=1 loops=338)\n                    -> Select #3 (subquery in condition; dependent)\n                        -> Aggregate: min(x.id)  (cost=67.7 rows=1) (actual time=0.272..0.272 rows=1 loops=784)\n                            -> Filter: (x.id > l2.id)  (cost=34.3 rows=333) (actual time=0.144..0.247 rows=499 loops=784)\n                                -> Index range scan on x (re-planned for each iteration)  (cost=34.3 rows=1000) (actual time=0.0638..0.194 rows=1000 loops=784)\n"
+        },
+        {
+          "solution": "02_lead_two_ahead",
+          "status": "ok",
+          "median_s": 0.002996553999992102,
+          "times_s": [
+            0.002996553999992102,
+            0.0030091410001205077,
+            0.002992106999954558
+          ],
+          "result_rows": 29,
+          "result_digest": "c5d29741f389d74d8be598eee68d94fa6e26d6d3",
+          "explain_analyze": "-> Table scan on <temporary>  (cost=215..230 rows=1000) (actual time=2.51..2.51 rows=29 loops=1)\n    -> Temporary table with deduplication  (cost=215..215 rows=1000) (actual time=2.51..2.51 rows=29 loops=1)\n        -> Filter: ((t.next_num = t.num) and (t.next_next_num = t.num))  (cost=0.115..115 rows=1000) (actual time=2.3..2.48 rows=108 loops=1)\n            -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=2.29..2.4 rows=1000 loops=1)\n                -> Materialize  (cost=0..0 rows=0) (actual time=2.29..2.29 rows=1000 loops=1)\n                    -> Window aggregate with buffering: lead(`Logs`.num,1) OVER w, lead(`Logs`.num,2) OVER w  (actual time=0.675..2.06 rows=1000 loops=1)\n                        -> Sort: `Logs`.id  (cost=101 rows=1000) (actual time=0.309..0.346 rows=1000 loops=1)\n                            -> Table scan on Logs  (cost=101 rows=1000) (actual time=0.0164..0.17 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_islands_row_number_diff",
+          "status": "ok",
+          "median_s": 0.0023781009999765956,
+          "times_s": [
+            0.0024235959999714396,
+            0.0023062289999415952,
+            0.0023781009999765956
+          ],
+          "result_rows": 29,
+          "result_digest": "c5d29741f389d74d8be598eee68d94fa6e26d6d3",
+          "explain_analyze": "-> Table scan on <temporary>  (cost=5..5 rows=0) (actual time=2.1..2.11 rows=29 loops=1)\n    -> Temporary table with deduplication  (cost=2.5..2.5 rows=0) (actual time=2.1..2.1 rows=29 loops=1)\n        -> Table scan on runs  (cost=2.5..2.5 rows=0) (actual time=2.08..2.09 rows=74 loops=1)\n            -> Materialize CTE runs  (cost=0..0 rows=0) (actual time=2.08..2.08 rows=74 loops=1)\n                -> Filter: (run_length >= 3)  (actual time=1.97..2.06 rows=74 loops=1)\n                    -> Table scan on <temporary>  (actual time=1.97..2.03 rows=662 loops=1)\n                        -> Aggregate using temporary table  (actual time=1.97..1.97 rows=662 loops=1)\n                            -> Table scan on numbered  (cost=2.5..2.5 rows=0) (actual time=1.42..1.52 rows=1000 loops=1)\n                                -> Materialize CTE numbered  (cost=0..0 rows=0) (actual time=1.42..1.42 rows=1000 loops=1)\n                                    -> Window aggregate: row_number() OVER (PARTITION BY `Logs`.num ORDER BY `Logs`.id )   (actual time=0.961..1.3 rows=1000 loops=1)\n                                        -> Sort: `Logs`.num, `Logs`.id  (actual time=0.96..1 rows=1000 loops=1)\n                                            -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=0.553..0.662 rows=1000 loops=1)\n                                                -> Temporary table  (cost=0..0 rows=0) (actual time=0.552..0.552 rows=1000 loops=1)\n                                                    -> Window aggregate: row_number() OVER (ORDER BY `Logs`.id )   (actual time=0.267..0.478 rows=1000 loops=1)\n                                                        -> Sort: `Logs`.id  (cost=101 rows=1000) (actual time=0.265..0.303 rows=1000 loops=1)\n                                                            -> Table scan on Logs  (cost=101 rows=1000) (actual time=0.0165..0.167 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Logs": 100000
+      },
+      "load_seconds": 0.612,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_next_id_self_join",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_lead_two_ahead",
+          "status": "ok",
+          "median_s": 0.23257354399993346,
+          "times_s": [
+            0.2305429620000723,
+            0.23447342800000115,
+            0.23257354399993346
+          ],
+          "result_rows": 40,
+          "result_digest": "58c162a3163b5d37c9b27457c7222cb76250320f",
+          "explain_analyze": "-> Table scan on <temporary>  (cost=21344..22602 rows=100432) (actual time=252..252 rows=40 loops=1)\n    -> Temporary table with deduplication  (cost=21344..21344 rows=100432) (actual time=252..252 rows=40 loops=1)\n        -> Filter: ((t.next_num = t.num) and (t.next_next_num = t.num))  (cost=0.113..11301 rows=100432) (actual time=230..250 rows=11896 loops=1)\n            -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=230..241 rows=100000 loops=1)\n                -> Materialize  (cost=0..0 rows=0) (actual time=230..230 rows=100000 loops=1)\n                    -> Window aggregate with buffering: lead(`Logs`.num,1) OVER w, lead(`Logs`.num,2) OVER w  (actual time=69.9..209 rows=100000 loops=1)\n                        -> Sort: `Logs`.id  (cost=10099 rows=100432) (actual time=31.7..36 rows=100000 loops=1)\n                            -> Table scan on Logs  (cost=10099 rows=100432) (actual time=0.0536..16.5 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_islands_row_number_diff",
+          "status": "ok",
+          "median_s": 0.22378714499996022,
+          "times_s": [
+            0.22767634499996348,
+            0.22378714499996022,
+            0.22244250200014903
+          ],
+          "result_rows": 40,
+          "result_digest": "58c162a3163b5d37c9b27457c7222cb76250320f",
+          "explain_analyze": "-> Table scan on <temporary>  (cost=5..5 rows=0) (actual time=294..294 rows=40 loops=1)\n    -> Temporary table with deduplication  (cost=2.5..2.5 rows=0) (actual time=294..294 rows=40 loops=1)\n        -> Table scan on runs  (cost=2.5..2.5 rows=0) (actual time=292..293 rows=7804 loops=1)\n            -> Materialize CTE runs  (cost=0..0 rows=0) (actual time=292..292 rows=7804 loops=1)\n                -> Filter: (run_length >= 3)  (actual time=281..290 rows=7804 loops=1)\n                    -> Table scan on <temporary>  (actual time=281..287 rows=65700 loops=1)\n                        -> Aggregate using temporary table  (actual time=281..281 rows=65700 loops=1)\n                            -> Table scan on numbered  (cost=2.5..2.5 rows=0) (actual time=209..220 rows=100000 loops=1)\n                                -> Materialize CTE numbered  (cost=0..0 rows=0) (actual time=209..209 rows=100000 loops=1)\n                                    -> Window aggregate: row_number() OVER (PARTITION BY `Logs`.num ORDER BY `Logs`.id )   (actual time=159..192 rows=100000 loops=1)\n                                        -> Sort: `Logs`.num, `Logs`.id  (actual time=159..164 rows=100000 loops=1)\n                                            -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=101..113 rows=100000 loops=1)\n                                                -> Temporary table  (cost=0..0 rows=0) (actual time=101..101 rows=100000 loops=1)\n                                                    -> Window aggregate: row_number() OVER (ORDER BY `Logs`.id )   (actual time=60.5..85.1 rows=100000 loops=1)\n                                                        -> Sort: `Logs`.id  (cost=10099 rows=100432) (actual time=60.5..65.7 rows=100000 loops=1)\n                                                            -> Table scan on Logs  (cost=10099 rows=100432) (actual time=0.105..31.6 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Logs": 1000000
+      },
+      "load_seconds": 5.925,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_next_id_self_join",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_lead_two_ahead",
+          "status": "ok",
+          "median_s": 10.41337708900005,
+          "times_s": [
+            10.41337708900005,
+            10.355400056000008,
+            10.975213285999871
+          ],
+          "result_rows": 40,
+          "result_digest": "58c162a3163b5d37c9b27457c7222cb76250320f",
+          "explain_analyze": "-> Table scan on <temporary>  (cost=212282..224771 rows=998960) (actual time=10558..10558 rows=40 loops=1)\n    -> Temporary table with deduplication  (cost=212282..212282 rows=998960) (actual time=10558..10558 rows=40 loops=1)\n        -> Filter: ((t.next_num = t.num) and (t.next_next_num = t.num))  (cost=0.113..112386 rows=998960) (actual time=10218..10531 rows=118008 loops=1)\n            -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=10218..10444 rows=1e+6 loops=1)\n                -> Materialize  (cost=0..0 rows=0) (actual time=10218..10218 rows=1e+6 loops=1)\n                    -> Window aggregate with buffering: lead(`Logs`.num,1) OVER w, lead(`Logs`.num,2) OVER w  (actual time=1024..9661 rows=1e+6 loops=1)\n                        -> Sort: `Logs`.id  (cost=100337 rows=998960) (actual time=349..393 rows=1e+6 loops=1)\n                            -> Table scan on Logs  (cost=100337 rows=998960) (actual time=0.0944..159 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_islands_row_number_diff",
+          "status": "ok",
+          "median_s": 6.5580434290000085,
+          "times_s": [
+            6.5813157770001,
+            6.5580434290000085,
+            6.548792724999885
+          ],
+          "result_rows": 40,
+          "result_digest": "58c162a3163b5d37c9b27457c7222cb76250320f",
+          "explain_analyze": "-> Table scan on <temporary>  (cost=5..5 rows=0) (actual time=7105..7105 rows=40 loops=1)\n    -> Temporary table with deduplication  (cost=2.5..2.5 rows=0) (actual time=7105..7105 rows=40 loops=1)\n        -> Table scan on runs  (cost=2.5..2.5 rows=0) (actual time=7082..7091 rows=77410 loops=1)\n            -> Materialize CTE runs  (cost=0..0 rows=0) (actual time=7082..7082 rows=77410 loops=1)\n                -> Filter: (run_length >= 3)  (actual time=6904..7068 rows=77410 loops=1)\n                    -> Table scan on <temporary>  (actual time=6904..7039 rows=657032 loops=1)\n                        -> Aggregate using temporary table  (actual time=6904..6904 rows=657031 loops=1)\n                            -> Table scan on numbered  (cost=2.5..2.5 rows=0) (actual time=2485..2750 rows=1e+6 loops=1)\n                                -> Materialize CTE numbered  (cost=0..0 rows=0) (actual time=2485..2485 rows=1e+6 loops=1)\n                                    -> Window aggregate: row_number() OVER (PARTITION BY `Logs`.num ORDER BY `Logs`.id )   (actual time=1747..2104 rows=1e+6 loops=1)\n                                        -> Sort: `Logs`.num, `Logs`.id  (actual time=1747..1808 rows=1e+6 loops=1)\n                                            -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=923..1194 rows=1e+6 loops=1)\n                                                -> Temporary table  (cost=0..0 rows=0) (actual time=923..923 rows=1e+6 loops=1)\n                                                    -> Window aggregate: row_number() OVER (ORDER BY `Logs`.id )   (actual time=352..565 rows=1e+6 loops=1)\n                                                        -> Sort: `Logs`.id  (cost=100465 rows=998960) (actual time=352..399 rows=1e+6 loops=1)\n                                                            -> Table scan on Logs  (cost=100465 rows=998960) (actual time=0.087..161 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

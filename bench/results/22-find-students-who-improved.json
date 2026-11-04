@@ -1,0 +1,200 @@
+{
+  "problem": "22-find-students-who-improved",
+  "generated_at": "2026-11-04T15:34:22+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_first_and_latest",
+    "02_first_value_last_value",
+    "03_group_dates_then_join_twice"
+  ],
+  "optimal": "03_group_dates_then_join_twice",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Scores": 1000
+      },
+      "load_seconds": 0.026,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_first_and_latest",
+          "status": "ok",
+          "median_s": 0.00972559599995293,
+          "times_s": [
+            0.009569263999992472,
+            0.00975993599990943,
+            0.00972559599995293
+          ],
+          "result_rows": 130,
+          "result_digest": "04932b31c274a81443172be6cdbff6a322861d25",
+          "explain_analyze": "-> Nested loop inner join  (cost=874 rows=908) (actual time=0.0771..9.55 rows=130 loops=1)\n    -> Filter: (f.exam_date = (select #2))  (cost=101 rows=1000) (actual time=0.0383..4.32 rows=367 loops=1)\n        -> Index scan on f using PRIMARY  (cost=101 rows=1000) (actual time=0.0209..0.272 rows=1000 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: min(a.exam_date)  (cost=0.838 rows=1) (actual time=0.00354..0.00357 rows=1 loops=1000)\n                -> Covering index lookup on a using PRIMARY (student_id=f.student_id, subject=f.`subject`)  (cost=0.566 rows=2.72) (actual time=0.00208..0.0029 rows=3.51 loops=1000)\n    -> Filter: ((l.exam_date = (select #3)) and (l.score > f.score))  (cost=0.5 rows=0.908) (actual time=0.0139..0.014 rows=0.354 loops=367)\n        -> Index lookup on l using PRIMARY (student_id=f.student_id, subject=f.`subject`)  (cost=0.5 rows=2.72) (actual time=0.00165..0.0024 rows=2.72 loops=367)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: max(b.exam_date)  (cost=0.838 rows=1) (actual time=0.00355..0.00357 rows=1 loops=1000)\n                -> Covering index lookup on b using PRIMARY (student_id=l.student_id, subject=l.`subject`)  (cost=0.566 rows=2.72) (actual time=0.00205..0.00284 rows=3.51 loops=1000)\n"
+        },
+        {
+          "solution": "02_first_value_last_value",
+          "status": "ok",
+          "median_s": 0.0033848069999748986,
+          "times_s": [
+            0.003375519999963217,
+            0.0033848069999748986,
+            0.003431694000028074
+          ],
+          "result_rows": 130,
+          "result_digest": "04932b31c274a81443172be6cdbff6a322861d25",
+          "explain_analyze": "-> Sort: w_scores.student_id, w_scores.`subject`, w_scores.first_score, w_scores.latest_score  (actual time=2.29..2.3 rows=130 loops=1)\n    -> Table scan on <temporary>  (cost=148..155 rows=333) (actual time=2.21..2.25 rows=130 loops=1)\n        -> Temporary table with deduplication  (cost=148..148 rows=333) (actual time=2.21..2.21 rows=130 loops=1)\n            -> Filter: (w_scores.latest_score > w_scores.first_score)  (cost=0.345..115 rows=333) (actual time=1.9..2.06 rows=438 loops=1)\n                -> Table scan on w_scores  (cost=2.5..2.5 rows=0) (actual time=1.9..2.01 rows=1000 loops=1)\n                    -> Materialize CTE w_scores  (cost=0..0 rows=0) (actual time=1.9..1.9 rows=1000 loops=1)\n                        -> Window aggregate with buffering: first_value(Scores.score) OVER w, last_value(Scores.score) OVER w  (actual time=0.599..1.71 rows=1000 loops=1)\n                            -> Sort: Scores.student_id, Scores.`subject`, Scores.exam_date  (cost=101 rows=1000) (actual time=0.587..0.636 rows=1000 loops=1)\n                                -> Table scan on Scores  (cost=101 rows=1000) (actual time=0.0212..0.224 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_group_dates_then_join_twice",
+          "status": "ok",
+          "median_s": 0.0027395110000725253,
+          "times_s": [
+            0.0028820669999731763,
+            0.0027395110000725253,
+            0.002729362000081892
+          ],
+          "result_rows": 130,
+          "result_digest": "04932b31c274a81443172be6cdbff6a322861d25",
+          "explain_analyze": "-> Nested loop inner join  (cost=1205 rows=122) (actual time=0.729..1.55 rows=130 loops=1)\n    -> Nested loop inner join  (cost=918 rows=367) (actual time=0.727..1.11 rows=280 loops=1)\n        -> Sort: e.student_id, e.`subject`  (cost=631..631 rows=367) (actual time=0.72..0.739 rows=280 loops=1)\n            -> Filter: ((e.first_date is not null) and (e.last_date is not null))  (cost=238..282 rows=367) (actual time=0.606..0.658 rows=280 loops=1)\n                -> Table scan on e  (cost=238..245 rows=367) (actual time=0.606..0.637 rows=280 loops=1)\n                    -> Materialize CTE ends  (cost=238..238 rows=367) (actual time=0.605..0.605 rows=280 loops=1)\n                        -> Filter: (count(0) >= 2)  (cost=201 rows=367) (actual time=0.0589..0.532 rows=280 loops=1)\n                            -> Group aggregate: count(0), min(Scores.exam_date), max(Scores.exam_date)  (cost=201 rows=367) (actual time=0.0583..0.508 rows=367 loops=1)\n                                -> Covering index scan on Scores using PRIMARY  (cost=101 rows=1000) (actual time=0.0518..0.234 rows=1000 loops=1)\n        -> Single-row index lookup on f using PRIMARY (student_id=e.student_id, subject=e.`subject`, exam_date=e.first_date)  (cost=0.25 rows=1) (actual time=0.00115..0.00118 rows=1 loops=280)\n    -> Filter: (l.score > f.score)  (cost=0.25 rows=0.333) (actual time=0.00138..0.00142 rows=0.464 loops=280)\n        -> Single-row index lookup on l using PRIMARY (student_id=e.student_id, subject=e.`subject`, exam_date=e.last_date)  (cost=0.25 rows=1) (actual time=0.00114..0.00123 rows=1 loops=280)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Scores": 100000
+      },
+      "load_seconds": 1.454,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_first_and_latest",
+          "status": "ok",
+          "median_s": 0.8745929869999145,
+          "times_s": [
+            0.9166365649998625,
+            0.8744717909999054,
+            0.8745929869999145
+          ],
+          "result_rows": 12179,
+          "result_digest": "15e8c9f06ce7159506c5e4a6f0a95884b66931ae",
+          "explain_analyze": "-> Nested loop inner join  (cost=85241 rows=84760) (actual time=0.11..907 rows=12179 loops=1)\n    -> Filter: (f.exam_date = (select #2))  (cost=10055 rows=99511) (actual time=0.0697..422 rows=36402 loops=1)\n        -> Index scan on f using PRIMARY  (cost=10055 rows=99511) (actual time=0.0492..26.1 rows=100000 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: min(a.exam_date)  (cost=0.8 rows=1) (actual time=0.00348..0.00351 rows=1 loops=100000)\n                -> Covering index lookup on a using PRIMARY (student_id=f.student_id, subject=f.`subject`)  (cost=0.544 rows=2.56) (actual time=0.00202..0.00284 rows=3.54 loops=100000)\n    -> Filter: ((l.exam_date = (select #3)) and (l.score > f.score))  (cost=0.5 rows=0.852) (actual time=0.013..0.0132 rows=0.335 loops=36402)\n        -> Index lookup on l using PRIMARY (student_id=f.student_id, subject=f.`subject`)  (cost=0.5 rows=2.56) (actual time=0.00167..0.00239 rows=2.75 loops=36402)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: max(b.exam_date)  (cost=0.8 rows=1) (actual time=0.00336..0.00339 rows=1 loops=100000)\n                -> Covering index lookup on b using PRIMARY (student_id=l.student_id, subject=l.`subject`)  (cost=0.544 rows=2.56) (actual time=0.00189..0.00267 rows=3.54 loops=100000)\n"
+        },
+        {
+          "solution": "02_first_value_last_value",
+          "status": "ok",
+          "median_s": 0.28124520599999414,
+          "times_s": [
+            0.28124520599999414,
+            0.2810015039999598,
+            0.28635070600012114
+          ],
+          "result_rows": 12179,
+          "result_digest": "15e8c9f06ce7159506c5e4a6f0a95884b66931ae",
+          "explain_analyze": "-> Sort: w_scores.student_id, w_scores.`subject`, w_scores.first_score, w_scores.latest_score  (actual time=237..237 rows=12179 loops=1)\n    -> Table scan on <temporary>  (cost=14514..14931 rows=33167) (actual time=231..232 rows=12179 loops=1)\n        -> Temporary table with deduplication  (cost=14514..14514 rows=33167) (actual time=231..231 rows=12179 loops=1)\n            -> Filter: (w_scores.latest_score > w_scores.first_score)  (cost=0.338..11197 rows=33167) (actual time=200..216 rows=41822 loops=1)\n                -> Table scan on w_scores  (cost=2.5..2.5 rows=0) (actual time=200..211 rows=100000 loops=1)\n                    -> Materialize CTE w_scores  (cost=0..0 rows=0) (actual time=200..200 rows=100000 loops=1)\n                        -> Window aggregate with buffering: first_value(Scores.score) OVER w, last_value(Scores.score) OVER w  (actual time=67.1..180 rows=100000 loops=1)\n                            -> Sort: Scores.student_id, Scores.`subject`, Scores.exam_date  (cost=10055 rows=99511) (actual time=67.1..72.6 rows=100000 loops=1)\n                                -> Table scan on Scores  (cost=10055 rows=99511) (actual time=0.0811..21.2 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_group_dates_then_join_twice",
+          "status": "ok",
+          "median_s": 0.19735534400001598,
+          "times_s": [
+            0.19702733700000863,
+            0.19735534400001598,
+            0.21622480900009577
+          ],
+          "result_rows": 12179,
+          "result_digest": "15e8c9f06ce7159506c5e4a6f0a95884b66931ae",
+          "explain_analyze": "-> Nested loop inner join  (cost=149098 rows=12978) (actual time=71.3..151 rows=12179 loops=1)\n    -> Nested loop inner join  (cost=120327 rows=38939) (actual time=71.3..109 rows=27250 loops=1)\n        -> Sort: e.student_id, e.`subject`  (cost=91555..91555 rows=38939) (actual time=71.3..73.2 rows=27250 loops=1)\n            -> Filter: ((e.first_date is not null) and (e.last_date is not null))  (cost=23900..28283 rows=38939) (actual time=57.4..62.4 rows=27250 loops=1)\n                -> Table scan on e  (cost=23900..24390 rows=38939) (actual time=57.4..60.5 rows=27250 loops=1)\n                    -> Materialize CTE ends  (cost=23900..23900 rows=38939) (actual time=57.4..57.4 rows=27250 loops=1)\n                        -> Filter: (count(0) >= 2)  (cost=20006 rows=38939) (actual time=0.0687..50.3 rows=27250 loops=1)\n                            -> Group aggregate: count(0), min(Scores.exam_date), max(Scores.exam_date)  (cost=20006 rows=38939) (actual time=0.0676..48 rows=36402 loops=1)\n                                -> Covering index scan on Scores using PRIMARY  (cost=10055 rows=99511) (actual time=0.0585..19.8 rows=100000 loops=1)\n        -> Single-row index lookup on f using PRIMARY (student_id=e.student_id, subject=e.`subject`, exam_date=e.first_date)  (cost=0.25 rows=1) (actual time=0.00113..0.00116 rows=1 loops=27250)\n    -> Filter: (l.score > f.score)  (cost=0.25 rows=0.333) (actual time=0.00138..0.00142 rows=0.447 loops=27250)\n        -> Single-row index lookup on l using PRIMARY (student_id=e.student_id, subject=e.`subject`, exam_date=e.last_date)  (cost=0.25 rows=1) (actual time=0.0012..0.00123 rows=1 loops=27250)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Scores": 1000000
+      },
+      "load_seconds": 14.633,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_first_and_latest",
+          "status": "ok",
+          "median_s": 8.861285610000095,
+          "times_s": [
+            8.861285610000095,
+            8.83547132700005,
+            9.40566826700001
+          ],
+          "result_rows": 122131,
+          "result_digest": "3de9017e488a7ef331e25bd9b686c36687bf148a",
+          "explain_analyze": "-> Nested loop inner join  (cost=866385 rows=923995) (actual time=0.169..9132 rows=122131 loops=1)\n    -> Filter: (f.exam_date = (select #2))  (cost=98962 rows=980394) (actual time=0.118..4270 rows=363778 loops=1)\n        -> Index scan on f using PRIMARY  (cost=98962 rows=980394) (actual time=0.0859..259 rows=1e+6 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: min(a.exam_date)  (cost=0.861 rows=1) (actual time=0.00353..0.00356 rows=1 loops=1e+6)\n                -> Covering index lookup on a using PRIMARY (student_id=f.student_id, subject=f.`subject`)  (cost=0.578 rows=2.83) (actual time=0.00208..0.0029 rows=3.54 loops=1e+6)\n    -> Filter: ((l.exam_date = (select #3)) and (l.score > f.score))  (cost=0.5 rows=0.942) (actual time=0.0131..0.0132 rows=0.336 loops=363778)\n        -> Index lookup on l using PRIMARY (student_id=f.student_id, subject=f.`subject`)  (cost=0.5 rows=2.83) (actual time=0.00171..0.00242 rows=2.75 loops=363778)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: max(b.exam_date)  (cost=0.861 rows=1) (actual time=0.00338..0.00341 rows=1 loops=1e+6)\n                -> Covering index lookup on b using PRIMARY (student_id=l.student_id, subject=l.`subject`)  (cost=0.578 rows=2.83) (actual time=0.00192..0.00269 rows=3.54 loops=1e+6)\n"
+        },
+        {
+          "solution": "02_first_value_last_value",
+          "status": "ok",
+          "median_s": 6.3800000899998395,
+          "times_s": [
+            6.392754122000042,
+            6.350981475000026,
+            6.3800000899998395
+          ],
+          "result_rows": 122131,
+          "result_digest": "3de9017e488a7ef331e25bd9b686c36687bf148a",
+          "explain_analyze": "-> Sort: w_scores.student_id, w_scores.`subject`, w_scores.first_score, w_scores.latest_score  (actual time=5984..5990 rows=122131 loops=1)\n    -> Table scan on <temporary>  (cost=142973..147060 rows=326765) (actual time=5904..5934 rows=122131 loops=1)\n        -> Temporary table with deduplication  (cost=142973..142973 rows=326765) (actual time=5904..5904 rows=122131 loops=1)\n            -> Filter: (w_scores.latest_score > w_scores.first_score)  (cost=0.338..110297 rows=326765) (actual time=5216..5523 rows=419142 loops=1)\n                -> Table scan on w_scores  (cost=2.5..2.5 rows=0) (actual time=5216..5466 rows=1e+6 loops=1)\n                    -> Materialize CTE w_scores  (cost=0..0 rows=0) (actual time=5216..5216 rows=1e+6 loops=1)\n                        -> Window aggregate with buffering: first_value(Scores.score) OVER w, last_value(Scores.score) OVER w  (actual time=767..4639 rows=1e+6 loops=1)\n                            -> Sort: Scores.student_id, Scores.`subject`, Scores.exam_date  (cost=101345 rows=980394) (actual time=767..833 rows=1e+6 loops=1)\n                                -> Table scan on Scores  (cost=101345 rows=980394) (actual time=0.0865..264 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_group_dates_then_join_twice",
+          "status": "ok",
+          "median_s": 2.591736625000067,
+          "times_s": [
+            2.932566880000195,
+            2.5731189109999377,
+            2.591736625000067
+          ],
+          "result_rows": 122131,
+          "result_digest": "3de9017e488a7ef331e25bd9b686c36687bf148a",
+          "explain_analyze": "-> Nested loop inner join  (cost=1.5e+6 rows=115559) (actual time=1125..2726 rows=122131 loops=1)\n    -> Nested loop inner join  (cost=1.22e+6 rows=346710) (actual time=1125..1938 rows=272955 loops=1)\n        -> Sort: e.student_id, e.`subject`  (cost=943414..943414 rows=346710) (actual time=1125..1149 rows=272955 loops=1)\n            -> Filter: ((e.first_date is not null) and (e.last_date is not null))  (cost=231672..270679 rows=346710) (actual time=836..966 rows=272955 loops=1)\n                -> Table scan on e  (cost=231672..236008 rows=346710) (actual time=836..938 rows=272955 loops=1)\n                    -> Materialize CTE ends  (cost=231672..231672 rows=346710) (actual time=836..836 rows=272955 loops=1)\n                        -> Filter: (count(0) >= 2)  (cost=197001 rows=346710) (actual time=0.106..634 rows=272955 loops=1)\n                            -> Group aggregate: count(0), min(Scores.exam_date), max(Scores.exam_date)  (cost=197001 rows=346710) (actual time=0.104..606 rows=363778 loops=1)\n                                -> Covering index scan on Scores using PRIMARY  (cost=98962 rows=980394) (actual time=0.0629..254 rows=1e+6 loops=1)\n        -> Single-row index lookup on f using PRIMARY (student_id=e.student_id, subject=e.`subject`, exam_date=e.first_date)  (cost=0.25 rows=1) (actual time=0.00268..0.00271 rows=1 loops=272955)\n    -> Filter: (l.score > f.score)  (cost=0.25 rows=0.333) (actual time=0.00271..0.00275 rows=0.447 loops=272955)\n        -> Single-row index lookup on l using PRIMARY (student_id=e.student_id, subject=e.`subject`, exam_date=e.last_date)  (cost=0.25 rows=1) (actual time=0.00251..0.00254 rows=1 loops=272955)\n"
+        }
+      ]
+    }
+  ]
+}

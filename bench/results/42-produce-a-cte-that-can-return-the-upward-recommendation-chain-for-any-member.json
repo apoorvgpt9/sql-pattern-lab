@@ -1,0 +1,160 @@
+{
+  "problem": "42-produce-a-cte-that-can-return-the-upward-recommendation-chain-for-any-member",
+  "generated_at": "2026-11-04T15:21:55+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes"
+    ]
+  },
+  "solutions": [
+    "01_closure_for_everyone_then_filter",
+    "03_anchor_on_requested_members"
+  ],
+  "optimal": "03_anchor_on_requested_members",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122096 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "members": 1001
+      },
+      "load_seconds": 0.036,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_closure_for_everyone_then_filter",
+          "status": "ok",
+          "median_s": 0.0022996649998958674,
+          "times_s": [
+            0.0022996649998958674,
+            0.002283254999952078,
+            0.0023959360000844754
+          ],
+          "result_rows": 3,
+          "result_digest": "35bde12c9d3315ff007325d3a537ac1778e5c450",
+          "explain_analyze": "-> Nested loop inner join  (cost=3152 rows=1711) (actual time=2.45..2.46 rows=3 loops=1)\n    -> Sort: r.`member`, r.recommender DESC  (cost=2895..2895 rows=1711) (actual time=2.45..2.45 rows=3 loops=1)\n        -> Filter: ((r.`member` in (12,22)) and (r.recommender is not null))  (cost=692..887 rows=1711) (actual time=2.24..2.44 rows=3 loops=1)\n            -> Table scan on r  (cost=692..716 rows=1711) (actual time=2.23..2.37 rows=1555 loops=1)\n                -> Materialize recursive CTE recommenders  (cost=692..692 rows=1711) (actual time=2.23..2.23 rows=1555 loops=1)\n                    -> Filter: (members.recommendedby is not null)  (cost=102 rows=901) (actual time=0.0603..0.296 rows=665 loops=1)\n                        -> Table scan on members  (cost=102 rows=1001) (actual time=0.0584..0.24 rows=1001 loops=1)\n                    -> Repeat until convergence\n                        -> Nested loop inner join  (cost=419 rows=810) (actual time=0.00495..0.887 rows=445 loops=2)\n                            -> Filter: (r.recommender is not null)  (cost=104 rows=900) (actual time=811e-6..0.077 rows=778 loops=2)\n                                -> Scan new records on r  (cost=104 rows=900) (actual time=480e-6..0.0295 rows=778 loops=2)\n                            -> Filter: (m.recommendedby is not null)  (cost=0.25 rows=0.9) (actual time=852e-6..901e-6 rows=0.572 loops=1555)\n                                -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.25 rows=1) (actual time=702e-6..730e-6 rows=1 loops=1555)\n    -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.25 rows=1) (actual time=0.00149..0.00152 rows=1 loops=3)\n"
+        },
+        {
+          "solution": "03_anchor_on_requested_members",
+          "status": "ok",
+          "median_s": 0.0007088439999733964,
+          "times_s": [
+            0.0007929820000072141,
+            0.0007088439999733964,
+            0.0006501750000325046
+          ],
+          "result_rows": 3,
+          "result_digest": "35bde12c9d3315ff007325d3a537ac1778e5c450",
+          "explain_analyze": "-> Nested loop inner join  (cost=9.98 rows=3.6) (actual time=0.031..0.0333 rows=3 loops=1)\n    -> Sort: r.`member`, r.recommender DESC  (cost=8.62..8.62 rows=3.6) (actual time=0.0286..0.0288 rows=3 loops=1)\n        -> Filter: (r.recommender is not null)  (cost=5.5..7.59 rows=3.6) (actual time=0.024..0.0246 rows=3 loops=1)\n            -> Table scan on r  (cost=5.4..7.23 rows=3.6) (actual time=0.0235..0.0239 rows=3 loops=1)\n                -> Materialize recursive CTE recommenders  (cost=4.69..4.69 rows=3.6) (actual time=0.023..0.023 rows=3 loops=1)\n                    -> Filter: ((members.memid in (12,22)) and (members.recommendedby is not null))  (cost=0.91 rows=1.8) (actual time=0.00909..0.0106 rows=2 loops=1)\n                        -> Index range scan on members using PRIMARY over (memid = 12) OR (memid = 22)  (cost=0.91 rows=2) (actual time=0.00794..0.00915 rows=2 loops=1)\n                    -> Repeat until convergence\n                        -> Nested loop inner join  (cost=3.43 rows=1.8) (actual time=0.00216..0.00372 rows=0.5 loops=2)\n                            -> Filter: (r.recommender is not null)  (cost=2.73 rows=2) (actual time=576e-6..776e-6 rows=1.5 loops=2)\n                                -> Scan new records on r  (cost=2.73 rows=2) (actual time=331e-6..431e-6 rows=1.5 loops=2)\n                            -> Filter: (m.recommendedby is not null)  (cost=0.295 rows=0.9) (actual time=0.00158..0.00162 rows=0.333 loops=3)\n                                -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.295 rows=1) (actual time=0.00133..0.00137 rows=1 loops=3)\n    -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.275 rows=1) (actual time=0.0012..0.00123 rows=1 loops=3)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "members": 100001
+      },
+      "load_seconds": 1.545,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_closure_for_everyone_then_filter",
+          "status": "ok",
+          "median_s": 0.18318793800006006,
+          "times_s": [
+            0.18318793800006006,
+            0.18175797499998225,
+            0.1857461910000211
+          ],
+          "result_rows": 3,
+          "result_digest": "35bde12c9d3315ff007325d3a537ac1778e5c450",
+          "explain_analyze": "-> Nested loop inner join  (cost=426525 rows=170400) (actual time=282..282 rows=3 loops=1)\n    -> Sort: r.`member`, r.recommender DESC  (cost=400965..400965 rows=170400) (actual time=282..282 rows=3 loops=1)\n        -> Filter: ((r.`member` in (12,22)) and (r.recommender is not null))  (cost=68623..87795 rows=170400) (actual time=259..282 rows=3 loops=1)\n            -> Table scan on r  (cost=68622..70755 rows=170400) (actual time=259..275 rows=171383 loops=1)\n                -> Materialize recursive CTE recommenders  (cost=68622..68622 rows=170400) (actual time=259..259 rows=171383 loops=1)\n                    -> Filter: (members.recommendedby is not null)  (cost=10101 rows=89684) (actual time=0.0248..22.9 rows=65069 loops=1)\n                        -> Table scan on members  (cost=10101 rows=99649) (actual time=0.0231..17.4 rows=100001 loops=1)\n                    -> Repeat until convergence\n                        -> Nested loop inner join  (cost=41481 rows=80716) (actual time=0.0148..110 rows=53157 loops=2)\n                            -> Filter: (r.recommender is not null)  (cost=10092 rows=89684) (actual time=0.00415..8.75 rows=85692 loops=2)\n                                -> Scan new records on r  (cost=10092 rows=89684) (actual time=0.00371..3.44 rows=85692 loops=2)\n                            -> Filter: (m.recommendedby is not null)  (cost=0.25 rows=0.9) (actual time=997e-6..0.00105 rows=0.62 loops=171383)\n                                -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.25 rows=1) (actual time=847e-6..876e-6 rows=1 loops=171383)\n    -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.25 rows=1) (actual time=0.00824..0.00827 rows=1 loops=3)\n"
+        },
+        {
+          "solution": "03_anchor_on_requested_members",
+          "status": "ok",
+          "median_s": 0.0007247020000704651,
+          "times_s": [
+            0.0007799370000611816,
+            0.0007247020000704651,
+            0.0006893500000160202
+          ],
+          "result_rows": 3,
+          "result_digest": "35bde12c9d3315ff007325d3a537ac1778e5c450",
+          "explain_analyze": "-> Nested loop inner join  (cost=9.98 rows=3.6) (actual time=0.0313..0.0336 rows=3 loops=1)\n    -> Sort: r.`member`, r.recommender DESC  (cost=8.62..8.62 rows=3.6) (actual time=0.029..0.0291 rows=3 loops=1)\n        -> Filter: (r.recommender is not null)  (cost=5.5..7.59 rows=3.6) (actual time=0.0246..0.0252 rows=3 loops=1)\n            -> Table scan on r  (cost=5.4..7.23 rows=3.6) (actual time=0.0242..0.0245 rows=3 loops=1)\n                -> Materialize recursive CTE recommenders  (cost=4.69..4.69 rows=3.6) (actual time=0.0238..0.0238 rows=3 loops=1)\n                    -> Filter: ((members.memid in (12,22)) and (members.recommendedby is not null))  (cost=0.91 rows=1.8) (actual time=0.00955..0.0111 rows=2 loops=1)\n                        -> Index range scan on members using PRIMARY over (memid = 12) OR (memid = 22)  (cost=0.91 rows=2) (actual time=0.00838..0.00966 rows=2 loops=1)\n                    -> Repeat until convergence\n                        -> Nested loop inner join  (cost=3.43 rows=1.8) (actual time=0.00219..0.00376 rows=0.5 loops=2)\n                            -> Filter: (r.recommender is not null)  (cost=2.73 rows=2) (actual time=606e-6..811e-6 rows=1.5 loops=2)\n                                -> Scan new records on r  (cost=2.73 rows=2) (actual time=350e-6..455e-6 rows=1.5 loops=2)\n                            -> Filter: (m.recommendedby is not null)  (cost=0.295 rows=0.9) (actual time=0.00164..0.00168 rows=0.333 loops=3)\n                                -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.295 rows=1) (actual time=0.00139..0.00142 rows=1 loops=3)\n    -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.275 rows=1) (actual time=0.00115..0.00117 rows=1 loops=3)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "members": 1000001
+      },
+      "load_seconds": 15.42,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_closure_for_everyone_then_filter",
+          "status": "ok",
+          "median_s": 5.563973618999967,
+          "times_s": [
+            4.490440912999929,
+            5.563973618999967,
+            6.7035793459999695
+          ],
+          "result_rows": 3,
+          "result_digest": "35bde12c9d3315ff007325d3a537ac1778e5c450",
+          "explain_analyze": "-> Nested loop inner join  (cost=5e+6 rows=1.7e+6) (actual time=7723..7723 rows=3 loops=1)\n    -> Sort: r.`member`, r.recommender DESC  (cost=4.7e+6..4.7e+6 rows=1.7e+6) (actual time=7723..7723 rows=3 loops=1)\n        -> Filter: ((r.`member` in (12,22)) and (r.recommender is not null))  (cost=812966..1e+6 rows=1.7e+6) (actual time=7175..7723 rows=3 loops=1)\n            -> Table scan on r  (cost=812966..834231 rows=1.7e+6) (actual time=7175..7645 rows=1.76e+6 loops=1)\n                -> Materialize recursive CTE recommenders  (cost=812966..812966 rows=1.7e+6) (actual time=7174..7174 rows=1.76e+6 loops=1)\n                    -> Filter: (members.recommendedby is not null)  (cost=101397 rows=895269) (actual time=0.027..284 rows=650449 loops=1)\n                        -> Table scan on members  (cost=101397 rows=994743) (actual time=0.0252..227 rows=1e+6 loops=1)\n                    -> Repeat until convergence\n                        -> Nested loop inner join  (cost=541467 rows=805741) (actual time=0.0188..2961 rows=557238 loops=2)\n                            -> Filter: (r.recommender is not null)  (cost=100720 rows=895268) (actual time=0.00417..218 rows=882462 loops=2)\n                                -> Scan new records on r  (cost=100720 rows=895268) (actual time=0.0037..160 rows=882462 loops=2)\n                            -> Filter: (m.recommendedby is not null)  (cost=0.392 rows=0.9) (actual time=0.00292..0.00298 rows=0.631 loops=1.76e+6)\n                                -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.392 rows=1) (actual time=0.00276..0.00279 rows=1 loops=1.76e+6)\n    -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.392 rows=1) (actual time=0.0131..0.0131 rows=1 loops=3)\n"
+        },
+        {
+          "solution": "03_anchor_on_requested_members",
+          "status": "ok",
+          "median_s": 0.0006948589999637989,
+          "times_s": [
+            0.0007137339999871983,
+            0.0006873739999946338,
+            0.0006948589999637989
+          ],
+          "result_rows": 3,
+          "result_digest": "35bde12c9d3315ff007325d3a537ac1778e5c450",
+          "explain_analyze": "-> Nested loop inner join  (cost=11.1 rows=3.6) (actual time=0.0381..0.0406 rows=3 loops=1)\n    -> Sort: r.`member`, r.recommender DESC  (cost=9.19..9.19 rows=3.6) (actual time=0.0356..0.0358 rows=3 loops=1)\n        -> Filter: (r.recommender is not null)  (cost=6.07..8.16 rows=3.6) (actual time=0.031..0.0316 rows=3 loops=1)\n            -> Table scan on r  (cost=5.97..7.8 rows=3.6) (actual time=0.0305..0.0309 rows=3 loops=1)\n                -> Materialize recursive CTE recommenders  (cost=5.26..5.26 rows=3.6) (actual time=0.0301..0.0301 rows=3 loops=1)\n                    -> Filter: ((members.memid in (12,22)) and (members.recommendedby is not null))  (cost=1.19 rows=1.8) (actual time=0.0107..0.0135 rows=2 loops=1)\n                        -> Index range scan on members using PRIMARY over (memid = 12) OR (memid = 22)  (cost=1.19 rows=2) (actual time=0.00958..0.012 rows=2 loops=1)\n                    -> Repeat until convergence\n                        -> Nested loop inner join  (cost=3.71 rows=1.8) (actual time=0.00297..0.00562 rows=0.5 loops=2)\n                            -> Filter: (r.recommender is not null)  (cost=2.73 rows=2) (actual time=616e-6..821e-6 rows=1.5 loops=2)\n                                -> Scan new records on r  (cost=2.73 rows=2) (actual time=351e-6..456e-6 rows=1.5 loops=2)\n                            -> Filter: (m.recommendedby is not null)  (cost=0.437 rows=0.9) (actual time=0.00281..0.00285 rows=0.333 loops=3)\n                                -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.437 rows=1) (actual time=0.00248..0.00251 rows=1 loops=3)\n    -> Single-row index lookup on m using PRIMARY (memid=r.recommender)  (cost=0.417 rows=1) (actual time=0.00131..0.00134 rows=1 loops=3)\n"
+        }
+      ]
+    }
+  ]
+}

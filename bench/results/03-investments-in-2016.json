@@ -1,0 +1,336 @@
+{
+  "problem": "03-investments-in-2016",
+  "generated_at": "2026-11-04T15:18:58+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_count",
+    "02_window_counts",
+    "03_exists_not_exists"
+  ],
+  "optimal": "03_exists_not_exists",
+  "machine": {
+    "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "python": "3.11.18",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "mem_total": "8122100 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261101.186.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Insurance": 1000
+      },
+      "load_seconds": 0.019,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count",
+          "status": "ok",
+          "median_s": 0.22954523200002086,
+          "times_s": [
+            0.22954523200002086,
+            0.22910752199999251,
+            0.23695550000002186
+          ],
+          "result_rows": 1,
+          "result_digest": "c2e49faa55468694682b89fb84517dd0314d8a09",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=201 rows=1) (actual time=314..314 rows=1 loops=1)\n    -> Filter: (((select #2) > 1) and ((select #3) = 1))  (cost=101 rows=1000) (actual time=0.441..314 rows=372 loops=1)\n        -> Table scan on i  (cost=101 rows=1000) (actual time=0.0367..0.229 rows=1000 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=21.3 rows=1) (actual time=0.187..0.187 rows=1 loops=1000)\n                -> Filter: (j.tiv_2015 = i.tiv_2015)  (cost=11.3 rows=100) (actual time=0.0901..0.187 rows=1.96 loops=1000)\n                    -> Table scan on j  (cost=11.3 rows=1000) (actual time=0.0347..0.14 rows=1000 loops=1000)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=3.25 rows=1) (actual time=0.206..0.206 rows=1 loops=610)\n                -> Filter: ((k.lat = i.lat) and (k.lon = i.lon))  (cost=2.25 rows=10) (actual time=0.101..0.206 rows=1.49 loops=610)\n                    -> Table scan on k  (cost=2.25 rows=1000) (actual time=0.0182..0.153 rows=1000 loops=610)\n"
+        },
+        {
+          "solution": "02_window_counts",
+          "status": "ok",
+          "median_s": 0.002431210999986888,
+          "times_s": [
+            0.0026230490000216378,
+            0.002431210999986888,
+            0.0023792430000071363
+          ],
+          "result_rows": 1,
+          "result_digest": "c2e49faa55468694682b89fb84517dd0314d8a09",
+          "explain_analyze": "-> Aggregate: sum(counted.tiv_2016)  (cost=118..118 rows=1) (actual time=2.24..2.24 rows=1 loops=1)\n    -> Filter: ((counted.n_same_loc = 1) and (counted.tiv_2015 is not null) and (counted.n_same_tiv > 1))  (cost=3.83..115 rows=30) (actual time=2.05..2.22 rows=372 loops=1)\n        -> Table scan on counted  (cost=2.5..2.5 rows=0) (actual time=2.05..2.15 rows=1000 loops=1)\n            -> Materialize CTE counted  (cost=0..0 rows=0) (actual time=2.05..2.05 rows=1000 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.lat,Insurance.lon )   (actual time=1.27..1.9 rows=1000 loops=1)\n                    -> Sort: Insurance.lat, Insurance.lon  (actual time=1.27..1.32 rows=1000 loops=1)\n                        -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=0.982..1.08 rows=1000 loops=1)\n                            -> Temporary table  (cost=0..0 rows=0) (actual time=0.981..0.981 rows=1000 loops=1)\n                                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.tiv_2015 )   (actual time=0.38..0.932 rows=1000 loops=1)\n                                    -> Sort: Insurance.tiv_2015  (cost=101 rows=1000) (actual time=0.364..0.417 rows=1000 loops=1)\n                                        -> Table scan on Insurance  (cost=101 rows=1000) (actual time=0.0349..0.204 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_exists_not_exists",
+          "status": "ok",
+          "median_s": 0.0015688120000163508,
+          "times_s": [
+            0.0015688120000163508,
+            0.0015867289999960121,
+            0.0015356829999859656
+          ],
+          "result_rows": 1,
+          "result_digest": "c2e49faa55468694682b89fb84517dd0314d8a09",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=18e+6 rows=1) (actual time=1.17..1.17 rows=1 loops=1)\n    -> Hash antijoin (k.lon = i.lon), (k.lat = i.lat), extra conditions: (k.pid <> i.pid)  (cost=9e+6 rows=90e+6) (actual time=0.651..1.14 rows=372 loops=1)\n        -> Hash semijoin (j.tiv_2015 = i.tiv_2015), extra conditions: (j.pid <> i.pid)  (cost=100002 rows=90000) (actual time=0.338..0.71 rows=610 loops=1)\n            -> Table scan on i  (cost=101 rows=1000) (actual time=0.0269..0.222 rows=1000 loops=1)\n            -> Hash\n                -> Table scan on j  (cost=0.932 rows=1000) (actual time=0.0409..0.157 rows=1000 loops=1)\n        -> Hash\n            -> Table scan on k  (cost=101 rows=1000) (actual time=0.0279..0.174 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Insurance": 1000
+      },
+      "load_seconds": 0.019,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count",
+          "status": "ok",
+          "median_s": 0.0041275550000250405,
+          "times_s": [
+            0.0048961120000399205,
+            0.0041275550000250405,
+            0.00401039899998068
+          ],
+          "result_rows": 1,
+          "result_digest": "c2e49faa55468694682b89fb84517dd0314d8a09",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=201 rows=1) (actual time=4.05..4.05 rows=1 loops=1)\n    -> Filter: (((select #2) > 1) and ((select #3) = 1))  (cost=101 rows=1000) (actual time=0.0475..4.01 rows=372 loops=1)\n        -> Table scan on i  (cost=101 rows=1000) (actual time=0.0308..0.221 rows=1000 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=0.578 rows=1) (actual time=0.00189..0.00193 rows=1 loops=1000)\n                -> Covering index lookup on j using idx_insurance_tiv15 (tiv_2015=i.tiv_2015)  (cost=0.414 rows=1.64) (actual time=0.00118..0.00156 rows=1.96 loops=1000)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=0.878 rows=1) (actual time=0.00195..0.00198 rows=1 loops=610)\n                -> Covering index lookup on k using idx_insurance_loc (lat=i.lat, lon=i.lon)  (cost=0.752 rows=1.26) (actual time=0.00131..0.00164 rows=1.49 loops=610)\n"
+        },
+        {
+          "solution": "02_window_counts",
+          "status": "ok",
+          "median_s": 0.002422958000011022,
+          "times_s": [
+            0.0024562879999621146,
+            0.0023927629999889177,
+            0.002422958000011022
+          ],
+          "result_rows": 1,
+          "result_digest": "c2e49faa55468694682b89fb84517dd0314d8a09",
+          "explain_analyze": "-> Aggregate: sum(counted.tiv_2016)  (cost=118..118 rows=1) (actual time=2.22..2.22 rows=1 loops=1)\n    -> Filter: ((counted.n_same_loc = 1) and (counted.tiv_2015 is not null) and (counted.n_same_tiv > 1))  (cost=3.83..115 rows=30) (actual time=2.03..2.2 rows=372 loops=1)\n        -> Table scan on counted  (cost=2.5..2.5 rows=0) (actual time=2.03..2.13 rows=1000 loops=1)\n            -> Materialize CTE counted  (cost=0..0 rows=0) (actual time=2.03..2.03 rows=1000 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.lat,Insurance.lon )   (actual time=1.29..1.9 rows=1000 loops=1)\n                    -> Sort: Insurance.lat, Insurance.lon  (actual time=1.28..1.34 rows=1000 loops=1)\n                        -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=0.987..1.09 rows=1000 loops=1)\n                            -> Temporary table  (cost=0..0 rows=0) (actual time=0.987..0.987 rows=1000 loops=1)\n                                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.tiv_2015 )   (actual time=0.41..0.934 rows=1000 loops=1)\n                                    -> Sort: Insurance.tiv_2015  (cost=101 rows=1000) (actual time=0.394..0.447 rows=1000 loops=1)\n                                        -> Table scan on Insurance  (cost=101 rows=1000) (actual time=0.0333..0.201 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_exists_not_exists",
+          "status": "ok",
+          "median_s": 0.002547335999963707,
+          "times_s": [
+            0.002602949999982229,
+            0.0024979020000159835,
+            0.002547335999963707
+          ],
+          "result_rows": 1,
+          "result_digest": "c2e49faa55468694682b89fb84517dd0314d8a09",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=1513 rows=1) (actual time=2.64..2.64 rows=1 loops=1)\n    -> Nested loop antijoin  (cost=1327 rows=1863) (actual time=0.0466..2.6 rows=372 loops=1)\n        -> Nested loop semijoin  (cost=515 rows=1475) (actual time=0.0418..1.64 rows=610 loops=1)\n            -> Filter: (i.tiv_2015 is not null)  (cost=101 rows=1000) (actual time=0.0339..0.305 rows=966 loops=1)\n                -> Table scan on i  (cost=101 rows=1000) (actual time=0.0336..0.235 rows=1000 loops=1)\n            -> Filter: (j.pid <> i.pid)  (cost=0.369 rows=1.48) (actual time=0.00126..0.00126 rows=0.631 loops=966)\n                -> Covering index lookup on j using idx_insurance_tiv15 (tiv_2015=i.tiv_2015)  (cost=0.369 rows=1.64) (actual time=952e-6..0.00108 rows=1.26 loops=966)\n        -> Filter: (k.pid <> i.pid)  (cost=0.79 rows=1.26) (actual time=0.00145..0.00145 rows=0.39 loops=610)\n            -> Covering index lookup on k using idx_insurance_loc (lat=i.lat, lon=i.lon)  (cost=0.79 rows=1.26) (actual time=0.00103..0.00128 rows=1.17 loops=610)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Insurance": 100000
+      },
+      "load_seconds": 0.845,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_window_counts",
+          "status": "ok",
+          "median_s": 0.19952450799996768,
+          "times_s": [
+            0.19952450799996768,
+            0.1990894859999912,
+            0.20011336999999685
+          ],
+          "result_rows": 1,
+          "result_digest": "4e336cd0bc3685b63157536265d3a4cd12c4a1cd",
+          "explain_analyze": "-> Aggregate: sum(counted.tiv_2016)  (cost=11270..11270 rows=1) (actual time=238..238 rows=1 loops=1)\n    -> Filter: ((counted.n_same_loc = 1) and (counted.tiv_2015 is not null) and (counted.n_same_tiv > 1))  (cost=3.75..10977 rows=2926) (actual time=218..236 rows=36704 loops=1)\n        -> Table scan on counted  (cost=2.5..2.5 rows=0) (actual time=218..229 rows=100000 loops=1)\n            -> Materialize CTE counted  (cost=0..0 rows=0) (actual time=218..218 rows=100000 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.lat,Insurance.lon )   (actual time=146..207 rows=100000 loops=1)\n                    -> Sort: Insurance.lat, Insurance.lon  (actual time=146..152 rows=100000 loops=1)\n                        -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=103..113 rows=100000 loops=1)\n                            -> Temporary table  (cost=0..0 rows=0) (actual time=103..103 rows=100000 loops=1)\n                                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.tiv_2015 )   (actual time=47.4..97.8 rows=100000 loops=1)\n                                    -> Sort: Insurance.tiv_2015  (cost=9827 rows=97552) (actual time=46.4..52 rows=100000 loops=1)\n                                        -> Table scan on Insurance  (cost=9827 rows=97552) (actual time=0.844..19.4 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_exists_not_exists",
+          "status": "ok",
+          "median_s": 0.15242957300000626,
+          "times_s": [
+            0.15254605799998444,
+            0.15097875800000793,
+            0.15242957300000626
+          ],
+          "result_rows": 1,
+          "result_digest": "4e336cd0bc3685b63157536265d3a4cd12c4a1cd",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=16.7e+12 rows=1) (actual time=168..168 rows=1 loops=1)\n    -> Hash antijoin (k.lon = i.lon), (k.lat = i.lat), extra conditions: (k.pid <> i.pid)  (cost=8.36e+12 rows=83.6e+12) (actual time=139..166 rows=36704 loops=1)\n        -> Hash semijoin (j.tiv_2015 = i.tiv_2015), extra conditions: (j.pid <> i.pid)  (cost=952e+6 rows=856e+6) (actual time=25.6..94.8 rows=60375 loops=1)\n            -> Table scan on i  (cost=9827 rows=97552) (actual time=0.801..23.5 rows=100000 loops=1)\n            -> Hash\n                -> Table scan on j  (cost=136 rows=97552) (actual time=0.885..15.4 rows=100000 loops=1)\n        -> Hash\n            -> Table scan on k  (cost=10634 rows=97552) (actual time=0.922..17.9 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Insurance": 100000
+      },
+      "load_seconds": 0.845,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count",
+          "status": "ok",
+          "median_s": 0.381898810999985,
+          "times_s": [
+            0.381898810999985,
+            0.38167930099996283,
+            0.42059414000004836
+          ],
+          "result_rows": 1,
+          "result_digest": "4e336cd0bc3685b63157536265d3a4cd12c4a1cd",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=20085 rows=1) (actual time=442..442 rows=1 loops=1)\n    -> Filter: (((select #2) > 1) and ((select #3) = 1))  (cost=10079 rows=100064) (actual time=0.733..439 rows=36704 loops=1)\n        -> Table scan on i  (cost=10079 rows=100064) (actual time=0.708..21.3 rows=100000 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.32 rows=1) (actual time=0.00208..0.00211 rows=1 loops=100000)\n                -> Covering index lookup on j using idx_insurance_tiv15 (tiv_2015=i.tiv_2015)  (cost=1.16 rows=1.58) (actual time=0.00146..0.00179 rows=1.91 loops=100000)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.25 rows=1) (actual time=0.00233..0.00236 rows=1 loops=60375)\n                -> Covering index lookup on k using idx_insurance_loc (lat=i.lat, lon=i.lon)  (cost=1.12 rows=1.27) (actual time=0.00172..0.00203 rows=1.5 loops=60375)\n"
+        },
+        {
+          "solution": "02_window_counts",
+          "status": "ok",
+          "median_s": 0.22042045000000599,
+          "times_s": [
+            0.20412633800003732,
+            0.22042045000000599,
+            0.22058245200003057
+          ],
+          "result_rows": 1,
+          "result_digest": "4e336cd0bc3685b63157536265d3a4cd12c4a1cd",
+          "explain_analyze": "-> Aggregate: sum(counted.tiv_2016)  (cost=11560..11560 rows=1) (actual time=240..240 rows=1 loops=1)\n    -> Filter: ((counted.n_same_loc = 1) and (counted.tiv_2015 is not null) and (counted.n_same_tiv > 1))  (cost=3.75..11260 rows=3002) (actual time=220..238 rows=36704 loops=1)\n        -> Table scan on counted  (cost=2.5..2.5 rows=0) (actual time=220..230 rows=100000 loops=1)\n            -> Materialize CTE counted  (cost=0..0 rows=0) (actual time=220..220 rows=100000 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.lat,Insurance.lon )   (actual time=148..209 rows=100000 loops=1)\n                    -> Sort: Insurance.lat, Insurance.lon  (actual time=148..154 rows=100000 loops=1)\n                        -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=105..115 rows=100000 loops=1)\n                            -> Temporary table  (cost=0..0 rows=0) (actual time=105..105 rows=100000 loops=1)\n                                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.tiv_2015 )   (actual time=47.4..99.7 rows=100000 loops=1)\n                                    -> Sort: Insurance.tiv_2015  (cost=10079 rows=100064) (actual time=46.4..53.2 rows=100000 loops=1)\n                                        -> Table scan on Insurance  (cost=10079 rows=100064) (actual time=0.847..19.4 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_exists_not_exists",
+          "status": "ok",
+          "median_s": 0.373563167000043,
+          "times_s": [
+            0.40024650700001985,
+            0.3694930369999838,
+            0.373563167000043
+          ],
+          "result_rows": 1,
+          "result_digest": "4e336cd0bc3685b63157536265d3a4cd12c4a1cd",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=196485 rows=1) (actual time=436..436 rows=1 loops=1)\n    -> Nested loop antijoin  (cost=176501 rows=199842) (actual time=1.18..433 rows=36704 loops=1)\n        -> Remove duplicate i rows using temporary table (weedout)  (cost=67038 rows=157734) (actual time=1.17..305 rows=60375 loops=1)\n            -> Nested loop inner join  (cost=67038 rows=157734) (actual time=1.17..253 rows=94514 loops=1)\n                -> Filter: (j.tiv_2015 is not null)  (cost=10079 rows=100064) (actual time=1.14..24.8 rows=96966 loops=1)\n                    -> Covering index scan on j using idx_insurance_tiv15  (cost=10079 rows=100064) (actual time=0.747..17.5 rows=100000 loops=1)\n                -> Index lookup on i using idx_insurance_tiv15 (tiv_2015=j.tiv_2015), with index condition: (j.pid <> i.pid)  (cost=0.621 rows=1.58) (actual time=0.00186..0.00219 rows=0.975 loops=96966)\n        -> Filter: (k.pid <> i.pid)  (cost=1.26 rows=1.27) (actual time=0.00199..0.00199 rows=0.392 loops=60375)\n            -> Covering index lookup on k using idx_insurance_loc (lat=i.lat, lon=i.lon)  (cost=1.26 rows=1.27) (actual time=0.00162..0.0018 rows=1.18 loops=60375)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Insurance": 1000000
+      },
+      "load_seconds": 8.455,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_window_counts",
+          "status": "ok",
+          "median_s": 6.104411124000023,
+          "times_s": [
+            6.104411124000023,
+            6.08570211,
+            6.12117761799999
+          ],
+          "result_rows": 1,
+          "result_digest": "5381bc15b56b7f4b95b81533bc45bb86bf42c999",
+          "explain_analyze": "-> Aggregate: sum(counted.tiv_2016)  (cost=115205..115205 rows=1) (actual time=6506..6506 rows=1 loops=1)\n    -> Filter: ((counted.n_same_loc = 1) and (counted.tiv_2015 is not null) and (counted.n_same_tiv > 1))  (cost=3.75..112213 rows=29920) (actual time=6183..6489 rows=366255 loops=1)\n        -> Table scan on counted  (cost=2.5..2.5 rows=0) (actual time=6183..6414 rows=1e+6 loops=1)\n            -> Materialize CTE counted  (cost=0..0 rows=0) (actual time=6183..6183 rows=1e+6 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.lat,Insurance.lon )   (actual time=3445..5684 rows=1e+6 loops=1)\n                    -> Sort: Insurance.lat, Insurance.lon  (actual time=3445..3520 rows=1e+6 loops=1)\n                        -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=2819..3060 rows=1e+6 loops=1)\n                            -> Temporary table  (cost=0..0 rows=0) (actual time=2819..2819 rows=1e+6 loops=1)\n                                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.tiv_2015 )   (actual time=592..2410 rows=1e+6 loops=1)\n                                    -> Sort: Insurance.tiv_2015  (cost=102338 rows=997426) (actual time=583..646 rows=1e+6 loops=1)\n                                        -> Table scan on Insurance  (cost=102338 rows=997426) (actual time=1.82..226 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_exists_not_exists",
+          "status": "ok",
+          "median_s": 1.6809509729999945,
+          "times_s": [
+            1.7183421119999593,
+            1.6809509729999945,
+            1.6743908290000036
+          ],
+          "result_rows": 1,
+          "result_digest": "5381bc15b56b7f4b95b81533bc45bb86bf42c999",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=17.9e+15 rows=1) (actual time=1874..1874 rows=1 loops=1)\n    -> Hash antijoin (k.lon = i.lon), (k.lat = i.lat), extra conditions: (k.pid <> i.pid)  (cost=8.93e+15 rows=89.3e+15) (actual time=1463..1857 rows=366255 loops=1)\n        -> Hash semijoin (j.tiv_2015 = i.tiv_2015), extra conditions: (j.pid <> i.pid)  (cost=99.5e+9 rows=89.5e+9) (actual time=302..1031 rows=602877 loops=1)\n            -> Table scan on i  (cost=100392 rows=997426) (actual time=0.838..245 rows=1e+6 loops=1)\n            -> Hash\n                -> Table scan on j  (cost=5533 rows=997426) (actual time=1.31..193 rows=1e+6 loops=1)\n        -> Hash\n            -> Table scan on k  (cost=174473 rows=997426) (actual time=0.679..184 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Insurance": 1000000
+      },
+      "load_seconds": 8.455,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count",
+          "status": "ok",
+          "median_s": 8.29064273399996,
+          "times_s": [
+            8.290924723999979,
+            8.29064273399996,
+            8.284755485999995
+          ],
+          "result_rows": 1,
+          "result_digest": "5381bc15b56b7f4b95b81533bc45bb86bf42c999",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=200341 rows=1) (actual time=9054..9054 rows=1 loops=1)\n    -> Filter: (((select #2) > 1) and ((select #3) = 1))  (cost=100495 rows=998459) (actual time=0.864..9021 rows=366255 loops=1)\n        -> Table scan on i  (cost=100495 rows=998459) (actual time=0.82..225 rows=1e+6 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.32 rows=1) (actual time=0.00384..0.00387 rows=1 loops=1e+6)\n                -> Covering index lookup on j using idx_insurance_tiv15 (tiv_2015=i.tiv_2015)  (cost=1.16 rows=1.6) (actual time=0.00318..0.00353 rows=1.91 loops=1e+6)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.25 rows=1) (actual time=0.00711..0.00714 rows=1 loops=602877)\n                -> Covering index lookup on k using idx_insurance_loc (lat=i.lat, lon=i.lon)  (cost=1.13 rows=1.27) (actual time=0.00648..0.0068 rows=1.5 loops=602877)\n"
+        },
+        {
+          "solution": "02_window_counts",
+          "status": "ok",
+          "median_s": 6.100809521999963,
+          "times_s": [
+            6.100809521999963,
+            6.272758125999985,
+            6.045352302999959
+          ],
+          "result_rows": 1,
+          "result_digest": "5381bc15b56b7f4b95b81533bc45bb86bf42c999",
+          "explain_analyze": "-> Aggregate: sum(counted.tiv_2016)  (cost=115324..115324 rows=1) (actual time=6487..6487 rows=1 loops=1)\n    -> Filter: ((counted.n_same_loc = 1) and (counted.tiv_2015 is not null) and (counted.n_same_tiv > 1))  (cost=3.75..112329 rows=29951) (actual time=6168..6470 rows=366255 loops=1)\n        -> Table scan on counted  (cost=2.5..2.5 rows=0) (actual time=6168..6398 rows=1e+6 loops=1)\n            -> Materialize CTE counted  (cost=0..0 rows=0) (actual time=6168..6168 rows=1e+6 loops=1)\n                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.lat,Insurance.lon )   (actual time=3487..5680 rows=1e+6 loops=1)\n                    -> Sort: Insurance.lat, Insurance.lon  (actual time=3487..3557 rows=1e+6 loops=1)\n                        -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=2818..3084 rows=1e+6 loops=1)\n                            -> Temporary table  (cost=0..0 rows=0) (actual time=2818..2818 rows=1e+6 loops=1)\n                                -> Window aggregate with buffering: count(0) OVER (PARTITION BY Insurance.tiv_2015 )   (actual time=579..2412 rows=1e+6 loops=1)\n                                    -> Sort: Insurance.tiv_2015  (cost=102441 rows=998459) (actual time=569..633 rows=1e+6 loops=1)\n                                        -> Table scan on Insurance  (cost=102441 rows=998459) (actual time=0.98..220 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_exists_not_exists",
+          "status": "ok",
+          "median_s": 16.762455077000027,
+          "times_s": [
+            19.766576317000045,
+            16.762455077000027,
+            16.460869995000053
+          ],
+          "result_rows": 1,
+          "result_digest": "5381bc15b56b7f4b95b81533bc45bb86bf42c999",
+          "explain_analyze": "-> Aggregate: sum(i.tiv_2016)  (cost=1.98e+6 rows=1) (actual time=17588..17588 rows=1 loops=1)\n    -> Nested loop antijoin  (cost=1.78e+6 rows=2.02e+6) (actual time=52.4..17551 rows=366255 loops=1)\n        -> Remove duplicate i rows using temporary table (weedout)  (cost=677573 rows=1.6e+6) (actual time=52.3..14955 rows=602877 loops=1)\n            -> Nested loop inner join  (cost=677573 rows=1.6e+6) (actual time=52.3..10463 rows=941760 loops=1)\n                -> Filter: (j.tiv_2015 is not null)  (cost=100495 rows=998459) (actual time=52.3..884 rows=970162 loops=1)\n                    -> Covering index scan on j using idx_insurance_tiv15  (cost=100495 rows=998459) (actual time=12.9..808 rows=1e+6 loops=1)\n                -> Index lookup on i using idx_insurance_tiv15 (tiv_2015=j.tiv_2015), with index condition: (j.pid <> i.pid)  (cost=0.64 rows=1.6) (actual time=0.00926..0.00971 rows=0.971 loops=970162)\n        -> Filter: (k.pid <> i.pid)  (cost=1.26 rows=1.27) (actual time=0.00417..0.00417 rows=0.392 loops=602877)\n            -> Covering index lookup on k using idx_insurance_loc (lat=i.lat, lon=i.lon)  (cost=1.26 rows=1.27) (actual time=0.00377..0.00398 rows=1.18 loops=602877)\n"
+        }
+      ]
+    }
+  ]
+}

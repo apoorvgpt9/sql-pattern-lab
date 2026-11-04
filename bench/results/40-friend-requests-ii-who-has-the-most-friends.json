@@ -1,0 +1,321 @@
+{
+  "problem": "40-friend-requests-ii-who-has-the-most-friends",
+  "generated_at": "2026-11-04T15:18:59+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_count_per_person",
+    "02_union_all_then_group",
+    "03_aggregate_each_role_then_sum"
+  ],
+  "optimal": "03_aggregate_each_role_then_sum",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122096 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "RequestAccepted": 1000
+      },
+      "load_seconds": 0.022,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count_per_person",
+          "status": "ok",
+          "median_s": 0.05753207800000837,
+          "times_s": [
+            0.05808149899996806,
+            0.05753207800000837,
+            0.057454287000041404
+          ],
+          "result_rows": 1,
+          "result_digest": "1b759bc0c7826560c803f306ca07da96b8fe41d7",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=76..76 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=76..76 rows=1 loops=1)\n        -> Stream results  (cost=402..430 rows=2000) (actual time=0.839..75.9 rows=332 loops=1)\n            -> Table scan on p  (cost=402..430 rows=2000) (actual time=0.606..0.655 rows=332 loops=1)\n                -> Materialize union CTE people with deduplication  (cost=402..402 rows=2000) (actual time=0.605..0.605 rows=332 loops=1)\n                    -> Covering index scan on RequestAccepted using PRIMARY  (cost=101 rows=1000) (actual time=0.0465..0.153 rows=1000 loops=1)\n                    -> Covering index scan on RequestAccepted using PRIMARY  (cost=101 rows=1000) (actual time=0.0366..0.157 rows=1000 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=39 rows=1) (actual time=0.226..0.226 rows=1 loops=332)\n        -> Filter: ((r.requester_id = p.id) or (r.accepter_id = p.id))  (cost=20 rows=190) (actual time=0.0842..0.225 rows=6.02 loops=332)\n            -> Covering index scan on r using PRIMARY  (cost=20 rows=1000) (actual time=0.043..0.161 rows=1000 loops=332)\n"
+        },
+        {
+          "solution": "02_union_all_then_group",
+          "status": "ok",
+          "median_s": 0.0012473799999952462,
+          "times_s": [
+            0.0012866740000276877,
+            0.0012473799999952462,
+            0.001242220999984056
+          ],
+          "result_rows": 1,
+          "result_digest": "1b759bc0c7826560c803f306ca07da96b8fe41d7",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=1.04..1.04 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=1.04..1.04 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=0.986..1.02 rows=332 loops=1)\n            -> Aggregate using temporary table  (actual time=0.986..0.986 rows=332 loops=1)\n                -> Table scan on endpoints  (cost=402..430 rows=2000) (actual time=0.463..0.645 rows=2000 loops=1)\n                    -> Materialize union CTE endpoints  (cost=402..402 rows=2000) (actual time=0.462..0.462 rows=2000 loops=1)\n                        -> Covering index scan on RequestAccepted using PRIMARY  (cost=101 rows=1000) (actual time=0.0623..0.172 rows=1000 loops=1)\n                        -> Covering index scan on RequestAccepted using PRIMARY  (cost=101 rows=1000) (actual time=0.0358..0.136 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_aggregate_each_role_then_sum",
+          "status": "ok",
+          "median_s": 0.0013183629999957702,
+          "times_s": [
+            0.0013183629999957702,
+            0.0013438880000080644,
+            0.001292153999997936
+          ],
+          "result_rows": 1,
+          "result_digest": "1b759bc0c7826560c803f306ca07da96b8fe41d7",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=0.945..0.945 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=0.944..0.944 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=0.869..0.9 rows=332 loops=1)\n            -> Aggregate using temporary table  (actual time=0.869..0.869 rows=332 loops=1)\n                -> Table scan on per_role  (cost=231..237 rows=302) (actual time=0.659..0.715 rows=606 loops=1)\n                    -> Materialize union CTE per_role  (cost=231..231 rows=302) (actual time=0.659..0.659 rows=606 loops=1)\n                        -> Group aggregate: count(0)  (cost=201 rows=302) (actual time=0.0508..0.217 rows=302 loops=1)\n                            -> Covering index scan on RequestAccepted using PRIMARY  (cost=101 rows=1000) (actual time=0.0488..0.159 rows=1000 loops=1)\n                        -> Table scan on <temporary>  (actual time=0.362..0.389 rows=304 loops=1)\n                            -> Aggregate using temporary table  (actual time=0.361..0.361 rows=304 loops=1)\n                                -> Covering index scan on RequestAccepted using PRIMARY  (cost=101 rows=1000) (actual time=0.0727..0.182 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "RequestAccepted": 1000
+      },
+      "load_seconds": 0.022,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count_per_person",
+          "status": "ok",
+          "median_s": 0.05919633899998189,
+          "times_s": [
+            0.05919633899998189,
+            0.060940987999970275,
+            0.05779446000002508
+          ],
+          "result_rows": 1,
+          "result_digest": "1b759bc0c7826560c803f306ca07da96b8fe41d7",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=94.9..94.9 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=94.9..94.9 rows=1 loops=1)\n        -> Stream results  (cost=402..430 rows=2000) (actual time=0.829..94.8 rows=332 loops=1)\n            -> Table scan on p  (cost=402..430 rows=2000) (actual time=0.505..0.561 rows=332 loops=1)\n                -> Materialize union CTE people with deduplication  (cost=402..402 rows=2000) (actual time=0.505..0.505 rows=332 loops=1)\n                    -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=101 rows=1000) (actual time=0.0395..0.132 rows=1000 loops=1)\n                    -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=101 rows=1000) (actual time=0.031..0.123 rows=1000 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=39 rows=1) (actual time=0.283..0.283 rows=1 loops=332)\n        -> Filter: ((r.requester_id = p.id) or (r.accepter_id = p.id))  (cost=20 rows=190) (actual time=0.0991..0.283 rows=6.02 loops=332)\n            -> Index range scan on r (re-planned for each iteration)  (cost=20 rows=1000) (actual time=0.0445..0.217 rows=1000 loops=332)\n"
+        },
+        {
+          "solution": "02_union_all_then_group",
+          "status": "ok",
+          "median_s": 0.0019811340000046584,
+          "times_s": [
+            0.0031815410000035627,
+            0.0019297850000157268,
+            0.0019811340000046584
+          ],
+          "result_rows": 1,
+          "result_digest": "1b759bc0c7826560c803f306ca07da96b8fe41d7",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=1.64..1.64 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=1.64..1.64 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=1.56..1.6 rows=332 loops=1)\n            -> Aggregate using temporary table  (actual time=1.56..1.56 rows=332 loops=1)\n                -> Table scan on endpoints  (cost=402..430 rows=2000) (actual time=0.665..0.891 rows=2000 loops=1)\n                    -> Materialize union CTE endpoints  (cost=402..402 rows=2000) (actual time=0.664..0.664 rows=2000 loops=1)\n                        -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=101 rows=1000) (actual time=0.0606..0.22 rows=1000 loops=1)\n                        -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=101 rows=1000) (actual time=0.0558..0.241 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_aggregate_each_role_then_sum",
+          "status": "ok",
+          "median_s": 0.0011213950000410478,
+          "times_s": [
+            0.0011213950000410478,
+            0.001112879000004341,
+            0.0011259229999609488
+          ],
+          "result_rows": 1,
+          "result_digest": "1b759bc0c7826560c803f306ca07da96b8fe41d7",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=0.79..0.79 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=0.789..0.789 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=0.712..0.743 rows=332 loops=1)\n            -> Aggregate using temporary table  (actual time=0.712..0.712 rows=332 loops=1)\n                -> Table scan on per_role  (cost=463..473 rows=606) (actual time=0.505..0.56 rows=606 loops=1)\n                    -> Materialize union CTE per_role  (cost=463..463 rows=606) (actual time=0.504..0.504 rows=606 loops=1)\n                        -> Group aggregate: count(0)  (cost=201 rows=302) (actual time=0.0505..0.217 rows=302 loops=1)\n                            -> Covering index scan on RequestAccepted using PRIMARY  (cost=101 rows=1000) (actual time=0.0483..0.158 rows=1000 loops=1)\n                        -> Group aggregate: count(0)  (cost=201 rows=304) (actual time=0.0369..0.232 rows=304 loops=1)\n                            -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=101 rows=1000) (actual time=0.0363..0.141 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "RequestAccepted": 100000
+      },
+      "load_seconds": 1.142,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count_per_person",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_union_all_then_group",
+          "status": "ok",
+          "median_s": 0.07464349500003209,
+          "times_s": [
+            0.0773339739999983,
+            0.07464349500003209,
+            0.07448576999996703
+          ],
+          "result_rows": 1,
+          "result_digest": "0995eb27bbe0e7200be2c7f8ecbeb2c729fea753",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=107..107 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=107..107 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=102..105 rows=33563 loops=1)\n            -> Aggregate using temporary table  (actual time=102..102 rows=33563 loops=1)\n                -> Table scan on endpoints  (cost=36012..38250 rows=178856) (actual time=41..59.6 rows=200000 loops=1)\n                    -> Materialize union CTE endpoints  (cost=36012..36012 rows=178856) (actual time=41..41 rows=200000 loops=1)\n                        -> Covering index scan on RequestAccepted using PRIMARY  (cost=9063 rows=89428) (actual time=0.788..14.4 rows=100000 loops=1)\n                        -> Covering index scan on RequestAccepted using PRIMARY  (cost=9063 rows=89428) (actual time=0.757..14.4 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_aggregate_each_role_then_sum",
+          "status": "ok",
+          "median_s": 0.07997158900002432,
+          "times_s": [
+            0.07997158900002432,
+            0.0798094570000103,
+            0.08009339599999521
+          ],
+          "result_rows": 1,
+          "result_digest": "0995eb27bbe0e7200be2c7f8ecbeb2c729fea753",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=103..103 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=103..103 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=95.5..98.6 rows=33563 loops=1)\n            -> Aggregate using temporary table  (actual time=95.5..95.5 rows=33563 loops=1)\n                -> Table scan on per_role  (cost=20548..20868 rows=25423) (actual time=69.8..75.4 rows=60752 loops=1)\n                    -> Materialize union CTE per_role  (cost=20548..20548 rows=25423) (actual time=69.8..69.8 rows=60752 loops=1)\n                        -> Group aggregate: count(0)  (cost=18006 rows=25423) (actual time=0.963..22.1 rows=30339 loops=1)\n                            -> Covering index scan on RequestAccepted using PRIMARY  (cost=9063 rows=89428) (actual time=0.96..16.2 rows=100000 loops=1)\n                        -> Table scan on <temporary>  (actual time=39.9..42.7 rows=30413 loops=1)\n                            -> Aggregate using temporary table  (actual time=39.9..39.9 rows=30413 loops=1)\n                                -> Covering index scan on RequestAccepted using PRIMARY  (cost=9063 rows=89428) (actual time=0.906..16.1 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "RequestAccepted": 100000
+      },
+      "load_seconds": 1.142,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count_per_person",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_union_all_then_group",
+          "status": "ok",
+          "median_s": 0.07612442200002079,
+          "times_s": [
+            0.07612442200002079,
+            0.07578394600000138,
+            0.07765529100004187
+          ],
+          "result_rows": 1,
+          "result_digest": "0995eb27bbe0e7200be2c7f8ecbeb2c729fea753",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=111..111 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=111..111 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=106..109 rows=33563 loops=1)\n            -> Aggregate using temporary table  (actual time=106..106 rows=33563 loops=1)\n                -> Table scan on endpoints  (cost=39345..41792 rows=195524) (actual time=36.7..55.4 rows=200000 loops=1)\n                    -> Materialize union CTE endpoints  (cost=39345..39345 rows=195524) (actual time=36.7..36.7 rows=200000 loops=1)\n                        -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=9896 rows=97762) (actual time=0.697..12.3 rows=100000 loops=1)\n                        -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=9896 rows=97762) (actual time=0.632..12.3 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_aggregate_each_role_then_sum",
+          "status": "ok",
+          "median_s": 0.05708632799996849,
+          "times_s": [
+            0.05675423799999635,
+            0.05708632799996849,
+            0.057169412999996894
+          ],
+          "result_rows": 1,
+          "result_digest": "0995eb27bbe0e7200be2c7f8ecbeb2c729fea753",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=78..78 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=78..78 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=70.7..73.8 rows=33563 loops=1)\n            -> Aggregate using temporary table  (actual time=70.7..70.7 rows=33563 loops=1)\n                -> Table scan on per_role  (cost=45244..45984 rows=58984) (actual time=46.7..52.3 rows=60752 loops=1)\n                    -> Materialize union CTE per_role  (cost=45244..45244 rows=58984) (actual time=46.7..46.7 rows=60752 loops=1)\n                        -> Group aggregate: count(0)  (cost=19673 rows=30080) (actual time=1.21..22.2 rows=30339 loops=1)\n                            -> Covering index scan on RequestAccepted using PRIMARY  (cost=9896 rows=97762) (actual time=1.21..16.3 rows=100000 loops=1)\n                        -> Group aggregate: count(0)  (cost=19673 rows=28904) (actual time=0.801..19.7 rows=30413 loops=1)\n                            -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=9896 rows=97762) (actual time=0.798..13.8 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "RequestAccepted": 1000000
+      },
+      "load_seconds": 12.205,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count_per_person",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_union_all_then_group",
+          "status": "ok",
+          "median_s": 4.900027934000036,
+          "times_s": [
+            5.48135934000004,
+            4.900027934000036,
+            4.829373433000001
+          ],
+          "result_rows": 1,
+          "result_digest": "4a007c703c23d8b3c61c127586ee5618aed787a4",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=5124..5124 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=5124..5124 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=5039..5102 rows=335167 loops=1)\n            -> Aggregate using temporary table  (actual time=5039..5039 rows=335166 loops=1)\n                -> Table scan on endpoints  (cost=354917..376896 rows=1.76e+6) (actual time=874..1307 rows=2e+6 loops=1)\n                    -> Materialize union CTE endpoints  (cost=354917..354917 rows=1.76e+6) (actual time=874..874 rows=2e+6 loops=1)\n                        -> Covering index scan on RequestAccepted using PRIMARY  (cost=89551 rows=879071) (actual time=1.43..148 rows=1e+6 loops=1)\n                        -> Covering index scan on RequestAccepted using PRIMARY  (cost=89551 rows=879071) (actual time=1.37..147 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_aggregate_each_role_then_sum",
+          "status": "ok",
+          "median_s": 4.175132827000084,
+          "times_s": [
+            4.0922113850000414,
+            4.196786560000078,
+            4.175132827000084
+          ],
+          "result_rows": 1,
+          "result_digest": "4a007c703c23d8b3c61c127586ee5618aed787a4",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=4379..4379 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=4379..4379 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=4273..4335 rows=335167 loops=1)\n            -> Aggregate using temporary table  (actual time=4273..4273 rows=335166 loops=1)\n                -> Table scan on per_role  (cost=210950..215156 rows=336264) (actual time=2976..3122 rows=606274 loops=1)\n                    -> Materialize union CTE per_role  (cost=210950..210950 rows=336264) (actual time=2976..2976 rows=606274 loops=1)\n                        -> Group aggregate: count(0)  (cost=177324 rows=336264) (actual time=1.66..225 rows=303302 loops=1)\n                            -> Covering index scan on RequestAccepted using PRIMARY  (cost=89417 rows=879071) (actual time=1.65..166 rows=1e+6 loops=1)\n                        -> Table scan on <temporary>  (actual time=2493..2554 rows=302972 loops=1)\n                            -> Aggregate using temporary table  (actual time=2493..2493 rows=302971 loops=1)\n                                -> Covering index scan on RequestAccepted using PRIMARY  (cost=89417 rows=879071) (actual time=1.48..181 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "RequestAccepted": 1000000
+      },
+      "load_seconds": 12.205,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_count_per_person",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_union_all_then_group",
+          "status": "ok",
+          "median_s": 5.327572405000069,
+          "times_s": [
+            5.327572405000069,
+            5.292857844999958,
+            5.978426289999902
+          ],
+          "result_rows": 1,
+          "result_digest": "4a007c703c23d8b3c61c127586ee5618aed787a4",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=5745..5745 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=5745..5745 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=5658..5723 rows=335167 loops=1)\n            -> Aggregate using temporary table  (actual time=5658..5658 rows=335166 loops=1)\n                -> Table scan on endpoints  (cost=489487..519729 rows=2.42e+6) (actual time=825..1278 rows=2e+6 loops=1)\n                    -> Materialize union CTE endpoints  (cost=489487..489487 rows=2.42e+6) (actual time=825..825 rows=2e+6 loops=1)\n                        -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=123787 rows=1.21e+6) (actual time=0.96..124 rows=1e+6 loops=1)\n                        -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=123787 rows=1.21e+6) (actual time=0.936..125 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_aggregate_each_role_then_sum",
+          "status": "ok",
+          "median_s": 1.820941275999985,
+          "times_s": [
+            1.8126489700000548,
+            1.8471202050000102,
+            1.820941275999985
+          ],
+          "result_rows": 1,
+          "result_digest": "4a007c703c23d8b3c61c127586ee5618aed787a4",
+          "explain_analyze": "-> Limit: 1 row(s)  (actual time=2074..2074 rows=1 loops=1)\n    -> Sort: num DESC, limit input to 1 row(s) per chunk  (actual time=2074..2074 rows=1 loops=1)\n        -> Table scan on <temporary>  (actual time=1967..2030 rows=335167 loops=1)\n            -> Aggregate using temporary table  (actual time=1967..1967 rows=335166 loops=1)\n                -> Table scan on per_role  (cost=547587..554937 rows=587772) (actual time=629..779 rows=606274 loops=1)\n                    -> Materialize union CTE per_role  (cost=547587..547587 rows=587772) (actual time=629..629 rows=606274 loops=1)\n                        -> Group aggregate: count(0)  (cost=244405 rows=286840) (actual time=1.78..235 rows=303302 loops=1)\n                            -> Covering index scan on RequestAccepted using PRIMARY  (cost=123448 rows=1.21e+6) (actual time=1.78..175 rows=1e+6 loops=1)\n                        -> Group aggregate: count(0)  (cost=244405 rows=300932) (actual time=1.18..197 rows=302972 loops=1)\n                            -> Covering index scan on RequestAccepted using idx_ra_accepter  (cost=123448 rows=1.21e+6) (actual time=1.18..138 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

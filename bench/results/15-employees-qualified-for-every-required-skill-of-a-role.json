@@ -1,0 +1,334 @@
+{
+  "problem": "15-employees-qualified-for-every-required-skill-of-a-role",
+  "generated_at": "2026-11-04T15:45:29+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_double_not_exists",
+    "02_dedupe_then_count",
+    "03_join_count_distinct"
+  ],
+  "optimal": "03_join_count_distinct",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "mem_total": "8121092 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "RoleRequirements": 130,
+        "EmployeeSkills": 1000
+      },
+      "load_seconds": 0.029,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "ok",
+          "median_s": 5.02249623900002,
+          "times_s": [
+            5.0149990100001105,
+            5.0310020300000815,
+            5.02249623900002
+          ],
+          "result_rows": 668,
+          "result_digest": "4338a61735c010771ed6c0924ada50ea0a756f84",
+          "explain_analyze": "-> Sort: r.`role`, e.employee_id  (actual time=5736..5736 rows=668 loops=1)\n    -> Stream results  (cost=3440 rows=34000) (actual time=3.64..5735 rows=668 loops=1)\n        -> Filter: exists(select #4) is false  (cost=3440 rows=34000) (actual time=3.64..5735 rows=668 loops=1)\n            -> Inner hash join (no condition)  (cost=3440 rows=34000) (actual time=0.671..1.73 rows=7788 loops=1)\n                -> Table scan on e  (cost=316..331 rows=1000) (actual time=0.572..0.766 rows=236 loops=1)\n                    -> Materialize  (cost=316..316 rows=1000) (actual time=0.572..0.572 rows=236 loops=1)\n                        -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.543..0.558 rows=236 loops=1)\n                            -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.543..0.543 rows=236 loops=1)\n                                -> Table scan on EmployeeSkills  (cost=101 rows=1000) (actual time=0.00425..0.378 rows=1000 loops=1)\n                -> Hash\n                    -> Table scan on r  (cost=20.9..23.7 rows=34) (actual time=0.0887..0.0914 rows=33 loops=1)\n                        -> Materialize  (cost=20.8..20.8 rows=34) (actual time=0.0869..0.0869 rows=33 loops=1)\n                            -> Covering index skip scan for deduplication on RoleRequirements using PRIMARY  (cost=17.4 rows=34) (actual time=0.0205..0.0771 rows=33 loops=1)\n            -> Select #4 (subquery in condition; dependent)\n                -> Nested loop antijoin  (cost=395 rows=3939) (actual time=0.726..0.728 rows=2.43 loops=7788)\n                    -> Covering index lookup on rr using PRIMARY (role=r.`role`)  (cost=0.766 rows=3.94) (actual time=0.00218..0.00319 rows=3.94 loops=7788)\n                    -> Single-row index lookup on <subquery5> using <auto_distinct_key> (employee_id=e.employee_id, skill=rr.skill)  (cost=201..201 rows=1) (actual time=0.184..0.184 rows=0.382 loops=30680)\n                        -> Materialize with deduplication  (cost=201..201 rows=1000) (actual time=0.723..0.723 rows=900 loops=7788)\n                            -> Filter: ((es.employee_id is not null) and (es.skill is not null))  (cost=101 rows=1000) (actual time=0.0011..0.466 rows=1000 loops=7788)\n                                -> Table scan on es  (cost=101 rows=1000) (actual time=972e-6..0.401 rows=1000 loops=7788)\n"
+        },
+        {
+          "solution": "02_dedupe_then_count",
+          "status": "ok",
+          "median_s": 0.018240653000020757,
+          "times_s": [
+            0.018240653000020757,
+            0.017925971000067875,
+            0.018500211999935345
+          ],
+          "result_rows": 668,
+          "result_digest": "4338a61735c010771ed6c0924ada50ea0a756f84",
+          "explain_analyze": "-> Sort: h.`role`, h.employee_id  (actual time=16.2..16.2 rows=668 loops=1)\n    -> Stream results  (cost=357 rows=0) (actual time=15.7..16 rows=668 loops=1)\n        -> Nested loop inner join  (cost=357 rows=0) (actual time=15.7..15.9 rows=668 loops=1)\n            -> Table scan on req  (cost=29.6..32.5 rows=33) (actual time=0.107..0.111 rows=33 loops=1)\n                -> Materialize CTE req  (cost=29.6..29.6 rows=33) (actual time=0.106..0.106 rows=33 loops=1)\n                    -> Group aggregate: count(0)  (cost=26.2 rows=33) (actual time=0.0289..0.0718 rows=33 loops=1)\n                        -> Covering index scan on RoleRequirements using PRIMARY  (cost=13.2 rows=130) (actual time=0.0236..0.0498 rows=130 loops=1)\n            -> Index lookup on h using <auto_key0> (role=req.`role`, n_hit=req.n_required)  (cost=0.251..2.51 rows=10) (actual time=0.475..0.478 rows=20.2 loops=33)\n                -> Materialize CTE hits  (cost=0..0 rows=0) (actual time=15.6..15.6 rows=6317 loops=1)\n                    -> Table scan on <temporary>  (actual time=8.44..9.08 rows=6317 loops=1)\n                        -> Aggregate using temporary table  (actual time=8.44..8.44 rows=6317 loops=1)\n                            -> Nested loop inner join  (cost=13338 rows=130000) (actual time=1.08..3.15 rows=11717 loops=1)\n                                -> Covering index scan on rr using PRIMARY  (cost=13.2 rows=130) (actual time=0.00506..0.0432 rows=130 loops=1)\n                                -> Index lookup on c using <auto_key0> (skill=rr.skill)  (cost=317..319 rows=10) (actual time=0.00884..0.0194 rows=90.1 loops=130)\n                                    -> Materialize CTE claims  (cost=316..316 rows=1000) (actual time=1.07..1.07 rows=900 loops=1)\n                                        -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.647..0.715 rows=900 loops=1)\n                                            -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.647..0.647 rows=900 loops=1)\n                                                -> Table scan on EmployeeSkills  (cost=101 rows=1000) (actual time=0.00454..0.398 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_join_count_distinct",
+          "status": "ok",
+          "median_s": 0.015079193999781637,
+          "times_s": [
+            0.01512883000009424,
+            0.015079193999781637,
+            0.015007596000032208
+          ],
+          "result_rows": 668,
+          "result_digest": "4338a61735c010771ed6c0924ada50ea0a756f84",
+          "explain_analyze": "-> Filter: (count(distinct RoleRequirements.skill) = req.n_required)  (actual time=9.46..13.5 rows=668 loops=1)\n    -> Group aggregate: count(distinct RoleRequirements.skill)  (actual time=9.4..13.1 rows=6317 loops=1)\n        -> Sort: rr.`role`, es.employee_id, req.n_required  (actual time=9.39..9.98 rows=12767 loops=1)\n            -> Stream results  (cost=13098 rows=13000) (actual time=0.225..3.85 rows=12767 loops=1)\n                -> Inner hash join (es.skill = rr.skill)  (cost=13098 rows=13000) (actual time=0.223..1.58 rows=12767 loops=1)\n                    -> Table scan on es  (cost=0.0278 rows=1000) (actual time=0.00486..0.418 rows=1000 loops=1)\n                    -> Hash\n                        -> Nested loop inner join  (cost=93.9 rows=130) (actual time=0.0911..0.19 rows=130 loops=1)\n                            -> Table scan on req  (cost=29.6..32.5 rows=33) (actual time=0.0815..0.0845 rows=33 loops=1)\n                                -> Materialize CTE req  (cost=29.6..29.6 rows=33) (actual time=0.0801..0.0801 rows=33 loops=1)\n                                    -> Group aggregate: count(0)  (cost=26.2 rows=33) (actual time=0.0258..0.0677 rows=33 loops=1)\n                                        -> Covering index scan on RoleRequirements using PRIMARY  (cost=13.2 rows=130) (actual time=0.02..0.0457 rows=130 loops=1)\n                            -> Covering index lookup on rr using PRIMARY (role=req.`role`)  (cost=0.376 rows=3.94) (actual time=0.00205..0.00294 rows=3.94 loops=33)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "RoleRequirements": 130,
+        "EmployeeSkills": 1000
+      },
+      "load_seconds": 0.029,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "ok",
+          "median_s": 0.07230340399996749,
+          "times_s": [
+            0.0722445889998653,
+            0.07230340399996749,
+            0.07281103199989047
+          ],
+          "result_rows": 668,
+          "result_digest": "4338a61735c010771ed6c0924ada50ea0a756f84",
+          "explain_analyze": "-> Sort: r.`role`, e.employee_id  (actual time=75..75.1 rows=668 loops=1)\n    -> Stream results  (cost=835 rows=8058) (actual time=0.539..74.8 rows=668 loops=1)\n        -> Filter: exists(select #4) is false  (cost=835 rows=8058) (actual time=0.538..74.6 rows=668 loops=1)\n            -> Inner hash join (no condition)  (cost=835 rows=8058) (actual time=0.494..0.937 rows=7788 loops=1)\n                -> Table scan on e  (cost=139..144 rows=237) (actual time=0.391..0.415 rows=236 loops=1)\n                    -> Materialize  (cost=139..139 rows=237) (actual time=0.39..0.39 rows=236 loops=1)\n                        -> Covering index skip scan for deduplication on EmployeeSkills using idx_es_emp_skill  (cost=115 rows=237) (actual time=0.00723..0.373 rows=236 loops=1)\n                -> Hash\n                    -> Table scan on r  (cost=20.9..23.7 rows=34) (actual time=0.0924..0.0952 rows=33 loops=1)\n                        -> Materialize  (cost=20.8..20.8 rows=34) (actual time=0.0909..0.0909 rows=33 loops=1)\n                            -> Covering index skip scan for deduplication on RoleRequirements using PRIMARY  (cost=17.4 rows=34) (actual time=0.0215..0.0776 rows=33 loops=1)\n            -> Select #4 (subquery in condition; dependent)\n                -> Nested loop antijoin  (cost=3.68 rows=4.38) (actual time=0.00508..0.00903 rows=2.43 loops=7788)\n                    -> Covering index lookup on rr using PRIMARY (role=r.`role`)  (cost=0.766 rows=3.94) (actual time=0.00187..0.00277 rows=3.94 loops=7788)\n                    -> Covering index lookup on es using idx_es_skill_emp (skill=rr.skill, employee_id=e.employee_id)  (cost=0.73 rows=1.11) (actual time=0.00148..0.00148 rows=0.382 loops=30680)\n"
+        },
+        {
+          "solution": "02_dedupe_then_count",
+          "status": "ok",
+          "median_s": 0.018009090000077776,
+          "times_s": [
+            0.018009090000077776,
+            0.018035263999991002,
+            0.01798458700000083
+          ],
+          "result_rows": 668,
+          "result_digest": "4338a61735c010771ed6c0924ada50ea0a756f84",
+          "explain_analyze": "-> Sort: h.`role`, h.employee_id  (actual time=16.1..16.1 rows=668 loops=1)\n    -> Stream results  (cost=357 rows=0) (actual time=15.7..16 rows=668 loops=1)\n        -> Nested loop inner join  (cost=357 rows=0) (actual time=15.7..15.9 rows=668 loops=1)\n            -> Table scan on req  (cost=29.6..32.5 rows=33) (actual time=0.0831..0.0874 rows=33 loops=1)\n                -> Materialize CTE req  (cost=29.6..29.6 rows=33) (actual time=0.0817..0.0817 rows=33 loops=1)\n                    -> Group aggregate: count(0)  (cost=26.2 rows=33) (actual time=0.025..0.0666 rows=33 loops=1)\n                        -> Covering index scan on RoleRequirements using PRIMARY  (cost=13.2 rows=130) (actual time=0.02..0.0459 rows=130 loops=1)\n            -> Index lookup on h using <auto_key0> (role=req.`role`, n_hit=req.n_required)  (cost=0.251..2.51 rows=10) (actual time=0.474..0.478 rows=20.2 loops=33)\n                -> Materialize CTE hits  (cost=0..0 rows=0) (actual time=15.6..15.6 rows=6317 loops=1)\n                    -> Table scan on <temporary>  (actual time=8.41..9.06 rows=6317 loops=1)\n                        -> Aggregate using temporary table  (actual time=8.41..8.41 rows=6317 loops=1)\n                            -> Nested loop inner join  (cost=12038 rows=117000) (actual time=1.01..3.04 rows=11717 loops=1)\n                                -> Covering index scan on rr using PRIMARY  (cost=13.2 rows=130) (actual time=0.00552..0.0452 rows=130 loops=1)\n                                -> Index lookup on c using <auto_key0> (skill=rr.skill)  (cost=292..294 rows=10) (actual time=0.00829..0.019 rows=90.1 loops=130)\n                                    -> Materialize CTE claims  (cost=291..291 rows=900) (actual time=0.998..0.998 rows=900 loops=1)\n                                        -> Group (no aggregates)  (cost=201 rows=900) (actual time=0.00725..0.537 rows=900 loops=1)\n                                            -> Covering index scan on EmployeeSkills using idx_es_emp_skill  (cost=101 rows=1000) (actual time=0.00539..0.42 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_join_count_distinct",
+          "status": "ok",
+          "median_s": 0.01996731000008367,
+          "times_s": [
+            0.01996731000008367,
+            0.020025508999879094,
+            0.019876404000115144
+          ],
+          "result_rows": 668,
+          "result_digest": "4338a61735c010771ed6c0924ada50ea0a756f84",
+          "explain_analyze": "-> Filter: (count(distinct RoleRequirements.skill) = req.n_required)  (actual time=14.8..18.8 rows=668 loops=1)\n    -> Group aggregate: count(distinct RoleRequirements.skill)  (actual time=14.8..18.5 rows=6317 loops=1)\n        -> Sort: rr.`role`, es.employee_id, req.n_required  (actual time=14.8..15.4 rows=12767 loops=1)\n            -> Stream results  (cost=1161 rows=3421) (actual time=0.0974..9.52 rows=12767 loops=1)\n                -> Nested loop inner join  (cost=1161 rows=3421) (actual time=0.0956..6.69 rows=12767 loops=1)\n                    -> Nested loop inner join  (cost=93.9 rows=130) (actual time=0.0895..0.198 rows=130 loops=1)\n                        -> Table scan on req  (cost=29.6..32.5 rows=33) (actual time=0.0805..0.087 rows=33 loops=1)\n                            -> Materialize CTE req  (cost=29.6..29.6 rows=33) (actual time=0.0791..0.0791 rows=33 loops=1)\n                                -> Group aggregate: count(0)  (cost=26.2 rows=33) (actual time=0.0257..0.0679 rows=33 loops=1)\n                                    -> Covering index scan on RoleRequirements using PRIMARY  (cost=13.2 rows=130) (actual time=0.0197..0.046 rows=130 loops=1)\n                        -> Covering index lookup on rr using PRIMARY (role=req.`role`)  (cost=0.376 rows=3.94) (actual time=0.00218..0.00312 rows=3.94 loops=33)\n                    -> Covering index lookup on es using idx_es_skill_emp (skill=rr.skill)  (cost=1.42 rows=26.3) (actual time=980e-6..0.0454 rows=98.2 loops=130)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "RoleRequirements": 159,
+        "EmployeeSkills": 100000
+      },
+      "load_seconds": 0.611,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_dedupe_then_count",
+          "status": "ok",
+          "median_s": 3.9580357209999875,
+          "times_s": [
+            3.9642979109999033,
+            3.9171606799998244,
+            3.9580357209999875
+          ],
+          "result_rows": 7613,
+          "result_digest": "1de2d8eb7458c7a4f90cba61ad89d154b2bbb839",
+          "explain_analyze": "-> Sort: h.`role`, h.employee_id  (actual time=4021..4021 rows=7613 loops=1)\n    -> Stream results  (cost=25058 rows=0) (actual time=4006..4018 rows=7613 loops=1)\n        -> Nested loop inner join  (cost=25058 rows=0) (actual time=4006..4017 rows=7613 loops=1)\n            -> Table scan on req  (cost=36.1..39 rows=40) (actual time=0.0984..0.107 rows=40 loops=1)\n                -> Materialize CTE req  (cost=36..36 rows=40) (actual time=0.0968..0.0968 rows=40 loops=1)\n                    -> Group aggregate: count(0)  (cost=32 rows=40) (actual time=0.0296..0.0807 rows=40 loops=1)\n                        -> Covering index scan on RoleRequirements using PRIMARY  (cost=16.1 rows=159) (actual time=0.023..0.054 rows=159 loops=1)\n            -> Index lookup on h using <auto_key0> (role=req.`role`, n_hit=req.n_required)  (cost=0.251..158 rows=629) (actual time=100..100 rows=190 loops=40)\n                -> Materialize CTE hits  (cost=0..0 rows=0) (actual time=4006..4006 rows=384306 loops=1)\n                    -> Table scan on <temporary>  (actual time=2809..2905 rows=384306 loops=1)\n                        -> Aggregate using temporary table  (actual time=2809..2809 rows=384305 loops=1)\n                            -> Nested loop inner join  (cost=1.62e+6 rows=15.9e+6) (actual time=173..398 rows=518884 loops=1)\n                                -> Covering index scan on rr using PRIMARY  (cost=16.1 rows=159) (actual time=0.00553..0.417 rows=159 loops=1)\n                                -> Index lookup on c using <auto_key0> (skill=rr.skill)  (cost=31349..31506 rows=629) (actual time=1.09..2.35 rows=3263 loops=159)\n                                    -> Materialize CTE claims  (cost=31348..31348 rows=100076) (actual time=173..173 rows=89828 loops=1)\n                                        -> Table scan on <temporary>  (cost=20087..21341 rows=100076) (actual time=95..105 rows=89828 loops=1)\n                                            -> Temporary table with deduplication  (cost=20087..20087 rows=100076) (actual time=95..95 rows=89828 loops=1)\n                                                -> Table scan on EmployeeSkills  (cost=10080 rows=100076) (actual time=0.00455..40 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_join_count_distinct",
+          "status": "ok",
+          "median_s": 0.6388136559999111,
+          "times_s": [
+            0.6378838800001176,
+            0.6388136559999111,
+            0.6744455739999466
+          ],
+          "result_rows": 7613,
+          "result_digest": "1de2d8eb7458c7a4f90cba61ad89d154b2bbb839",
+          "explain_analyze": "-> Filter: (count(distinct RoleRequirements.skill) = req.n_required)  (actual time=499..705 rows=7613 loops=1)\n    -> Group aggregate: count(distinct RoleRequirements.skill)  (actual time=499..686 rows=384306 loops=1)\n        -> Sort: rr.`role`, es.employee_id, req.n_required  (actual time=499..527 rows=578074 loops=1)\n            -> Stream results  (cost=1.59e+6 rows=1.59e+6) (actual time=0.293..195 rows=578074 loops=1)\n                -> Inner hash join (es.skill = rr.skill)  (cost=1.59e+6 rows=1.59e+6) (actual time=0.291..90.9 rows=578074 loops=1)\n                    -> Table scan on es  (cost=2.03 rows=100076) (actual time=0.00483..40.2 rows=100000 loops=1)\n                    -> Hash\n                        -> Nested loop inner join  (cost=114 rows=159) (actual time=0.13..0.248 rows=159 loops=1)\n                            -> Table scan on req  (cost=36.1..39 rows=40) (actual time=0.119..0.122 rows=40 loops=1)\n                                -> Materialize CTE req  (cost=36..36 rows=40) (actual time=0.118..0.118 rows=40 loops=1)\n                                    -> Group aggregate: count(0)  (cost=32 rows=40) (actual time=0.0289..0.104 rows=40 loops=1)\n                                        -> Covering index scan on RoleRequirements using PRIMARY  (cost=16.1 rows=159) (actual time=0.0217..0.0539 rows=159 loops=1)\n                            -> Covering index lookup on rr using PRIMARY (role=req.`role`)  (cost=0.376 rows=3.97) (actual time=0.00199..0.00289 rows=3.98 loops=40)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "RoleRequirements": 159,
+        "EmployeeSkills": 100000
+      },
+      "load_seconds": 0.611,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "ok",
+          "median_s": 6.920342117000018,
+          "times_s": [
+            7.026376076000133,
+            6.920342117000018,
+            6.8759654559999035
+          ],
+          "result_rows": 7613,
+          "result_digest": "1de2d8eb7458c7a4f90cba61ad89d154b2bbb839",
+          "explain_analyze": "-> Sort: r.`role`, e.employee_id  (actual time=8519..8520 rows=7613 loops=1)\n    -> Stream results  (cost=83467 rows=821066) (actual time=38.9..8514 rows=7613 loops=1)\n        -> Filter: exists(select #4) is false  (cost=83467 rows=821066) (actual time=38.9..8513 rows=7613 loops=1)\n            -> Inner hash join (no condition)  (cost=83467 rows=821066) (actual time=38.5..87.8 rows=827760 loops=1)\n                -> Table scan on e  (cost=22090..22343 rows=20026) (actual time=38.4..40.4 rows=20694 loops=1)\n                    -> Materialize  (cost=22090..22090 rows=20026) (actual time=38.4..38.4 rows=20694 loops=1)\n                        -> Group (no aggregates)  (cost=20087 rows=20026) (actual time=0.0115..37 rows=20694 loops=1)\n                            -> Covering index scan on EmployeeSkills using idx_es_emp_skill  (cost=10080 rows=100076) (actual time=0.00555..32.4 rows=100000 loops=1)\n                -> Hash\n                    -> Table scan on r  (cost=25.3..28.2 rows=41) (actual time=0.105..0.108 rows=40 loops=1)\n                        -> Materialize  (cost=25.2..25.2 rows=41) (actual time=0.104..0.104 rows=40 loops=1)\n                            -> Covering index skip scan for deduplication on RoleRequirements using PRIMARY  (cost=21.1 rows=41) (actual time=0.0237..0.0927 rows=40 loops=1)\n            -> Select #4 (subquery in condition; dependent)\n                -> Nested loop antijoin  (cost=3.16 rows=19.9) (actual time=0.00741..0.00952 rows=3.35 loops=827760)\n                    -> Covering index lookup on rr using PRIMARY (role=r.`role`)  (cost=0.771 rows=3.97) (actual time=0.00191..0.00286 rows=3.98 loops=827760)\n                    -> Single-row index lookup on <subquery5> using <auto_distinct_key> (employee_id=e.employee_id, skill=rr.skill)  (cost=2.29..2.29 rows=1) (actual time=0.00156..0.00156 rows=0.158 loops=3.29e+6)\n                        -> Materialize with deduplication  (cost=2.19..2.19 rows=5) (actual time=0.00472..0.00472 rows=4.34 loops=827760)\n                            -> Filter: ((es.employee_id is not null) and (es.skill is not null))  (cost=1.69 rows=5) (actual time=0.00111..0.00336 rows=4.83 loops=827760)\n                                -> Covering index lookup on es using idx_es_emp_skill (employee_id=e.employee_id)  (cost=1.69 rows=5) (actual time=994e-6..0.00297 rows=4.83 loops=827760)\n"
+        },
+        {
+          "solution": "02_dedupe_then_count",
+          "status": "ok",
+          "median_s": 3.890219788000195,
+          "times_s": [
+            3.8656824419999793,
+            3.890219788000195,
+            3.90075666000007
+          ],
+          "result_rows": 7613,
+          "result_digest": "1de2d8eb7458c7a4f90cba61ad89d154b2bbb839",
+          "explain_analyze": "-> Sort: h.`role`, h.employee_id  (actual time=3957..3957 rows=7613 loops=1)\n    -> Stream results  (cost=25058 rows=0) (actual time=3942..3954 rows=7613 loops=1)\n        -> Nested loop inner join  (cost=25058 rows=0) (actual time=3942..3953 rows=7613 loops=1)\n            -> Table scan on req  (cost=36.1..39 rows=40) (actual time=0.0951..0.103 rows=40 loops=1)\n                -> Materialize CTE req  (cost=36..36 rows=40) (actual time=0.0937..0.0937 rows=40 loops=1)\n                    -> Group aggregate: count(0)  (cost=32 rows=40) (actual time=0.0258..0.0774 rows=40 loops=1)\n                        -> Covering index scan on RoleRequirements using PRIMARY  (cost=16.1 rows=159) (actual time=0.0205..0.0513 rows=159 loops=1)\n            -> Index lookup on h using <auto_key0> (role=req.`role`, n_hit=req.n_required)  (cost=0.251..158 rows=629) (actual time=98.5..98.8 rows=190 loops=40)\n                -> Materialize CTE hits  (cost=0..0 rows=0) (actual time=3942..3942 rows=384306 loops=1)\n                    -> Table scan on <temporary>  (actual time=2723..2821 rows=384306 loops=1)\n                        -> Aggregate using temporary table  (actual time=2723..2723 rows=384305 loops=1)\n                            -> Nested loop inner join  (cost=1.46e+6 rows=14.4e+6) (actual time=121..341 rows=518884 loops=1)\n                                -> Covering index scan on rr using PRIMARY  (cost=16.1 rows=159) (actual time=0.00542..0.401 rows=159 loops=1)\n                                -> Index lookup on c using <auto_key0> (skill=rr.skill)  (cost=29119..29276 rows=629) (actual time=0.768..2 rows=3263 loops=159)\n                                    -> Materialize CTE claims  (cost=29119..29119 rows=90312) (actual time=121..121 rows=89828 loops=1)\n                                        -> Group (no aggregates)  (cost=20087 rows=90312) (actual time=0.00742..52.1 rows=89828 loops=1)\n                                            -> Covering index scan on EmployeeSkills using idx_es_emp_skill  (cost=10080 rows=100076) (actual time=0.00539..39.9 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_join_count_distinct",
+          "status": "ok",
+          "median_s": 0.8351958449998165,
+          "times_s": [
+            0.8326851349997924,
+            0.8351958449998165,
+            0.8403104539997912
+          ],
+          "result_rows": 7613,
+          "result_digest": "1de2d8eb7458c7a4f90cba61ad89d154b2bbb839",
+          "explain_analyze": "-> Filter: (count(distinct RoleRequirements.skill) = req.n_required)  (actual time=746..959 rows=7613 loops=1)\n    -> Group aggregate: count(distinct RoleRequirements.skill)  (actual time=746..939 rows=384306 loops=1)\n        -> Sort: rr.`role`, es.employee_id, req.n_required  (actual time=746..774 rows=578074 loops=1)\n            -> Stream results  (cost=3853 rows=10503) (actual time=0.115..433 rows=578074 loops=1)\n                -> Nested loop inner join  (cost=3853 rows=10503) (actual time=0.113..300 rows=578074 loops=1)\n                    -> Nested loop inner join  (cost=114 rows=159) (actual time=0.104..0.608 rows=159 loops=1)\n                        -> Table scan on req  (cost=36.1..39 rows=40) (actual time=0.0928..0.152 rows=40 loops=1)\n                            -> Materialize CTE req  (cost=36..36 rows=40) (actual time=0.0912..0.0912 rows=40 loops=1)\n                                -> Group aggregate: count(0)  (cost=32 rows=40) (actual time=0.0285..0.0787 rows=40 loops=1)\n                                    -> Covering index scan on RoleRequirements using PRIMARY  (cost=16.1 rows=159) (actual time=0.0216..0.0523 rows=159 loops=1)\n                        -> Covering index lookup on rr using PRIMARY (role=req.`role`)  (cost=0.376 rows=3.97) (actual time=0.00588..0.0105 rows=3.98 loops=40)\n                    -> Covering index lookup on es using idx_es_skill_emp (skill=rr.skill)  (cost=4.26 rows=66.1) (actual time=0.00631..1.71 rows=3636 loops=159)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "RoleRequirements": 159,
+        "EmployeeSkills": 1000000
+      },
+      "load_seconds": 5.819,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_dedupe_then_count",
+          "status": "ok",
+          "median_s": 54.416431805,
+          "times_s": [
+            54.416431805,
+            54.403519052999854,
+            54.44304787200008
+          ],
+          "result_rows": 75558,
+          "result_digest": "37317227d7434641ce86fcfad63f8cef07d54e88",
+          "explain_analyze": "-> Sort: h.`role`, h.employee_id  (actual time=55582..55584 rows=75558 loops=1)\n    -> Stream results  (cost=249540 rows=0) (actual time=55347..55552 rows=75558 loops=1)\n        -> Nested loop inner join  (cost=249540 rows=0) (actual time=55347..55538 rows=75558 loops=1)\n            -> Table scan on req  (cost=36.9..39.8 rows=40) (actual time=0.127..0.185 rows=40 loops=1)\n                -> Materialize CTE req  (cost=36.8..36.8 rows=40) (actual time=0.125..0.125 rows=40 loops=1)\n                    -> Group aggregate: count(0)  (cost=32.8 rows=40) (actual time=0.0582..0.11 rows=40 loops=1)\n                        -> Covering index scan on RoleRequirements using PRIMARY  (cost=16.9 rows=159) (actual time=0.0521..0.0836 rows=159 loops=1)\n            -> Index lookup on h using <auto_key0> (role=req.`role`, n_hit=req.n_required)  (cost=0.251..1573 rows=6277) (actual time=1384..1388 rows=1889 loops=40)\n                -> Materialize CTE hits  (cost=0..0 rows=0) (actual time=55346..55346 rows=3.84e+6 loops=1)\n                    -> Table scan on <temporary>  (actual time=42400..43641 rows=3.84e+6 loops=1)\n                        -> Aggregate using temporary table  (actual time=42400..42400 rows=3.84e+6 loops=1)\n                            -> Nested loop inner join  (cost=16.1e+6 rows=159e+6) (actual time=4683..11746 rows=5.18e+6 loops=1)\n                                -> Covering index scan on rr using PRIMARY  (cost=16.9 rows=159) (actual time=0.00583..0.664 rows=159 loops=1)\n                                -> Index lookup on c using <auto_key0> (skill=rr.skill)  (cost=312812..314385 rows=6277) (actual time=29.5..72.5 rows=32551 loops=159)\n                                    -> Materialize CTE claims  (cost=312812..312812 rows=998002) (actual time=4683..4683 rows=899748 loops=1)\n                                        -> Table scan on <temporary>  (cost=200534..213011 rows=998002) (actual time=2347..2551 rows=899748 loops=1)\n                                            -> Temporary table with deduplication  (cost=200534..200534 rows=998002) (actual time=2347..2347 rows=899748 loops=1)\n                                                -> Table scan on EmployeeSkills  (cost=100734 rows=998002) (actual time=0.0293..456 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_join_count_distinct",
+          "status": "ok",
+          "median_s": 9.505232361000026,
+          "times_s": [
+            7.516399524999997,
+            9.743219536999959,
+            9.505232361000026
+          ],
+          "result_rows": 75558,
+          "result_digest": "37317227d7434641ce86fcfad63f8cef07d54e88",
+          "explain_analyze": "-> Filter: (count(distinct RoleRequirements.skill) = req.n_required)  (actual time=8038..10128 rows=75558 loops=1)\n    -> Group aggregate: count(distinct RoleRequirements.skill)  (actual time=8038..9930 rows=3.84e+6 loops=1)\n        -> Sort: rr.`role`, es.employee_id, req.n_required  (actual time=8038..8327 rows=5.75e+6 loops=1)\n            -> Stream results  (cost=15.9e+6 rows=15.9e+6) (actual time=0.265..2029 rows=5.75e+6 loops=1)\n                -> Inner hash join (es.skill = rr.skill)  (cost=15.9e+6 rows=15.9e+6) (actual time=0.263..942 rows=5.75e+6 loops=1)\n                    -> Table scan on es  (cost=21.6 rows=998002) (actual time=0.00598..417 rows=1e+6 loops=1)\n                    -> Hash\n                        -> Nested loop inner join  (cost=114 rows=159) (actual time=0.103..0.222 rows=159 loops=1)\n                            -> Table scan on req  (cost=36.1..39 rows=40) (actual time=0.0928..0.0963 rows=40 loops=1)\n                                -> Materialize CTE req  (cost=36..36 rows=40) (actual time=0.0914..0.0914 rows=40 loops=1)\n                                    -> Group aggregate: count(0)  (cost=32 rows=40) (actual time=0.0268..0.0779 rows=40 loops=1)\n                                        -> Covering index scan on RoleRequirements using PRIMARY  (cost=16.1 rows=159) (actual time=0.0209..0.0522 rows=159 loops=1)\n                            -> Covering index lookup on rr using PRIMARY (role=req.`role`)  (cost=0.376 rows=3.97) (actual time=0.00201..0.00291 rows=3.98 loops=40)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "RoleRequirements": 159,
+        "EmployeeSkills": 1000000
+      },
+      "load_seconds": 5.819,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_double_not_exists",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_dedupe_then_count",
+          "status": "ok",
+          "median_s": 52.53001439200011,
+          "times_s": [
+            52.53001439200011,
+            52.42480961199999,
+            52.61382024500017
+          ],
+          "result_rows": 75558,
+          "result_digest": "37317227d7434641ce86fcfad63f8cef07d54e88",
+          "explain_analyze": "-> Sort: h.`role`, h.employee_id  (actual time=53550..53553 rows=75558 loops=1)\n    -> Stream results  (cost=249540 rows=0) (actual time=53314..53520 rows=75558 loops=1)\n        -> Nested loop inner join  (cost=249540 rows=0) (actual time=53314..53506 rows=75558 loops=1)\n            -> Table scan on req  (cost=36.9..39.8 rows=40) (actual time=0.126..0.19 rows=40 loops=1)\n                -> Materialize CTE req  (cost=36.8..36.8 rows=40) (actual time=0.124..0.124 rows=40 loops=1)\n                    -> Group aggregate: count(0)  (cost=32.8 rows=40) (actual time=0.0556..0.107 rows=40 loops=1)\n                        -> Covering index scan on RoleRequirements using PRIMARY  (cost=16.9 rows=159) (actual time=0.0483..0.0789 rows=159 loops=1)\n            -> Index lookup on h using <auto_key0> (role=req.`role`, n_hit=req.n_required)  (cost=0.251..1573 rows=6277) (actual time=1333..1338 rows=1889 loops=40)\n                -> Materialize CTE hits  (cost=0..0 rows=0) (actual time=53314..53314 rows=3.84e+6 loops=1)\n                    -> Table scan on <temporary>  (actual time=40401..41630 rows=3.84e+6 loops=1)\n                        -> Aggregate using temporary table  (actual time=40401..40401 rows=3.84e+6 loops=1)\n                            -> Nested loop inner join  (cost=14.6e+6 rows=144e+6) (actual time=2753..9824 rows=5.18e+6 loops=1)\n                                -> Covering index scan on rr using PRIMARY  (cost=16.9 rows=159) (actual time=0.00598..0.627 rows=159 loops=1)\n                                -> Index lookup on c using <auto_key0> (skill=rr.skill)  (cost=291000..292573 rows=6277) (actual time=17.3..60.4 rows=32551 loops=159)\n                                    -> Materialize CTE claims  (cost=291000..291000 rows=904660) (actual time=2752..2752 rows=899748 loops=1)\n                                        -> Group (no aggregates)  (cost=200534 rows=904660) (actual time=0.036..626 rows=899748 loops=1)\n                                            -> Covering index scan on EmployeeSkills using idx_es_emp_skill  (cost=100734 rows=998002) (actual time=0.0333..465 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_join_count_distinct",
+          "status": "ok",
+          "median_s": 9.445264638000026,
+          "times_s": [
+            9.445264638000026,
+            9.289425002999906,
+            11.10502358199983
+          ],
+          "result_rows": 75558,
+          "result_digest": "37317227d7434641ce86fcfad63f8cef07d54e88",
+          "explain_analyze": "-> Filter: (count(distinct RoleRequirements.skill) = req.n_required)  (actual time=7951..10042 rows=75558 loops=1)\n    -> Group aggregate: count(distinct RoleRequirements.skill)  (actual time=7951..9829 rows=3.84e+6 loops=1)\n        -> Sort: rr.`role`, es.employee_id, req.n_required  (actual time=7951..8231 rows=5.75e+6 loops=1)\n            -> Stream results  (cost=76444 rows=253486) (actual time=0.118..4122 rows=5.75e+6 loops=1)\n                -> Nested loop inner join  (cost=76444 rows=253486) (actual time=0.116..2832 rows=5.75e+6 loops=1)\n                    -> Nested loop inner join  (cost=114 rows=159) (actual time=0.104..0.964 rows=159 loops=1)\n                        -> Table scan on req  (cost=36.1..39 rows=40) (actual time=0.0938..0.182 rows=40 loops=1)\n                            -> Materialize CTE req  (cost=36..36 rows=40) (actual time=0.0921..0.0921 rows=40 loops=1)\n                                -> Group aggregate: count(0)  (cost=32 rows=40) (actual time=0.0288..0.0792 rows=40 loops=1)\n                                    -> Covering index scan on RoleRequirements using PRIMARY  (cost=16.1 rows=159) (actual time=0.022..0.0527 rows=159 loops=1)\n                        -> Covering index lookup on rr using PRIMARY (role=req.`role`)  (cost=0.376 rows=3.97) (actual time=0.00961..0.0179 rows=3.98 loops=40)\n                    -> Covering index lookup on es using idx_es_skill_emp (skill=rr.skill)  (cost=80.9 rows=1594) (actual time=0.012..16.2 rows=36166 loops=159)\n"
+        }
+      ]
+    }
+  ]
+}

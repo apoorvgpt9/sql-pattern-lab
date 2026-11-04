@@ -1,0 +1,348 @@
+{
+  "problem": "01-market-analysis-i",
+  "generated_at": "2026-11-04T15:12:18+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subquery",
+    "02_left_join_group_by",
+    "03_aggregate_then_join"
+  ],
+  "optimal": "03_aggregate_then_join",
+  "machine": {
+    "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "python": "3.11.18",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "mem_total": "8122100 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261101.186.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Users": 200,
+        "Items": 20,
+        "Orders": 1000
+      },
+      "load_seconds": 0.041,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 0.036260289000004775,
+          "times_s": [
+            0.03709662699999683,
+            0.036260289000004775,
+            0.035101433000001236
+          ],
+          "result_rows": 200,
+          "result_digest": "2512a1ef8dc658412652f2cec1f43cadd10f5e39",
+          "explain_analyze": "-> Table scan on u  (cost=20.2 rows=200) (actual time=0.0305..0.0508 rows=200 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=21.3 rows=1) (actual time=0.212..0.212 rows=1 loops=200)\n        -> Filter: ((o.buyer_id = u.user_id) and (year(o.order_date) = 2019))  (cost=11.3 rows=100) (actual time=0.128..0.212 rows=1.67 loops=200)\n            -> Table scan on o  (cost=11.3 rows=1000) (actual time=0.0244..0.16 rows=1000 loops=200)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 0.002432986999998832,
+          "times_s": [
+            0.002479146000005983,
+            0.002432986999998832,
+            0.0023603579999971203
+          ],
+          "result_rows": 200,
+          "result_digest": "2512a1ef8dc658412652f2cec1f43cadd10f5e39",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=0.678..0.698 rows=200 loops=1)\n    -> Aggregate using temporary table  (actual time=0.677..0.677 rows=200 loops=1)\n        -> Left hash join (o.buyer_id = u.user_id)  (cost=20002 rows=200000) (actual time=0.455..0.514 rows=397 loops=1)\n            -> Table scan on u  (cost=20.2 rows=200) (actual time=0.0323..0.0462 rows=200 loops=1)\n            -> Hash\n                -> Filter: ((o.order_date >= '2019-01-01') and (o.order_date < '2020-01-01'))  (cost=0.506 rows=1000) (actual time=0.0649..0.354 rows=353 loops=1)\n                    -> Table scan on o  (cost=0.506 rows=1000) (actual time=0.0635..0.242 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.0025248729999987063,
+          "times_s": [
+            0.002562360000005981,
+            0.0025248729999987063,
+            0.0022996080000012853
+          ],
+          "result_rows": 200,
+          "result_digest": "2512a1ef8dc658412652f2cec1f43cadd10f5e39",
+          "explain_analyze": "-> Nested loop left join  (cost=525 rows=0) (actual time=0.417..0.568 rows=200 loops=1)\n    -> Table scan on u  (cost=20.2 rows=200) (actual time=0.0251..0.0428 rows=200 loops=1)\n    -> Index lookup on b using <auto_key0> (buyer_id=u.user_id)  (cost=0.251..2.53 rows=10.1) (actual time=0.00236..0.00245 rows=0.685 loops=200)\n        -> Materialize CTE buyer_2019  (cost=0..0 rows=0) (actual time=0.388..0.388 rows=143 loops=1)\n            -> Table scan on <temporary>  (actual time=0.333..0.347 rows=143 loops=1)\n                -> Aggregate using temporary table  (actual time=0.333..0.333 rows=143 loops=1)\n                    -> Filter: ((Orders.order_date >= DATE'2019-01-01') and (Orders.order_date < DATE'2020-01-01'))  (cost=101 rows=111) (actual time=0.0306..0.262 rows=353 loops=1)\n                        -> Table scan on Orders  (cost=101 rows=1000) (actual time=0.0292..0.172 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Users": 200,
+        "Items": 20,
+        "Orders": 1000
+      },
+      "load_seconds": 0.041,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 0.004494418999996697,
+          "times_s": [
+            0.004494418999996697,
+            0.0055352310000031935,
+            0.004077447999996764
+          ],
+          "result_rows": 200,
+          "result_digest": "2512a1ef8dc658412652f2cec1f43cadd10f5e39",
+          "explain_analyze": "-> Table scan on u  (cost=20.2 rows=200) (actual time=0.0419..0.0722 rows=200 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.65 rows=1) (actual time=0.00533..0.00537 rows=1 loops=200)\n        -> Filter: (year(o.order_date) = 2019)  (cost=1.14 rows=5.13) (actual time=0.00385..0.00489 rows=1.67 loops=200)\n            -> Covering index lookup on o using idx_orders_buyer_date (buyer_id=u.user_id)  (cost=1.14 rows=5.13) (actual time=0.00319..0.00435 rows=4.72 loops=200)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 0.00542053999999581,
+          "times_s": [
+            0.00542053999999581,
+            0.004494129000001124,
+            0.006052602000004015
+          ],
+          "result_rows": 200,
+          "result_digest": "2512a1ef8dc658412652f2cec1f43cadd10f5e39",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=2.56..2.6 rows=200 loops=1)\n    -> Aggregate using temporary table  (actual time=2.56..2.56 rows=200 loops=1)\n        -> Nested loop left join  (cost=249 rows=1026) (actual time=0.127..1.92 rows=397 loops=1)\n            -> Table scan on u  (cost=20.2 rows=200) (actual time=0.0725..0.11 rows=200 loops=1)\n            -> Filter: ((o.order_date >= '2019-01-01') and (o.order_date < '2020-01-01'))  (cost=0.632 rows=5.13) (actual time=0.00683..0.00871 rows=1.67 loops=200)\n                -> Covering index lookup on o using idx_orders_buyer_date (buyer_id=u.user_id)  (cost=0.632 rows=5.13) (actual time=0.00529..0.00733 rows=4.72 loops=200)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.008289075999996953,
+          "times_s": [
+            0.008289075999996953,
+            0.0076510540000001015,
+            0.009011221999998043
+          ],
+          "result_rows": 200,
+          "result_digest": "2512a1ef8dc658412652f2cec1f43cadd10f5e39",
+          "explain_analyze": "-> Nested loop left join  (cost=2747 rows=22218) (actual time=0.613..0.837 rows=200 loops=1)\n    -> Table scan on u  (cost=20.2 rows=200) (actual time=0.0566..0.0896 rows=200 loops=1)\n    -> Index lookup on b using <auto_key0> (buyer_id=u.user_id)  (cost=124..126 rows=10.1) (actual time=0.00339..0.00352 rows=0.685 loops=200)\n        -> Materialize CTE buyer_2019  (cost=123..123 rows=111) (actual time=0.548..0.548 rows=143 loops=1)\n            -> Group aggregate: count(0)  (cost=112 rows=111) (actual time=0.0722..0.446 rows=143 loops=1)\n                -> Filter: ((Orders.order_date >= DATE'2019-01-01') and (Orders.order_date < DATE'2020-01-01'))  (cost=101 rows=111) (actual time=0.0576..0.397 rows=353 loops=1)\n                    -> Covering index scan on Orders using idx_orders_buyer_date  (cost=101 rows=1000) (actual time=0.0507..0.267 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Users": 20000,
+        "Items": 1000,
+        "Orders": 100000
+      },
+      "load_seconds": 1.176,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 0.18222806999999364,
+          "times_s": [
+            0.18222806999999364,
+            0.18606002999999305,
+            0.18032103800000243
+          ],
+          "result_rows": 20000,
+          "result_digest": "5e10f61c8fa1e7976b39a3c36180356a3091e414",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=60.8..62.8 rows=20000 loops=1)\n    -> Aggregate using temporary table  (actual time=60.8..60.8 rows=20000 loops=1)\n        -> Left hash join (o.buyer_id = u.user_id)  (cost=198e+6 rows=1.98e+9) (actual time=31..46.1 rows=38378 loops=1)\n            -> Table scan on u  (cost=2006 rows=19819) (actual time=0.182..3.27 rows=20000 loops=1)\n            -> Hash\n                -> Filter: ((o.order_date >= '2019-01-01') and (o.order_date < '2020-01-01'))  (cost=0.511 rows=100048) (actual time=0.886..26.2 rows=33449 loops=1)\n                    -> Table scan on o  (cost=0.511 rows=100048) (actual time=0.883..16.9 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.17157980500000747,
+          "times_s": [
+            0.17275927100000388,
+            0.17157980500000747,
+            0.1712164580000035
+          ],
+          "result_rows": 20000,
+          "result_digest": "5e10f61c8fa1e7976b39a3c36180356a3091e414",
+          "explain_analyze": "-> Nested loop left join  (cost=51571 rows=0) (actual time=42.6..63.2 rows=20000 loops=1)\n    -> Table scan on u  (cost=2006 rows=19819) (actual time=0.192..3.57 rows=20000 loops=1)\n    -> Index lookup on b using <auto_key0> (buyer_id=u.user_id)  (cost=0.25..2.5 rows=10) (actual time=0.00267..0.00281 rows=0.671 loops=20000)\n        -> Materialize CTE buyer_2019  (cost=0..0 rows=0) (actual time=42.4..42.4 rows=13929 loops=1)\n            -> Table scan on <temporary>  (actual time=34.7..36.1 rows=13929 loops=1)\n                -> Aggregate using temporary table  (actual time=34.7..34.7 rows=13929 loops=1)\n                    -> Filter: ((Orders.order_date >= DATE'2019-01-01') and (Orders.order_date < DATE'2020-01-01'))  (cost=10077 rows=11114) (actual time=0.938..26 rows=33449 loops=1)\n                        -> Table scan on Orders  (cost=10077 rows=100048) (actual time=0.935..17 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Users": 20000,
+        "Items": 1000,
+        "Orders": 100000
+      },
+      "load_seconds": 1.176,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 0.17921758599999293,
+          "times_s": [
+            0.17921758599999293,
+            0.17922181299999806,
+            0.1781713310000015
+          ],
+          "result_rows": 20000,
+          "result_digest": "5e10f61c8fa1e7976b39a3c36180356a3091e414",
+          "explain_analyze": "-> Table scan on u  (cost=2006 rows=19819) (actual time=0.19..3.46 rows=20000 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=2.1 rows=1) (actual time=0.00312..0.00315 rows=1 loops=20000)\n        -> Filter: (year(o.order_date) = 2019)  (cost=1.55 rows=5.44) (actual time=0.00218..0.00282 rows=1.59 loops=20000)\n            -> Covering index lookup on o using idx_orders_buyer_date (buyer_id=u.user_id)  (cost=1.55 rows=5.44) (actual time=0.0017..0.00239 rows=4.75 loops=20000)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 0.1960805679999993,
+          "times_s": [
+            0.19569921400000112,
+            0.19666872400000557,
+            0.1960805679999993
+          ],
+          "result_rows": 20000,
+          "result_digest": "5e10f61c8fa1e7976b39a3c36180356a3091e414",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=82.6..84.6 rows=20000 loops=1)\n    -> Aggregate using temporary table  (actual time=82.6..82.6 rows=20000 loops=1)\n        -> Nested loop left join  (cost=32750 rows=107857) (actual time=0.279..64.5 rows=38378 loops=1)\n            -> Table scan on u  (cost=2006 rows=19819) (actual time=0.191..3.83 rows=20000 loops=1)\n            -> Filter: ((o.order_date >= '2019-01-01') and (o.order_date < '2020-01-01'))  (cost=1.01 rows=5.44) (actual time=0.00201..0.00279 rows=1.59 loops=20000)\n                -> Covering index lookup on o using idx_orders_buyer_date (buyer_id=u.user_id)  (cost=1.01 rows=5.44) (actual time=0.00149..0.00222 rows=4.75 loops=20000)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 0.1649460159999876,
+          "times_s": [
+            0.1658395110000015,
+            0.1649460159999876,
+            0.16385600499999953
+          ],
+          "result_rows": 20000,
+          "result_digest": "5e10f61c8fa1e7976b39a3c36180356a3091e414",
+          "explain_analyze": "-> Nested loop left join  (cost=22.1e+6 rows=220e+6) (actual time=35.6..54.9 rows=20000 loops=1)\n    -> Table scan on u  (cost=2006 rows=19819) (actual time=0.231..3.56 rows=20000 loops=1)\n    -> Index lookup on b using <auto_key0> (buyer_id=u.user_id)  (cost=12305..12307 rows=10) (actual time=0.00231..0.00241 rows=0.671 loops=20000)\n        -> Materialize CTE buyer_2019  (cost=12305..12305 rows=11118) (actual time=35.4..35.4 rows=13929 loops=1)\n            -> Group aggregate: count(0)  (cost=11193 rows=11118) (actual time=1.27..27 rows=13929 loops=1)\n                -> Filter: ((Orders.order_date >= DATE'2019-01-01') and (Orders.order_date < DATE'2020-01-01'))  (cost=10081 rows=11118) (actual time=0.867..24.4 rows=33449 loops=1)\n                    -> Covering index scan on Orders using idx_orders_buyer_date  (cost=10081 rows=100086) (actual time=0.746..15.7 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Users": 200000,
+        "Items": 1000,
+        "Orders": 1000000
+      },
+      "load_seconds": 10.607,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 2.2199943880000035,
+          "times_s": [
+            2.2029215900000167,
+            2.260128495999993,
+            2.2199943880000035
+          ],
+          "result_rows": 200000,
+          "result_digest": "83a67600b65c81fd0ee7a481fdb3401afb5f35e0",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=1032..1076 rows=200000 loops=1)\n    -> Aggregate using temporary table  (actual time=1032..1032 rows=199999 loops=1)\n        -> Left hash join (o.buyer_id = u.user_id)  (cost=20e+9 rows=200e+9) (actual time=311..488 rows=386189 loops=1)\n            -> Table scan on u  (cost=20146 rows=200262) (actual time=2.47..47.9 rows=200000 loops=1)\n            -> Hash\n                -> Filter: ((o.order_date >= '2019-01-01') and (o.order_date < '2020-01-01'))  (cost=0.521 rows=997577) (actual time=0.896..266 rows=336754 loops=1)\n                    -> Table scan on o  (cost=0.521 rows=997577) (actual time=0.892..170 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 1.9087897580000117,
+          "times_s": [
+            1.8779558809999912,
+            1.9087897580000117,
+            1.9344466409999939
+          ],
+          "result_rows": 200000,
+          "result_digest": "83a67600b65c81fd0ee7a481fdb3401afb5f35e0",
+          "explain_analyze": "-> Nested loop left join  (cost=520842 rows=0) (actual time=596..830 rows=200000 loops=1)\n    -> Table scan on u  (cost=20146 rows=200262) (actual time=1.45..35 rows=200000 loops=1)\n    -> Index lookup on b using <auto_key0> (buyer_id=u.user_id)  (cost=0.25..2.5 rows=10) (actual time=0.00359..0.00381 rows=0.669 loops=200000)\n        -> Materialize CTE buyer_2019  (cost=0..0 rows=0) (actual time=594..594 rows=134863 loops=1)\n            -> Table scan on <temporary>  (actual time=442..456 rows=134863 loops=1)\n                -> Aggregate using temporary table  (actual time=442..442 rows=134863 loops=1)\n                    -> Filter: ((Orders.order_date >= DATE'2019-01-01') and (Orders.order_date < DATE'2020-01-01'))  (cost=100391 rows=110820) (actual time=0.862..258 rows=336754 loops=1)\n                        -> Table scan on Orders  (cost=100391 rows=997577) (actual time=0.858..169 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Users": 200000,
+        "Items": 1000,
+        "Orders": 1000000
+      },
+      "load_seconds": 10.607,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 1.7998208030000171,
+          "times_s": [
+            1.8463400920000197,
+            1.7830893539999977,
+            1.7998208030000171
+          ],
+          "result_rows": 200000,
+          "result_digest": "83a67600b65c81fd0ee7a481fdb3401afb5f35e0",
+          "explain_analyze": "-> Table scan on u  (cost=20120 rows=200002) (actual time=1.42..35.2 rows=200000 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=2.2 rows=1) (actual time=0.00333..0.00336 rows=1 loops=200000)\n        -> Filter: (year(o.order_date) = 2019)  (cost=1.61 rows=5.98) (actual time=0.0024..0.00304 rows=1.6 loops=200000)\n            -> Covering index lookup on o using idx_orders_buyer_date (buyer_id=u.user_id)  (cost=1.61 rows=5.98) (actual time=0.00193..0.0026 rows=4.75 loops=200000)\n"
+        },
+        {
+          "solution": "02_left_join_group_by",
+          "status": "ok",
+          "median_s": 2.3038177190000226,
+          "times_s": [
+            2.2657478990000186,
+            2.330674290000019,
+            2.3038177190000226
+          ],
+          "result_rows": 200000,
+          "result_digest": "83a67600b65c81fd0ee7a481fdb3401afb5f35e0",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=1104..1144 rows=200000 loops=1)\n    -> Aggregate using temporary table  (actual time=1104..1104 rows=199999 loops=1)\n        -> Nested loop left join  (cost=341346 rows=1.2e+6) (actual time=1.7..682 rows=386189 loops=1)\n            -> Table scan on u  (cost=20123 rows=200024) (actual time=1.43..37.4 rows=200000 loops=1)\n            -> Filter: ((o.order_date >= '2019-01-01') and (o.order_date < '2020-01-01'))  (cost=1.01 rows=5.98) (actual time=0.0022..0.00298 rows=1.6 loops=200000)\n                -> Covering index lookup on o using idx_orders_buyer_date (buyer_id=u.user_id)  (cost=1.01 rows=5.98) (actual time=0.00167..0.00241 rows=4.75 loops=200000)\n"
+        },
+        {
+          "solution": "03_aggregate_then_join",
+          "status": "ok",
+          "median_s": 1.6985707279999929,
+          "times_s": [
+            1.6742734649999989,
+            1.7061781049999922,
+            1.6985707279999929
+          ],
+          "result_rows": 200000,
+          "result_digest": "83a67600b65c81fd0ee7a481fdb3401afb5f35e0",
+          "explain_analyze": "-> Nested loop left join  (cost=2.22e+9 rows=22.2e+9) (actual time=374..582 rows=200000 loops=1)\n    -> Table scan on u  (cost=20123 rows=200024) (actual time=1.53..35.1 rows=200000 loops=1)\n    -> Index lookup on b using <auto_key0> (buyer_id=u.user_id)  (cost=122570..122573 rows=10) (actual time=0.00247..0.00257 rows=0.669 loops=200000)\n        -> Materialize CTE buyer_2019  (cost=122570..122570 rows=110834) (actual time=372..372 rows=134863 loops=1)\n            -> Group aggregate: count(0)  (cost=111487 rows=110834) (actual time=7.78..271 rows=134863 loops=1)\n                -> Filter: ((Orders.order_date >= DATE'2019-01-01') and (Orders.order_date < DATE'2020-01-01'))  (cost=100403 rows=110834) (actual time=2.64..245 rows=336754 loops=1)\n                    -> Covering index scan on Orders using idx_orders_buyer_date  (cost=100403 rows=997703) (actual time=0.719..158 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

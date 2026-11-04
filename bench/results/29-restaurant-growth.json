@@ -1,0 +1,335 @@
+{
+  "problem": "29-restaurant-growth",
+  "generated_at": "2026-11-04T15:26:47+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_self_join_range",
+    "02_range_window_on_raw_rows",
+    "03_daily_then_rows_window"
+  ],
+  "optimal": "03_daily_then_rows_window",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Customer": 1000
+      },
+      "load_seconds": 0.024,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_range",
+          "status": "ok",
+          "median_s": 0.001721053999972355,
+          "times_s": [
+            0.0017466420000573635,
+            0.0017119369999818446,
+            0.001721053999972355
+          ],
+          "result_rows": 28,
+          "result_digest": "c87ee453f3ec740f722a2d63b88bd9247695ba3f",
+          "explain_analyze": "-> Sort: d1.visited_on  (actual time=1.26..1.26 rows=28 loops=1)\n    -> Filter: (`count(0)` = 7)  (actual time=1.24..1.25 rows=28 loops=1)\n        -> Table scan on <temporary>  (actual time=1.24..1.25 rows=34 loops=1)\n            -> Aggregate using temporary table  (actual time=1.24..1.24 rows=34 loops=1)\n                -> Filter: (d2.visited_on between (d1.visited_on - interval 6 day) and d1.visited_on)  (cost=18.6 rows=0) (actual time=0.856..1.1 rows=217 loops=1)\n                    -> Inner hash join (no condition)  (cost=18.6 rows=0) (actual time=0.853..0.958 rows=1156 loops=1)\n                        -> Table scan on d2  (cost=2.5..2.5 rows=0) (actual time=0.00109..0.00544 rows=34 loops=1)\n                            -> Materialize CTE daily if needed (query plan printed elsewhere)  (cost=0..0 rows=0) (never executed)\n                        -> Hash\n                            -> Table scan on d1  (cost=2.5..2.5 rows=0) (actual time=0.841..0.844 rows=34 loops=1)\n                                -> Materialize CTE daily if needed  (cost=0..0 rows=0) (actual time=0.841..0.841 rows=34 loops=1)\n                                    -> Table scan on <temporary>  (actual time=0.829..0.832 rows=34 loops=1)\n                                        -> Aggregate using temporary table  (actual time=0.829..0.829 rows=34 loops=1)\n                                            -> Table scan on Customer  (cost=101 rows=1000) (actual time=0.0333..0.296 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_range_window_on_raw_rows",
+          "status": "ok",
+          "median_s": 0.003059193000012783,
+          "times_s": [
+            0.0030231759999423957,
+            0.0031452709999939543,
+            0.003059193000012783
+          ],
+          "result_rows": 28,
+          "result_digest": "c87ee453f3ec740f722a2d63b88bd9247695ba3f",
+          "explain_analyze": "-> Sort: t.visited_on, t.amount, average_amount  (actual time=2.7..2.7 rows=28 loops=1)\n    -> Table scan on <temporary>  (cost=81.7..88.3 rows=333) (actual time=2.69..2.69 rows=28 loops=1)\n        -> Temporary table with deduplication  (cost=81.7..81.7 rows=333) (actual time=2.69..2.69 rows=28 loops=1)\n            -> Filter: (t.visited_on >= (select #3))  (cost=0.145..48.3 rows=333) (actual time=2.08..2.32 rows=807 loops=1)\n                -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=1.82..1.91 rows=1000 loops=1)\n                    -> Materialize  (cost=0..0 rows=0) (actual time=1.82..1.82 rows=1000 loops=1)\n                        -> Window aggregate with buffering: sum(Customer.amount) OVER (ORDER BY Customer.visited_on RANGE BETWEEN INTERVAL 6 day  PRECEDING AND CURRENT ROW)   (actual time=0.62..1.67 rows=1000 loops=1)\n                            -> Sort: Customer.visited_on  (cost=101 rows=1000) (actual time=0.361..0.402 rows=1000 loops=1)\n                                -> Table scan on Customer  (cost=101 rows=1000) (actual time=0.0184..0.212 rows=1000 loops=1)\n                -> Select #3 (subquery in condition; run only once)\n                    -> Aggregate: min(Customer.visited_on)  (cost=201 rows=1) (actual time=0.206..0.206 rows=1 loops=1)\n                        -> Covering index scan on Customer using PRIMARY  (cost=101 rows=1000) (actual time=0.0145..0.149 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_daily_then_rows_window",
+          "status": "ok",
+          "median_s": 0.001411214999961885,
+          "times_s": [
+            0.001411214999961885,
+            0.0014478939999662543,
+            0.0013956369999732487
+          ],
+          "result_rows": 28,
+          "result_digest": "c87ee453f3ec740f722a2d63b88bd9247695ba3f",
+          "explain_analyze": "-> Sort: windowed.visited_on  (cost=2.6..2.6 rows=0) (actual time=0.669..0.67 rows=28 loops=1)\n    -> Filter: (windowed.day_no >= 7)  (cost=2.5..2.5 rows=0) (actual time=0.66..0.664 rows=28 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=0.658..0.661 rows=34 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=0.658..0.658 rows=34 loops=1)\n                -> Window aggregate: row_number() OVER (ORDER BY daily.visited_on )   (actual time=0.642..0.651 rows=34 loops=1)\n                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=0.641..0.645 rows=34 loops=1)\n                        -> Temporary table  (cost=0..0 rows=0) (actual time=0.641..0.641 rows=34 loops=1)\n                            -> Window aggregate with buffering: sum(daily.day_total) OVER (ORDER BY daily.visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)   (actual time=0.609..0.638 rows=34 loops=1)\n                                -> Sort: daily.visited_on  (cost=2.6..2.6 rows=0) (actual time=0.605..0.607 rows=34 loops=1)\n                                    -> Table scan on daily  (cost=2.5..2.5 rows=0) (actual time=0.594..0.597 rows=34 loops=1)\n                                        -> Materialize CTE daily  (cost=0..0 rows=0) (actual time=0.594..0.594 rows=34 loops=1)\n                                            -> Table scan on <temporary>  (actual time=0.585..0.588 rows=34 loops=1)\n                                                -> Aggregate using temporary table  (actual time=0.584..0.584 rows=34 loops=1)\n                                                    -> Table scan on Customer  (cost=101 rows=1000) (actual time=0.0192..0.209 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Customer": 1000
+      },
+      "load_seconds": 0.024,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_range",
+          "status": "ok",
+          "median_s": 0.0013829429999532294,
+          "times_s": [
+            0.0013829429999532294,
+            0.001388582000004135,
+            0.0013595110000323984
+          ],
+          "result_rows": 28,
+          "result_digest": "c87ee453f3ec740f722a2d63b88bd9247695ba3f",
+          "explain_analyze": "-> Sort: d1.visited_on  (actual time=0.605..0.606 rows=28 loops=1)\n    -> Filter: (`count(0)` = 7)  (actual time=0.592..0.597 rows=28 loops=1)\n        -> Table scan on <temporary>  (actual time=0.591..0.594 rows=34 loops=1)\n            -> Aggregate using temporary table  (actual time=0.59..0.59 rows=34 loops=1)\n                -> Filter: (d2.visited_on between (d1.visited_on - interval 6 day) and d1.visited_on)  (cost=339 rows=128) (actual time=0.267..0.483 rows=217 loops=1)\n                    -> Inner hash join (no condition)  (cost=339 rows=128) (actual time=0.262..0.375 rows=1156 loops=1)\n                        -> Table scan on d2  (cost=205..208 rows=34) (actual time=581e-6..0.00415 rows=34 loops=1)\n                            -> Materialize CTE daily if needed (query plan printed elsewhere)  (cost=205..205 rows=34) (never executed)\n                        -> Hash\n                            -> Table scan on d1  (cost=205..208 rows=34) (actual time=0.25..0.254 rows=34 loops=1)\n                                -> Materialize CTE daily if needed  (cost=205..205 rows=34) (actual time=0.25..0.25 rows=34 loops=1)\n                                    -> Group aggregate: sum(Customer.amount)  (cost=201 rows=34) (actual time=0.0255..0.238 rows=34 loops=1)\n                                        -> Covering index scan on Customer using idx_customer_visited_amount  (cost=101 rows=1000) (actual time=0.0178..0.175 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_range_window_on_raw_rows",
+          "status": "ok",
+          "median_s": 0.002869238000016594,
+          "times_s": [
+            0.00285318599992479,
+            0.002869238000016594,
+            0.0029026810000232217
+          ],
+          "result_rows": 28,
+          "result_digest": "c87ee453f3ec740f722a2d63b88bd9247695ba3f",
+          "explain_analyze": "-> Sort: t.visited_on, t.amount, average_amount  (actual time=2.29..2.3 rows=28 loops=1)\n    -> Table scan on <temporary>  (cost=81.7..88.3 rows=333) (actual time=2.28..2.28 rows=28 loops=1)\n        -> Temporary table with deduplication  (cost=81.7..81.7 rows=333) (actual time=2.28..2.28 rows=28 loops=1)\n            -> Filter: (t.visited_on >= (select #3))  (cost=0.145..48.3 rows=333) (actual time=1.67..1.91 rows=807 loops=1)\n                -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=1.62..1.72 rows=1000 loops=1)\n                    -> Materialize  (cost=0..0 rows=0) (actual time=1.62..1.62 rows=1000 loops=1)\n                        -> Window aggregate with buffering: sum(Customer.amount) OVER (ORDER BY Customer.visited_on RANGE BETWEEN INTERVAL 6 day  PRECEDING AND CURRENT ROW)   (actual time=0.589..1.51 rows=1000 loops=1)\n                            -> Sort: Customer.visited_on  (cost=101 rows=1000) (actual time=0.356..0.392 rows=1000 loops=1)\n                                -> Index scan on Customer using idx_customer_visited_amount  (cost=101 rows=1000) (actual time=0.0326..0.228 rows=1000 loops=1)\n                -> Select #3 (subquery in condition; run only once)\n                    -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=50e-6..90e-6 rows=1 loops=1)\n"
+        },
+        {
+          "solution": "03_daily_then_rows_window",
+          "status": "ok",
+          "median_s": 0.0011333379999314275,
+          "times_s": [
+            0.0011309210000263192,
+            0.001146640000001753,
+            0.0011333379999314275
+          ],
+          "result_rows": 28,
+          "result_digest": "c87ee453f3ec740f722a2d63b88bd9247695ba3f",
+          "explain_analyze": "-> Sort: windowed.visited_on  (cost=2.6..2.6 rows=0) (actual time=0.34..0.341 rows=28 loops=1)\n    -> Filter: (windowed.day_no >= 7)  (cost=2.5..2.5 rows=0) (actual time=0.33..0.334 rows=28 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=0.329..0.332 rows=34 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=0.328..0.328 rows=34 loops=1)\n                -> Window aggregate: row_number() OVER (ORDER BY daily.visited_on )   (actual time=0.313..0.322 rows=34 loops=1)\n                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=0.312..0.315 rows=34 loops=1)\n                        -> Temporary table  (cost=0..0 rows=0) (actual time=0.312..0.312 rows=34 loops=1)\n                            -> Window aggregate with buffering: sum(daily.day_total) OVER (ORDER BY daily.visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)   (actual time=0.28..0.309 rows=34 loops=1)\n                                -> Sort: daily.visited_on  (cost=228..228 rows=34) (actual time=0.276..0.277 rows=34 loops=1)\n                                    -> Table scan on daily  (cost=205..208 rows=34) (actual time=0.266..0.269 rows=34 loops=1)\n                                        -> Materialize CTE daily  (cost=205..205 rows=34) (actual time=0.265..0.265 rows=34 loops=1)\n                                            -> Group aggregate: sum(Customer.amount)  (cost=201 rows=34) (actual time=0.0435..0.255 rows=34 loops=1)\n                                                -> Covering index scan on Customer using idx_customer_visited_amount  (cost=101 rows=1000) (actual time=0.032..0.191 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Customer": 100000
+      },
+      "load_seconds": 0.864,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_range",
+          "status": "ok",
+          "median_s": 1.3121154039999965,
+          "times_s": [
+            1.3057671479999726,
+            1.3121154039999965,
+            1.33888454800001
+          ],
+          "result_rows": 3393,
+          "result_digest": "e3c298590e5839e1adbbd39bcdd405ef7947e797",
+          "explain_analyze": "-> Sort: d1.visited_on  (actual time=1802..1802 rows=3393 loops=1)\n    -> Filter: (`count(0)` = 7)  (actual time=1800..1801 rows=3393 loops=1)\n        -> Table scan on <temporary>  (actual time=1800..1801 rows=3399 loops=1)\n            -> Aggregate using temporary table  (actual time=1800..1800 rows=3399 loops=1)\n                -> Filter: (d2.visited_on between (d1.visited_on - interval 6 day) and d1.visited_on)  (cost=9460 rows=0) (actual time=57..1786 rows=23772 loops=1)\n                    -> Inner hash join (no condition)  (cost=9460 rows=0) (actual time=57..790 rows=11.6e+6 loops=1)\n                        -> Table scan on d2  (cost=2.5..2.5 rows=0) (actual time=0.00182..0.541 rows=3399 loops=1)\n                            -> Materialize CTE daily if needed (query plan printed elsewhere)  (cost=0..0 rows=0) (never executed)\n                        -> Hash\n                            -> Table scan on d1  (cost=2.5..2.5 rows=0) (actual time=56.3..56.6 rows=3399 loops=1)\n                                -> Materialize CTE daily if needed  (cost=0..0 rows=0) (actual time=56.3..56.3 rows=3399 loops=1)\n                                    -> Table scan on <temporary>  (actual time=55.6..55.9 rows=3399 loops=1)\n                                        -> Aggregate using temporary table  (actual time=55.6..55.6 rows=3399 loops=1)\n                                            -> Table scan on Customer  (cost=9628 rows=95400) (actual time=0.0773..19.3 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "02_range_window_on_raw_rows",
+          "status": "ok",
+          "median_s": 0.2531391990000884,
+          "times_s": [
+            0.2529737440000872,
+            0.2531391990000884,
+            0.25390799800004515
+          ],
+          "result_rows": 3393,
+          "result_digest": "e3c298590e5839e1adbbd39bcdd405ef7947e797",
+          "explain_analyze": "-> Sort: t.visited_on, t.amount, average_amount  (actual time=261..261 rows=3393 loops=1)\n    -> Table scan on <temporary>  (cost=7554..7954 rows=31797) (actual time=260..260 rows=3393 loops=1)\n        -> Temporary table with deduplication  (cost=7554..7554 rows=31797) (actual time=260..260 rows=3393 loops=1)\n            -> Filter: (t.visited_on >= (select #3))  (cost=0.138..4375 rows=31797) (actual time=186..216 rows=99807 loops=1)\n                -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=167..176 rows=100000 loops=1)\n                    -> Materialize  (cost=0..0 rows=0) (actual time=167..167 rows=100000 loops=1)\n                        -> Window aggregate with buffering: sum(Customer.amount) OVER (ORDER BY Customer.visited_on RANGE BETWEEN INTERVAL 6 day  PRECEDING AND CURRENT ROW)   (actual time=55.9..156 rows=100000 loops=1)\n                            -> Sort: Customer.visited_on  (cost=9628 rows=95400) (actual time=34.3..38.2 rows=100000 loops=1)\n                                -> Table scan on Customer  (cost=9628 rows=95400) (actual time=0.0753..18.1 rows=100000 loops=1)\n                -> Select #3 (subquery in condition; run only once)\n                    -> Aggregate: min(Customer.visited_on)  (cost=19168 rows=1) (actual time=19.8..19.8 rows=1 loops=1)\n                        -> Covering index scan on Customer using PRIMARY  (cost=9628 rows=95400) (actual time=0.0919..14.2 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_daily_then_rows_window",
+          "status": "ok",
+          "median_s": 0.08143967499995597,
+          "times_s": [
+            0.0815786629999593,
+            0.08142995399998654,
+            0.08143967499995597
+          ],
+          "result_rows": 3393,
+          "result_digest": "e3c298590e5839e1adbbd39bcdd405ef7947e797",
+          "explain_analyze": "-> Sort: windowed.visited_on  (cost=2.6..2.6 rows=0) (actual time=62.6..62.7 rows=3393 loops=1)\n    -> Filter: (windowed.day_no >= 7)  (cost=2.5..2.5 rows=0) (actual time=61.7..62.2 rows=3393 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=61.7..62 rows=3399 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=61.7..61.7 rows=3399 loops=1)\n                -> Window aggregate: row_number() OVER (ORDER BY daily.visited_on )   (actual time=60.3..61.2 rows=3399 loops=1)\n                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=60.3..60.6 rows=3399 loops=1)\n                        -> Temporary table  (cost=0..0 rows=0) (actual time=60.3..60.3 rows=3399 loops=1)\n                            -> Window aggregate with buffering: sum(daily.day_total) OVER (ORDER BY daily.visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)   (actual time=57.1..60.1 rows=3399 loops=1)\n                                -> Sort: daily.visited_on  (cost=2.6..2.6 rows=0) (actual time=57.1..57.2 rows=3399 loops=1)\n                                    -> Table scan on daily  (cost=2.5..2.5 rows=0) (actual time=56.3..56.6 rows=3399 loops=1)\n                                        -> Materialize CTE daily  (cost=0..0 rows=0) (actual time=56.3..56.3 rows=3399 loops=1)\n                                            -> Table scan on <temporary>  (actual time=55.6..55.9 rows=3399 loops=1)\n                                                -> Aggregate using temporary table  (actual time=55.6..55.6 rows=3399 loops=1)\n                                                    -> Table scan on Customer  (cost=9628 rows=95400) (actual time=0.0853..19.3 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Customer": 100000
+      },
+      "load_seconds": 0.864,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_range",
+          "status": "ok",
+          "median_s": 1.215132552,
+          "times_s": [
+            1.2229940670000587,
+            1.2106108990000166,
+            1.215132552
+          ],
+          "result_rows": 3393,
+          "result_digest": "e3c298590e5839e1adbbd39bcdd405ef7947e797",
+          "explain_analyze": "-> Sort: d1.visited_on  (actual time=1749..1749 rows=3393 loops=1)\n    -> Filter: (`count(0)` = 7)  (actual time=1748..1748 rows=3393 loops=1)\n        -> Table scan on <temporary>  (actual time=1748..1748 rows=3399 loops=1)\n            -> Aggregate using temporary table  (actual time=1748..1748 rows=3399 loops=1)\n                -> Filter: (d2.visited_on between (d1.visited_on - interval 6 day) and d1.visited_on)  (cost=1.2e+6 rows=1.3e+6) (actual time=24.4..1734 rows=23772 loops=1)\n                    -> Inner hash join (no condition)  (cost=1.2e+6 rows=1.3e+6) (actual time=23.9..768 rows=11.6e+6 loops=1)\n                        -> Table scan on d2  (cost=20617..20662 rows=3418) (actual time=0.00148..0.57 rows=3399 loops=1)\n                            -> Materialize CTE daily if needed (query plan printed elsewhere)  (cost=20617..20617 rows=3418) (never executed)\n                        -> Hash\n                            -> Table scan on d1  (cost=20617..20662 rows=3418) (actual time=23.3..23.6 rows=3399 loops=1)\n                                -> Materialize CTE daily if needed  (cost=20617..20617 rows=3418) (actual time=23.3..23.3 rows=3399 loops=1)\n                                    -> Group aggregate: sum(Customer.amount)  (cost=20275 rows=3418) (actual time=0.0727..22.7 rows=3399 loops=1)\n                                        -> Covering index scan on Customer using idx_customer_visited_amount  (cost=10182 rows=100935) (actual time=0.0628..16.6 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "02_range_window_on_raw_rows",
+          "status": "ok",
+          "median_s": 0.2353474940000524,
+          "times_s": [
+            0.2364593810000315,
+            0.23479908900003466,
+            0.2353474940000524
+          ],
+          "result_rows": 3393,
+          "result_digest": "e3c298590e5839e1adbbd39bcdd405ef7947e797",
+          "explain_analyze": "-> Sort: t.visited_on, t.amount, average_amount  (actual time=239..239 rows=3393 loops=1)\n    -> Table scan on <temporary>  (cost=7993..8416 rows=33642) (actual time=237..237 rows=3393 loops=1)\n        -> Temporary table with deduplication  (cost=7993..7993 rows=33642) (actual time=237..237 rows=3393 loops=1)\n            -> Filter: (t.visited_on >= (select #3))  (cost=0.138..4628 rows=33642) (actual time=164..193 rows=99807 loops=1)\n                -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=163..173 rows=100000 loops=1)\n                    -> Materialize  (cost=0..0 rows=0) (actual time=163..163 rows=100000 loops=1)\n                        -> Window aggregate with buffering: sum(Customer.amount) OVER (ORDER BY Customer.visited_on RANGE BETWEEN INTERVAL 6 day  PRECEDING AND CURRENT ROW)   (actual time=52.4..153 rows=100000 loops=1)\n                            -> Sort: Customer.visited_on  (cost=10182 rows=100935) (actual time=31..34.8 rows=100000 loops=1)\n                                -> Index scan on Customer using idx_customer_visited_amount  (cost=10182 rows=100935) (actual time=0.0463..17 rows=100000 loops=1)\n                -> Select #3 (subquery in condition; run only once)\n                    -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=50e-6..90e-6 rows=1 loops=1)\n"
+        },
+        {
+          "solution": "03_daily_then_rows_window",
+          "status": "ok",
+          "median_s": 0.047359598999946684,
+          "times_s": [
+            0.047359598999946684,
+            0.04751157800001238,
+            0.04714957599992431
+          ],
+          "result_rows": 3393,
+          "result_digest": "e3c298590e5839e1adbbd39bcdd405ef7947e797",
+          "explain_analyze": "-> Sort: windowed.visited_on  (cost=2.6..2.6 rows=0) (actual time=29.7..29.8 rows=3393 loops=1)\n    -> Filter: (windowed.day_no >= 7)  (cost=2.5..2.5 rows=0) (actual time=28.8..29.3 rows=3393 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=28.8..29.1 rows=3399 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=28.8..28.8 rows=3399 loops=1)\n                -> Window aggregate: row_number() OVER (ORDER BY daily.visited_on )   (actual time=27.4..28.3 rows=3399 loops=1)\n                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=27.4..27.7 rows=3399 loops=1)\n                        -> Temporary table  (cost=0..0 rows=0) (actual time=27.4..27.4 rows=3399 loops=1)\n                            -> Window aggregate with buffering: sum(daily.day_total) OVER (ORDER BY daily.visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)   (actual time=24.2..27.3 rows=3399 loops=1)\n                                -> Sort: daily.visited_on  (cost=25016..25016 rows=3418) (actual time=24.2..24.3 rows=3399 loops=1)\n                                    -> Table scan on daily  (cost=20617..20662 rows=3418) (actual time=23.5..23.9 rows=3399 loops=1)\n                                        -> Materialize CTE daily  (cost=20617..20617 rows=3418) (actual time=23.5..23.5 rows=3399 loops=1)\n                                            -> Group aggregate: sum(Customer.amount)  (cost=20275 rows=3418) (actual time=0.101..23 rows=3399 loops=1)\n                                                -> Covering index scan on Customer using idx_customer_visited_amount  (cost=10182 rows=100935) (actual time=0.0907..16.8 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Customer": 1000000
+      },
+      "load_seconds": 8.774,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_range",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_range_window_on_raw_rows",
+          "status": "ok",
+          "median_s": 7.053963557999964,
+          "times_s": [
+            7.053963557999964,
+            7.098130644999969,
+            7.052347448000091
+          ],
+          "result_rows": 33987,
+          "result_digest": "bd5f2cadf073ab8fa095f01e8e1b691c848fc924",
+          "explain_analyze": "-> Sort: t.visited_on, t.amount, average_amount  (actual time=7141..7143 rows=33987 loops=1)\n    -> Table scan on <temporary>  (cost=74110..78013 rows=312026) (actual time=7127..7130 rows=33987 loops=1)\n        -> Temporary table with deduplication  (cost=74110..74110 rows=312026) (actual time=7127..7127 rows=33987 loops=1)\n            -> Filter: (t.visited_on >= (select #3))  (cost=0.138..42907 rows=312026) (actual time=6194..6648 rows=999807 loops=1)\n                -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=5996..6236 rows=1e+6 loops=1)\n                    -> Materialize  (cost=0..0 rows=0) (actual time=5996..5996 rows=1e+6 loops=1)\n                        -> Window aggregate with buffering: sum(Customer.amount) OVER (ORDER BY Customer.visited_on RANGE BETWEEN INTERVAL 6 day  PRECEDING AND CURRENT ROW)   (actual time=840..5573 rows=1e+6 loops=1)\n                            -> Sort: Customer.visited_on  (cost=94298 rows=936171) (actual time=381..420 rows=1e+6 loops=1)\n                                -> Table scan on Customer  (cost=94298 rows=936171) (actual time=0.0809..180 rows=1e+6 loops=1)\n                -> Select #3 (subquery in condition; run only once)\n                    -> Aggregate: min(Customer.visited_on)  (cost=187915 rows=1) (actual time=197..197 rows=1 loops=1)\n                        -> Covering index scan on Customer using PRIMARY  (cost=94298 rows=936171) (actual time=0.0942..141 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_daily_then_rows_window",
+          "status": "ok",
+          "median_s": 0.835953944000039,
+          "times_s": [
+            0.8335370160000366,
+            0.8403770369999393,
+            0.835953944000039
+          ],
+          "result_rows": 33987,
+          "result_digest": "bd5f2cadf073ab8fa095f01e8e1b691c848fc924",
+          "explain_analyze": "-> Sort: windowed.visited_on  (cost=2.6..2.6 rows=0) (actual time=652..654 rows=33987 loops=1)\n    -> Filter: (windowed.day_no >= 7)  (cost=2.5..2.5 rows=0) (actual time=641..646 rows=33987 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=641..644 rows=33993 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=641..641 rows=33993 loops=1)\n                -> Window aggregate: row_number() OVER (ORDER BY daily.visited_on )   (actual time=627..636 rows=33993 loops=1)\n                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=627..630 rows=33993 loops=1)\n                        -> Temporary table  (cost=0..0 rows=0) (actual time=627..627 rows=33993 loops=1)\n                            -> Window aggregate with buffering: sum(daily.day_total) OVER (ORDER BY daily.visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)   (actual time=594..625 rows=33993 loops=1)\n                                -> Sort: daily.visited_on  (cost=2.6..2.6 rows=0) (actual time=594..596 rows=33993 loops=1)\n                                    -> Table scan on daily  (cost=2.5..2.5 rows=0) (actual time=585..588 rows=33993 loops=1)\n                                        -> Materialize CTE daily  (cost=0..0 rows=0) (actual time=585..585 rows=33993 loops=1)\n                                            -> Table scan on <temporary>  (actual time=578..581 rows=33993 loops=1)\n                                                -> Aggregate using temporary table  (actual time=578..578 rows=33993 loops=1)\n                                                    -> Table scan on Customer  (cost=94298 rows=936171) (actual time=0.0789..193 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Customer": 1000000
+      },
+      "load_seconds": 8.774,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_range",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_range_window_on_raw_rows",
+          "status": "ok",
+          "median_s": 6.893789559999959,
+          "times_s": [
+            6.885799469999938,
+            7.507012600999815,
+            6.893789559999959
+          ],
+          "result_rows": 33987,
+          "result_digest": "bd5f2cadf073ab8fa095f01e8e1b691c848fc924",
+          "explain_analyze": "-> Sort: t.visited_on, t.amount, average_amount  (actual time=6933..6935 rows=33987 loops=1)\n    -> Table scan on <temporary>  (cost=76710..80749 rows=322973) (actual time=6919..6923 rows=33987 loops=1)\n        -> Temporary table with deduplication  (cost=76710..76710 rows=322973) (actual time=6919..6919 rows=33987 loops=1)\n            -> Filter: (t.visited_on >= (select #3))  (cost=0.138..44412 rows=322973) (actual time=5973..6427 rows=999807 loops=1)\n                -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=5973..6214 rows=1e+6 loops=1)\n                    -> Materialize  (cost=0..0 rows=0) (actual time=5973..5973 rows=1e+6 loops=1)\n                        -> Window aggregate with buffering: sum(Customer.amount) OVER (ORDER BY Customer.visited_on RANGE BETWEEN INTERVAL 6 day  PRECEDING AND CURRENT ROW)   (actual time=792..5545 rows=1e+6 loops=1)\n                            -> Sort: Customer.visited_on  (cost=98006 rows=969015) (actual time=330..369 rows=1e+6 loops=1)\n                                -> Index scan on Customer using idx_customer_visited_amount  (cost=98006 rows=969015) (actual time=0.0481..167 rows=1e+6 loops=1)\n                -> Select #3 (subquery in condition; run only once)\n                    -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=60e-6..100e-6 rows=1 loops=1)\n"
+        },
+        {
+          "solution": "03_daily_then_rows_window",
+          "status": "ok",
+          "median_s": 0.4821298409999599,
+          "times_s": [
+            0.4821298409999599,
+            0.5161097289999361,
+            0.4746113730000161
+          ],
+          "result_rows": 33987,
+          "result_digest": "bd5f2cadf073ab8fa095f01e8e1b691c848fc924",
+          "explain_analyze": "-> Sort: windowed.visited_on  (cost=2.6..2.6 rows=0) (actual time=301..302 rows=33987 loops=1)\n    -> Filter: (windowed.day_no >= 7)  (cost=2.5..2.5 rows=0) (actual time=289..295 rows=33987 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=289..292 rows=33993 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=289..289 rows=33993 loops=1)\n                -> Window aggregate: row_number() OVER (ORDER BY daily.visited_on )   (actual time=275..284 rows=33993 loops=1)\n                    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=275..278 rows=33993 loops=1)\n                        -> Temporary table  (cost=0..0 rows=0) (actual time=275..275 rows=33993 loops=1)\n                            -> Window aggregate with buffering: sum(daily.day_total) OVER (ORDER BY daily.visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)   (actual time=242..274 rows=33993 loops=1)\n                                -> Sort: daily.visited_on  (cost=252533..252533 rows=33579) (actual time=242..244 rows=33993 loops=1)\n                                    -> Table scan on daily  (cost=198266..198688 rows=33579) (actual time=234..237 rows=33993 loops=1)\n                                        -> Materialize CTE daily  (cost=198266..198266 rows=33579) (actual time=234..234 rows=33993 loops=1)\n                                            -> Group aggregate: sum(Customer.amount)  (cost=194908 rows=33579) (actual time=0.111..228 rows=33993 loops=1)\n                                                -> Covering index scan on Customer using idx_customer_visited_amount  (cost=98006 rows=969015) (actual time=0.1..167 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

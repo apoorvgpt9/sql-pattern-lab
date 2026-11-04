@@ -1,0 +1,343 @@
+{
+  "problem": "04-monthly-transactions-i",
+  "generated_at": "2026-11-04T15:25:21+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_distinct_groups_subqueries",
+    "02_two_aggregates_join",
+    "03_conditional_aggregation"
+  ],
+  "optimal": "03_conditional_aggregation",
+  "machine": {
+    "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "python": "3.11.18",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "mem_total": "8122100 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261101.186.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Transactions": 1000
+      },
+      "load_seconds": 0.02,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_distinct_groups_subqueries",
+          "status": "ok",
+          "median_s": 0.28088143299999047,
+          "times_s": [
+            0.2856863639999574,
+            0.28088143299999047,
+            0.2788994029999685
+          ],
+          "result_rows": 246,
+          "result_digest": "f284db40a28bf9e90282ac145c057b10ffc4c2ef",
+          "explain_analyze": "-> Table scan on g  (cost=316..331 rows=1000) (actual time=0.573..0.638 rows=246 loops=1)\n    -> Materialize  (cost=316..316 rows=1000) (actual time=0.572..0.572 rows=246 loops=1)\n        -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.508..0.534 rows=246 loops=1)\n            -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.508..0.508 rows=246 loops=1)\n                -> Table scan on Transactions  (cost=101 rows=1000) (actual time=0.0254..0.187 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_two_aggregates_join",
+          "status": "ok",
+          "median_s": 0.004453139000020201,
+          "times_s": [
+            0.00451875899989318,
+            0.004427160000091135,
+            0.004453139000020201
+          ],
+          "result_rows": 246,
+          "result_digest": "f284db40a28bf9e90282ac145c057b10ffc4c2ef",
+          "explain_analyze": "-> Nested loop left join  (cost=2502 rows=0) (actual time=1.93..2.29 rows=246 loops=1)\n    -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=0.996..1.03 rows=246 loops=1)\n        -> Materialize CTE totals  (cost=0..0 rows=0) (actual time=0.996..0.996 rows=246 loops=1)\n            -> Table scan on <temporary>  (actual time=0.919..0.947 rows=246 loops=1)\n                -> Aggregate using temporary table  (actual time=0.919..0.919 rows=246 loops=1)\n                    -> Table scan on Transactions  (cost=101 rows=1000) (actual time=0.0267..0.211 rows=1000 loops=1)\n    -> Filter: (a.country <=> t.country)  (cost=0.25..2.5 rows=10) (actual time=0.00478..0.00495 rows=0.703 loops=246)\n        -> Index lookup on a using <auto_key0> (month=t.`month`, country=t.country)  (cost=0.25..2.5 rows=10) (actual time=0.00463..0.00475 rows=0.703 loops=246)\n            -> Materialize CTE approved  (cost=0..0 rows=0) (actual time=0.926..0.926 rows=173 loops=1)\n                -> Table scan on <temporary>  (actual time=0.754..0.775 rows=173 loops=1)\n                    -> Aggregate using temporary table  (actual time=0.754..0.754 rows=173 loops=1)\n                        -> Filter: (Transactions.state = 'approved')  (cost=101 rows=500) (actual time=0.0177..0.318 rows=635 loops=1)\n                            -> Table scan on Transactions  (cost=101 rows=1000) (actual time=0.0163..0.202 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.003594710000015766,
+          "times_s": [
+            0.003594710000015766,
+            0.0035971739999922647,
+            0.0035860670000147365
+          ],
+          "result_rows": 246,
+          "result_digest": "f284db40a28bf9e90282ac145c057b10ffc4c2ef",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=1.25..1.28 rows=246 loops=1)\n    -> Aggregate using temporary table  (actual time=1.25..1.25 rows=246 loops=1)\n        -> Table scan on Transactions  (cost=101 rows=1000) (actual time=0.0226..0.22 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Transactions": 1000
+      },
+      "load_seconds": 0.02,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_distinct_groups_subqueries",
+          "status": "ok",
+          "median_s": 0.009762023999996927,
+          "times_s": [
+            0.009762023999996927,
+            0.00984424900002523,
+            0.009619017999966673
+          ],
+          "result_rows": 246,
+          "result_digest": "f284db40a28bf9e90282ac145c057b10ffc4c2ef",
+          "explain_analyze": "-> Table scan on g  (cost=316..331 rows=1000) (actual time=0.595..0.634 rows=246 loops=1)\n    -> Materialize  (cost=316..316 rows=1000) (actual time=0.595..0.595 rows=246 loops=1)\n        -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.532..0.558 rows=246 loops=1)\n            -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.531..0.531 rows=246 loops=1)\n                -> Table scan on Transactions  (cost=101 rows=1000) (actual time=0.0239..0.205 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_two_aggregates_join",
+          "status": "ok",
+          "median_s": 0.005077604999996765,
+          "times_s": [
+            0.005119567999940955,
+            0.005077604999996765,
+            0.004982280000035644
+          ],
+          "result_rows": 246,
+          "result_digest": "f284db40a28bf9e90282ac145c057b10ffc4c2ef",
+          "explain_analyze": "-> Nested loop left join  (cost=3261 rows=5012) (actual time=2.34..2.69 rows=246 loops=1)\n    -> Table scan on t  (cost=251..260 rows=501) (actual time=1.09..1.12 rows=246 loops=1)\n        -> Materialize CTE totals  (cost=251..251 rows=501) (actual time=1.09..1.09 rows=246 loops=1)\n            -> Group aggregate: count(0), sum(Transactions.amount)  (cost=201 rows=501) (actual time=0.0758..1 rows=246 loops=1)\n                -> Index scan on Transactions using idx_tx_month_country  (cost=101 rows=1000) (actual time=0.071..0.791 rows=1000 loops=1)\n    -> Filter: (a.country <=> t.country)  (cost=160..2.5 rows=10) (actual time=0.00606..0.00623 rows=0.703 loops=246)\n        -> Index lookup on a using <auto_key0> (month=t.`month`, country=t.country)  (cost=178..180 rows=10) (actual time=0.00592..0.00603 rows=0.703 loops=246)\n            -> Materialize CTE approved  (cost=178..178 rows=269) (actual time=1.24..1.24 rows=173 loops=1)\n                -> Group aggregate: count(0), sum(Transactions.amount)  (cost=151 rows=269) (actual time=0.06..1.04 rows=173 loops=1)\n                    -> Filter: (Transactions.state = 'approved')  (cost=101 rows=500) (actual time=0.0574..0.897 rows=635 loops=1)\n                        -> Index scan on Transactions using idx_tx_month_country  (cost=101 rows=1000) (actual time=0.0565..0.774 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.0035958319999735977,
+          "times_s": [
+            0.003775324000002911,
+            0.0035958319999735977,
+            0.003590624000025855
+          ],
+          "result_rows": 246,
+          "result_digest": "f284db40a28bf9e90282ac145c057b10ffc4c2ef",
+          "explain_analyze": "-> Group aggregate: count(0), sum((Transactions.state = 'approved')), sum(Transactions.amount), sum((case when (Transactions.state = 'approved') then Transactions.amount else 0 end))  (cost=201 rows=501) (actual time=0.0823..1.32 rows=246 loops=1)\n    -> Index scan on Transactions using idx_tx_month_country  (cost=101 rows=1000) (actual time=0.0767..0.882 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Transactions": 100000
+      },
+      "load_seconds": 1.034,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_distinct_groups_subqueries",
+          "status": "ok",
+          "median_s": 32.21211612400009,
+          "times_s": [
+            32.252620802000024,
+            32.21211612400009,
+            32.16710235200003
+          ],
+          "result_rows": 288,
+          "result_digest": "022ac51d6b8cc2ef0d71a5847277a22fb91c53ac",
+          "explain_analyze": "-> Table scan on g  (cost=31354..32608 rows=100095) (actual time=48.2..48.9 rows=288 loops=1)\n    -> Materialize  (cost=31354..31354 rows=100095) (actual time=48.2..48.2 rows=288 loops=1)\n        -> Table scan on <temporary>  (cost=20091..21345 rows=100095) (actual time=48.2..48.2 rows=288 loops=1)\n            -> Temporary table with deduplication  (cost=20091..20091 rows=100095) (actual time=48.2..48.2 rows=288 loops=1)\n                -> Table scan on Transactions  (cost=10082 rows=100095) (actual time=0.274..16.9 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "02_two_aggregates_join",
+          "status": "ok",
+          "median_s": 0.1500392150001062,
+          "times_s": [
+            0.15057568899999296,
+            0.1500392150001062,
+            0.1495242529999814
+          ],
+          "result_rows": 288,
+          "result_digest": "022ac51d6b8cc2ef0d71a5847277a22fb91c53ac",
+          "explain_analyze": "-> Nested loop left join  (cost=250275 rows=0) (actual time=200..201 rows=288 loops=1)\n    -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=94.4..94.4 rows=288 loops=1)\n        -> Materialize CTE totals  (cost=0..0 rows=0) (actual time=94.4..94.4 rows=288 loops=1)\n            -> Table scan on <temporary>  (actual time=94.2..94.3 rows=288 loops=1)\n                -> Aggregate using temporary table  (actual time=94.2..94.2 rows=288 loops=1)\n                    -> Table scan on Transactions  (cost=10082 rows=100095) (actual time=0.299..20.9 rows=100000 loops=1)\n    -> Filter: (a.country <=> t.country)  (cost=0.25..2.5 rows=10) (actual time=0.369..0.369 rows=0.875 loops=288)\n        -> Index lookup on a using <auto_key0> (month=t.`month`, country=t.country)  (cost=0.25..2.5 rows=10) (actual time=0.369..0.369 rows=0.875 loops=288)\n            -> Materialize CTE approved  (cost=0..0 rows=0) (actual time=106..106 rows=252 loops=1)\n                -> Table scan on <temporary>  (actual time=106..106 rows=252 loops=1)\n                    -> Aggregate using temporary table  (actual time=106..106 rows=252 loops=1)\n                        -> Filter: (Transactions.state = 'approved')  (cost=10082 rows=50048) (actual time=0.608..45.2 rows=62563 loops=1)\n                            -> Table scan on Transactions  (cost=10082 rows=100095) (actual time=0.603..28.5 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.12216410600001382,
+          "times_s": [
+            0.1210137539999323,
+            0.12323932699996476,
+            0.12216410600001382
+          ],
+          "result_rows": 288,
+          "result_digest": "022ac51d6b8cc2ef0d71a5847277a22fb91c53ac",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=122..122 rows=288 loops=1)\n    -> Aggregate using temporary table  (actual time=122..122 rows=288 loops=1)\n        -> Table scan on Transactions  (cost=10082 rows=100095) (actual time=0.347..21.1 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Transactions": 100000
+      },
+      "load_seconds": 1.034,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_distinct_groups_subqueries",
+          "status": "ok",
+          "median_s": 0.4233490939999456,
+          "times_s": [
+            0.4233490939999456,
+            0.42325010599995494,
+            0.42458264899994447
+          ],
+          "result_rows": 288,
+          "result_digest": "022ac51d6b8cc2ef0d71a5847277a22fb91c53ac",
+          "explain_analyze": "-> Table scan on g  (cost=31362..32616 rows=100118) (actual time=49.1..49.2 rows=288 loops=1)\n    -> Materialize  (cost=31362..31362 rows=100118) (actual time=49.1..49.1 rows=288 loops=1)\n        -> Table scan on <temporary>  (cost=20096..21350 rows=100118) (actual time=49..49 rows=288 loops=1)\n            -> Temporary table with deduplication  (cost=20096..20096 rows=100118) (actual time=49..49 rows=288 loops=1)\n                -> Table scan on Transactions  (cost=10084 rows=100118) (actual time=0.319..17.6 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "02_two_aggregates_join",
+          "status": "ok",
+          "median_s": 0.24654567599998245,
+          "times_s": [
+            0.24654567599998245,
+            0.24536404800005585,
+            0.25798400999997284
+          ],
+          "result_rows": 288,
+          "result_digest": "022ac51d6b8cc2ef0d71a5847277a22fb91c53ac",
+          "explain_analyze": "-> Nested loop left join  (cost=305662 rows=316621) (actual time=269..269 rows=288 loops=1)\n    -> Table scan on t  (cost=23261..23660 rows=31656) (actual time=129..129 rows=288 loops=1)\n        -> Materialize CTE totals  (cost=23261..23261 rows=31656) (actual time=129..129 rows=288 loops=1)\n            -> Group aggregate: count(0), sum(Transactions.amount)  (cost=20096 rows=31656) (actual time=1.81..129 rows=288 loops=1)\n                -> Index scan on Transactions using idx_tx_month_country  (cost=10084 rows=100118) (actual time=1.77..113 rows=100000 loops=1)\n    -> Filter: (a.country <=> t.country)  (cost=15108..2.5 rows=10) (actual time=0.485..0.485 rows=0.875 loops=288)\n        -> Index lookup on a using <auto_key0> (month=t.`month`, country=t.country)  (cost=16787..16789 rows=10) (actual time=0.485..0.485 rows=0.875 loops=288)\n            -> Materialize CTE approved  (cost=16786..16786 rows=16964) (actual time=139..139 rows=252 loops=1)\n                -> Group aggregate: count(0), sum(Transactions.amount)  (cost=15090 rows=16964) (actual time=1.49..139 rows=252 loops=1)\n                    -> Filter: (Transactions.state = 'approved')  (cost=10084 rows=50059) (actual time=1.45..128 rows=62563 loops=1)\n                        -> Index scan on Transactions using idx_tx_month_country  (cost=10084 rows=100118) (actual time=1.45..116 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.1531159999999545,
+          "times_s": [
+            0.15075250699999287,
+            0.1531159999999545,
+            0.1915058649999537
+          ],
+          "result_rows": 288,
+          "result_digest": "022ac51d6b8cc2ef0d71a5847277a22fb91c53ac",
+          "explain_analyze": "-> Group aggregate: count(0), sum((Transactions.state = 'approved')), sum(Transactions.amount), sum((case when (Transactions.state = 'approved') then Transactions.amount else 0 end))  (cost=20096 rows=31656) (actual time=1.9..155 rows=288 loops=1)\n    -> Index scan on Transactions using idx_tx_month_country  (cost=10084 rows=100118) (actual time=1.84..120 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Transactions": 1000000
+      },
+      "load_seconds": 10.249,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_distinct_groups_subqueries",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_two_aggregates_join",
+          "status": "ok",
+          "median_s": 1.4532541050000418,
+          "times_s": [
+            1.4509523889998945,
+            1.4532541050000418,
+            1.5396286050000754
+          ],
+          "result_rows": 288,
+          "result_digest": "124438d74fee761d6edbf78522cbb4832ee71c3b",
+          "explain_analyze": "-> Nested loop left join  (cost=2.5e+6 rows=0) (actual time=1605..1605 rows=288 loops=1)\n    -> Table scan on t  (cost=2.5..2.5 rows=0) (actual time=867..868 rows=288 loops=1)\n        -> Materialize CTE totals  (cost=0..0 rows=0) (actual time=867..867 rows=288 loops=1)\n            -> Table scan on <temporary>  (actual time=867..867 rows=288 loops=1)\n                -> Aggregate using temporary table  (actual time=867..867 rows=288 loops=1)\n                    -> Table scan on Transactions  (cost=100390 rows=998209) (actual time=0.34..199 rows=1e+6 loops=1)\n    -> Filter: (a.country <=> t.country)  (cost=0.25..2.5 rows=10) (actual time=2.56..2.56 rows=0.875 loops=288)\n        -> Index lookup on a using <auto_key0> (month=t.`month`, country=t.country)  (cost=0.25..2.5 rows=10) (actual time=2.56..2.56 rows=0.875 loops=288)\n            -> Materialize CTE approved  (cost=0..0 rows=0) (actual time=737..737 rows=252 loops=1)\n                -> Table scan on <temporary>  (actual time=737..737 rows=252 loops=1)\n                    -> Aggregate using temporary table  (actual time=737..737 rows=252 loops=1)\n                        -> Filter: (Transactions.state = 'approved')  (cost=100390 rows=499104) (actual time=0.342..316 rows=626734 loops=1)\n                            -> Table scan on Transactions  (cost=100390 rows=998209) (actual time=0.337..198 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 1.2225719889999027,
+          "times_s": [
+            1.2311182239999425,
+            1.2225719889999027,
+            1.179011591999938
+          ],
+          "result_rows": 288,
+          "result_digest": "124438d74fee761d6edbf78522cbb4832ee71c3b",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=1232..1232 rows=288 loops=1)\n    -> Aggregate using temporary table  (actual time=1232..1232 rows=288 loops=1)\n        -> Table scan on Transactions  (cost=100390 rows=998209) (actual time=0.371..210 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Transactions": 1000000
+      },
+      "load_seconds": 10.249,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_distinct_groups_subqueries",
+          "status": "ok",
+          "median_s": 11.928798218999987,
+          "times_s": [
+            11.928798218999987,
+            11.724997488999975,
+            11.988066354000011
+          ],
+          "result_rows": 288,
+          "result_digest": "124438d74fee761d6edbf78522cbb4832ee71c3b",
+          "explain_analyze": "-> Table scan on g  (cost=312441..324918 rows=997983) (actual time=482..483 rows=288 loops=1)\n    -> Materialize  (cost=312441..312441 rows=997983) (actual time=482..482 rows=288 loops=1)\n        -> Table scan on <temporary>  (cost=200166..212643 rows=997983) (actual time=482..482 rows=288 loops=1)\n            -> Temporary table with deduplication  (cost=200166..200166 rows=997983) (actual time=482..482 rows=288 loops=1)\n                -> Table scan on Transactions  (cost=100367 rows=997983) (actual time=0.314..174 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "02_two_aggregates_join",
+          "status": "ok",
+          "median_s": 7.1048859199999015,
+          "times_s": [
+            7.0026937320000116,
+            7.1048859199999015,
+            7.258042836000072
+          ],
+          "result_rows": 288,
+          "result_digest": "124438d74fee761d6edbf78522cbb4832ee71c3b",
+          "explain_analyze": "-> Nested loop left join  (cost=2.97e+6 rows=2.51e+6) (actual time=7312..7312 rows=288 loops=1)\n    -> Table scan on t  (cost=225239..228376 rows=250733) (actual time=3579..3579 rows=288 loops=1)\n        -> Materialize CTE totals  (cost=225239..225239 rows=250733) (actual time=3579..3579 rows=288 loops=1)\n            -> Group aggregate: count(0), sum(Transactions.amount)  (cost=200166 rows=250733) (actual time=5.95..3577 rows=288 loops=1)\n                -> Index scan on Transactions using idx_tx_month_country  (cost=100367 rows=997983) (actual time=5.65..3419 rows=1e+6 loops=1)\n    -> Filter: (a.country <=> t.country)  (cost=147333..2.5 rows=10) (actual time=13..13 rows=0.875 loops=288)\n        -> Index lookup on a using <auto_key0> (month=t.`month`, country=t.country)  (cost=163703..163705 rows=10) (actual time=13..13 rows=0.875 loops=288)\n            -> Materialize CTE approved  (cost=163703..163703 rows=134364) (actual time=3732..3732 rows=252 loops=1)\n                -> Group aggregate: count(0), sum(Transactions.amount)  (cost=150266 rows=134364) (actual time=5.49..3729 rows=252 loops=1)\n                    -> Filter: (Transactions.state = 'approved')  (cost=100367 rows=498992) (actual time=5.16..3625 rows=626734 loops=1)\n                        -> Index scan on Transactions using idx_tx_month_country  (cost=100367 rows=997983) (actual time=5.16..3502 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 3.7632923969999865,
+          "times_s": [
+            3.835380158000021,
+            3.68289366099998,
+            3.7632923969999865
+          ],
+          "result_rows": 288,
+          "result_digest": "124438d74fee761d6edbf78522cbb4832ee71c3b",
+          "explain_analyze": "-> Group aggregate: count(0), sum((Transactions.state = 'approved')), sum(Transactions.amount), sum((case when (Transactions.state = 'approved') then Transactions.amount else 0 end))  (cost=200166 rows=250733) (actual time=6.15..3800 rows=288 loops=1)\n    -> Index scan on Transactions using idx_tx_month_country  (cost=100367 rows=997983) (actual time=5.68..3444 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

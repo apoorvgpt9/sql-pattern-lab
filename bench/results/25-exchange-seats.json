@@ -1,0 +1,200 @@
+{
+  "problem": "25-exchange-seats",
+  "generated_at": "2026-11-04T15:13:41+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subquery",
+    "02_lead_lag",
+    "03_relabel_ids"
+  ],
+  "optimal": "03_relabel_ids",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Seat": 999
+      },
+      "load_seconds": 0.022,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 0.006933893999999441,
+          "times_s": [
+            0.007226299999999242,
+            0.006933893999999441,
+            0.006664010999998027
+          ],
+          "result_rows": 999,
+          "result_digest": "53f952b98be6c6eece32e0d41d90bacd090d3237",
+          "explain_analyze": "-> Index scan on s using PRIMARY  (cost=101 rows=999) (actual time=0.0164..0.192 rows=999 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Filter: (t.id = (case when ((s.id % 2) = 1) then (s.id + 1) else (s.id - 1) end))  (cost=0.35 rows=1) (actual time=0.00105..0.00114 rows=0.999 loops=999)\n        -> Single-row index lookup on t using PRIMARY (id=(case when ((s.id % 2) = 1) then (s.id + 1) else (s.id - 1) end))  (cost=0.35 rows=1) (actual time=854e-6..882e-6 rows=0.999 loops=999)\n"
+        },
+        {
+          "solution": "02_lead_lag",
+          "status": "ok",
+          "median_s": 0.010097821999998757,
+          "times_s": [
+            0.009684835999998143,
+            0.013137053000001231,
+            0.010097821999998757
+          ],
+          "result_rows": 999,
+          "result_digest": "53f952b98be6c6eece32e0d41d90bacd090d3237",
+          "explain_analyze": "-> Sort: Seat.id  (actual time=4.85..4.92 rows=999 loops=1)\n    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=4.54..4.67 rows=999 loops=1)\n        -> Temporary table  (cost=0..0 rows=0) (actual time=4.53..4.53 rows=999 loops=1)\n            -> Window aggregate with buffering: lag(Seat.student) OVER (ORDER BY Seat.id )   (actual time=2.8..4.41 rows=999 loops=1)\n                -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=2.15..2.29 rows=999 loops=1)\n                    -> Temporary table  (cost=0..0 rows=0) (actual time=2.15..2.15 rows=999 loops=1)\n                        -> Window aggregate with buffering: lead(Seat.student) OVER (ORDER BY Seat.id )   (actual time=0.77..2.05 rows=999 loops=1)\n                            -> Sort: Seat.id  (cost=101 rows=999) (actual time=0.272..0.309 rows=999 loops=1)\n                                -> Table scan on Seat  (cost=101 rows=999) (actual time=0.0208..0.172 rows=999 loops=1)\n"
+        },
+        {
+          "solution": "03_relabel_ids",
+          "status": "ok",
+          "median_s": 0.005572482000005152,
+          "times_s": [
+            0.005572482000005152,
+            0.005673661000002994,
+            0.00551180900000503
+          ],
+          "result_rows": 999,
+          "result_digest": "53f952b98be6c6eece32e0d41d90bacd090d3237",
+          "explain_analyze": "-> Sort: moved.id  (cost=1311..1311 rows=999) (actual time=0.667..0.703 rows=999 loops=1)\n    -> Table scan on moved  (cost=201..216 rows=999) (actual time=0.465..0.565 rows=999 loops=1)\n        -> Materialize CTE moved  (cost=201..201 rows=999) (actual time=0.464..0.464 rows=999 loops=1)\n            -> Table scan on Seat  (cost=101 rows=999) (actual time=0.013..0.204 rows=999 loops=1)\n            -> Select #3 (subquery in projection; run only once)\n                -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=60e-6..100e-6 rows=1 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Seat": 99999
+      },
+      "load_seconds": 0.726,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 0.622593013999996,
+          "times_s": [
+            0.6712100470000024,
+            0.622593013999996,
+            0.6182468870000051
+          ],
+          "result_rows": 99999,
+          "result_digest": "f282e614f511b50fd5b824e2fb4c0802f39744a1",
+          "explain_analyze": "-> Index scan on s using PRIMARY  (cost=9648 rows=95920) (actual time=0.0555..18 rows=99999 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Filter: (t.id = (case when ((s.id % 2) = 1) then (s.id + 1) else (s.id - 1) end))  (cost=0.35 rows=1) (actual time=0.00101..0.0011 rows=1 loops=99999)\n        -> Single-row index lookup on t using PRIMARY (id=(case when ((s.id % 2) = 1) then (s.id + 1) else (s.id - 1) end))  (cost=0.35 rows=1) (actual time=822e-6..850e-6 rows=1 loops=99999)\n"
+        },
+        {
+          "solution": "02_lead_lag",
+          "status": "ok",
+          "median_s": 1.6856188220000092,
+          "times_s": [
+            1.7364944899999983,
+            1.6769142259999938,
+            1.6856188220000092
+          ],
+          "result_rows": 99999,
+          "result_digest": "f282e614f511b50fd5b824e2fb4c0802f39744a1",
+          "explain_analyze": "-> Sort: Seat.id  (actual time=1251..1260 rows=99999 loops=1)\n    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=1186..1219 rows=99999 loops=1)\n        -> Temporary table  (cost=0..0 rows=0) (actual time=1186..1186 rows=99999 loops=1)\n            -> Window aggregate with buffering: lag(Seat.student) OVER (ORDER BY Seat.id )   (actual time=391..1128 rows=99999 loops=1)\n                -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=265..296 rows=99999 loops=1)\n                    -> Temporary table  (cost=0..0 rows=0) (actual time=265..265 rows=99999 loops=1)\n                        -> Window aggregate with buffering: lead(Seat.student) OVER (ORDER BY Seat.id )   (actual time=80.6..217 rows=99999 loops=1)\n                            -> Sort: Seat.id  (cost=9648 rows=95920) (actual time=32.3..36.7 rows=99999 loops=1)\n                                -> Table scan on Seat  (cost=9648 rows=95920) (actual time=0.0562..16.6 rows=99999 loops=1)\n"
+        },
+        {
+          "solution": "03_relabel_ids",
+          "status": "ok",
+          "median_s": 0.510134463,
+          "times_s": [
+            0.5116145700000061,
+            0.5069726979999984,
+            0.510134463
+          ],
+          "result_rows": 99999,
+          "result_digest": "f282e614f511b50fd5b824e2fb4c0802f39744a1",
+          "explain_analyze": "-> Sort: moved.id  (cost=188777..188777 rows=95920) (actual time=101..107 rows=99999 loops=1)\n    -> Table scan on moved  (cost=19240..20442 rows=95920) (actual time=59.4..73.1 rows=99999 loops=1)\n        -> Materialize CTE moved  (cost=19240..19240 rows=95920) (actual time=59.4..59.4 rows=99999 loops=1)\n            -> Table scan on Seat  (cost=9648 rows=95920) (actual time=0.0591..27.2 rows=99999 loops=1)\n            -> Select #3 (subquery in projection; run only once)\n                -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=60e-6..100e-6 rows=1 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Seat": 999999
+      },
+      "load_seconds": 6.681,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 6.604439485,
+          "times_s": [
+            6.604439485,
+            6.694748249,
+            6.598555626000007
+          ],
+          "result_rows": 999999,
+          "result_digest": "1ec041ec0feffd44087692b142dca5be6274757d",
+          "explain_analyze": "-> Index scan on s using PRIMARY  (cost=97872 rows=973350) (actual time=0.0589..183 rows=999999 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Filter: (t.id = (case when ((s.id % 2) = 1) then (s.id + 1) else (s.id - 1) end))  (cost=0.35 rows=1) (actual time=0.00199..0.00208 rows=1 loops=999999)\n        -> Single-row index lookup on t using PRIMARY (id=(case when ((s.id % 2) = 1) then (s.id + 1) else (s.id - 1) end))  (cost=0.35 rows=1) (actual time=0.00179..0.00182 rows=1 loops=999999)\n"
+        },
+        {
+          "solution": "02_lead_lag",
+          "status": "ok",
+          "median_s": 24.755432727,
+          "times_s": [
+            24.755432727,
+            24.68224343,
+            25.40231256199999
+          ],
+          "result_rows": 999999,
+          "result_digest": "1ec041ec0feffd44087692b142dca5be6274757d",
+          "explain_analyze": "-> Sort: Seat.id  (actual time=20468..20557 rows=999999 loops=1)\n    -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=19754..20121 rows=999999 loops=1)\n        -> Temporary table  (cost=0..0 rows=0) (actual time=19754..19754 rows=999999 loops=1)\n            -> Window aggregate with buffering: lag(Seat.student) OVER (ORDER BY Seat.id )   (actual time=10710..19120 rows=999999 loops=1)\n                -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=9344..9685 rows=999999 loops=1)\n                    -> Temporary table  (cost=0..0 rows=0) (actual time=9344..9344 rows=999999 loops=1)\n                        -> Window aggregate with buffering: lead(Seat.student) OVER (ORDER BY Seat.id )   (actual time=1228..8777 rows=999999 loops=1)\n                            -> Sort: Seat.id  (cost=99482 rows=973350) (actual time=395..446 rows=999999 loops=1)\n                                -> Table scan on Seat  (cost=99482 rows=973350) (actual time=0.115..174 rows=999999 loops=1)\n"
+        },
+        {
+          "solution": "03_relabel_ids",
+          "status": "ok",
+          "median_s": 5.633932125999991,
+          "times_s": [
+            5.633932125999991,
+            6.09927688800002,
+            5.589425980999977
+          ],
+          "result_rows": 999999,
+          "result_digest": "1ec041ec0feffd44087692b142dca5be6274757d",
+          "explain_analyze": "-> Sort: moved.id  (cost=2.24e+6..2.24e+6 rows=973350) (actual time=1107..1151 rows=999999 loops=1)\n    -> Table scan on moved  (cost=195207..207376 rows=973350) (actual time=661..867 rows=999999 loops=1)\n        -> Materialize CTE moved  (cost=195207..195207 rows=973350) (actual time=661..661 rows=999999 loops=1)\n            -> Table scan on Seat  (cost=97872 rows=973350) (actual time=0.0434..171 rows=999999 loops=1)\n            -> Select #3 (subquery in projection; run only once)\n                -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=60e-6..100e-6 rows=1 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,357 @@
+{
+  "problem": "07-trips-and-users",
+  "generated_at": "2026-11-04T15:30:20+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subqueries",
+    "02_join_users_twice",
+    "03_filter_then_aggregate"
+  ],
+  "optimal": "03_filter_then_aggregate",
+  "machine": {
+    "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "python": "3.11.18",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "mem_total": "8122100 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261101.186.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Users": 240,
+        "Trips": 1000
+      },
+      "load_seconds": 0.031,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.0040441310000005615,
+          "times_s": [
+            0.004394969000031779,
+            0.0040441310000005615,
+            0.00396555200018156
+          ],
+          "result_rows": 3,
+          "result_digest": "21827a6c01611bda2a60745b2371b8b9d9900d5e",
+          "explain_analyze": "-> Filter: ((select #9) > 0)  (cost=126..15 rows=111) (actual time=0.853..1.64 rows=3 loops=1)\n    -> Table scan on d  (cost=127..131 rows=111) (actual time=0.41..0.411 rows=3 loops=1)\n        -> Materialize  (cost=127..127 rows=111) (actual time=0.41..0.41 rows=3 loops=1)\n            -> Table scan on <temporary>  (cost=112..116 rows=111) (actual time=0.405..0.405 rows=3 loops=1)\n                -> Temporary table with deduplication  (cost=112..112 rows=111) (actual time=0.404..0.404 rows=3 loops=1)\n                    -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=101 rows=111) (actual time=0.0191..0.371 rows=116 loops=1)\n                        -> Table scan on Trips  (cost=101 rows=1000) (actual time=0.0179..0.194 rows=1000 loops=1)\n    -> Select #9 (subquery in condition; dependent)\n        -> Aggregate: count(0)  (cost=66.3 rows=1) (actual time=0.405..0.405 rows=1 loops=3)\n            -> Nested loop inner join  (cost=63.8 rows=25) (actual time=0.0201..0.401 rows=36.3 loops=3)\n                -> Nested loop inner join  (cost=46.3 rows=50) (actual time=0.0188..0.363 rows=38.7 loops=3)\n                    -> Filter: (t.request_at = d.request_at)  (cost=11.3 rows=100) (actual time=0.0162..0.32 rows=38.7 loops=3)\n                        -> Table scan on t  (cost=11.3 rows=1000) (actual time=0.0129..0.2 rows=1000 loops=3)\n                    -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=840e-6..933e-6 rows=1 loops=116)\n                        -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=655e-6..685e-6 rows=1 loops=116)\n                -> Filter: (Users.banned = 'No')  (cost=0.251 rows=0.5) (actual time=735e-6..823e-6 rows=0.94 loops=116)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.251 rows=1) (actual time=553e-6..584e-6 rows=1 loops=116)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=77.9 rows=1) (actual time=0.361..0.361 rows=1 loops=3)\n        -> Nested loop inner join  (cost=76.3 rows=16.7) (actual time=0.0511..0.36 rows=9 loops=3)\n            -> Nested loop inner join  (cost=64.6 rows=33.3) (actual time=0.0498..0.349 rows=10 loops=3)\n                -> Filter: ((t.request_at = d.request_at) and (t.`status` <> 'completed'))  (cost=41.3 rows=66.7) (actual time=0.0482..0.337 rows=10 loops=3)\n                    -> Table scan on t  (cost=41.3 rows=1000) (actual time=0.0134..0.211 rows=1000 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.251 rows=0.5) (actual time=867e-6..960e-6 rows=1 loops=30)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.251 rows=1) (actual time=682e-6..712e-6 rows=1 loops=30)\n            -> Filter: (Users.banned = 'No')  (cost=0.252 rows=0.5) (actual time=786e-6..871e-6 rows=0.9 loops=30)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.252 rows=1) (actual time=582e-6..612e-6 rows=1 loops=30)\n-> Select #5 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=66.3 rows=1) (actual time=0.397..0.397 rows=1 loops=3)\n        -> Nested loop inner join  (cost=63.8 rows=25) (actual time=0.019..0.394 rows=36.3 loops=3)\n            -> Nested loop inner join  (cost=46.3 rows=50) (actual time=0.0176..0.358 rows=38.7 loops=3)\n                -> Filter: (t.request_at = d.request_at)  (cost=11.3 rows=100) (actual time=0.0162..0.318 rows=38.7 loops=3)\n                    -> Table scan on t  (cost=11.3 rows=1000) (actual time=0.013..0.206 rows=1000 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=752e-6..846e-6 rows=1 loops=116)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=575e-6..606e-6 rows=1 loops=116)\n            -> Filter: (Users.banned = 'No')  (cost=0.251 rows=0.5) (actual time=690e-6..778e-6 rows=0.94 loops=116)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.251 rows=1) (actual time=510e-6..540e-6 rows=1 loops=116)\n"
+        },
+        {
+          "solution": "02_join_users_twice",
+          "status": "ok",
+          "median_s": 0.001082040000028428,
+          "times_s": [
+            0.0011505929999202635,
+            0.001082040000028428,
+            0.0010708429999795044
+          ],
+          "result_rows": 3,
+          "result_digest": "21827a6c01611bda2a60745b2371b8b9d9900d5e",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=0.76..0.76 rows=3 loops=1)\n    -> Aggregate using temporary table  (actual time=0.759..0.759 rows=3 loops=1)\n        -> Nested loop inner join  (cost=160 rows=27.8) (actual time=0.0291..0.681 rows=109 loops=1)\n            -> Nested loop inner join  (cost=140 rows=55.6) (actual time=0.0273..0.564 rows=116 loops=1)\n                -> Filter: (t.request_at between '2013-10-01' and '2013-10-03')  (cost=101 rows=111) (actual time=0.022..0.434 rows=116 loops=1)\n                    -> Table scan on t  (cost=101 rows=1000) (actual time=0.0209..0.263 rows=1000 loops=1)\n                -> Filter: (c.banned = 'No')  (cost=0.25 rows=0.5) (actual time=854e-6..948e-6 rows=1 loops=116)\n                    -> Single-row index lookup on c using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=670e-6..701e-6 rows=1 loops=116)\n            -> Filter: (d.banned = 'No')  (cost=0.251 rows=0.5) (actual time=754e-6..843e-6 rows=0.94 loops=116)\n                -> Single-row index lookup on d using PRIMARY (users_id=t.driver_id)  (cost=0.251 rows=1) (actual time=566e-6..597e-6 rows=1 loops=116)\n"
+        },
+        {
+          "solution": "03_filter_then_aggregate",
+          "status": "ok",
+          "median_s": 0.0011907630000678182,
+          "times_s": [
+            0.0011907630000678182,
+            0.0011757409999972879,
+            0.0013565529998231796
+          ],
+          "result_rows": 3,
+          "result_digest": "21827a6c01611bda2a60745b2371b8b9d9900d5e",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=0.748..0.749 rows=3 loops=1)\n    -> Aggregate using temporary table  (actual time=0.748..0.748 rows=3 loops=1)\n        -> Nested loop inner join  (cost=160 rows=27.8) (actual time=0.0295..0.664 rows=109 loops=1)\n            -> Nested loop inner join  (cost=140 rows=55.6) (actual time=0.0279..0.552 rows=116 loops=1)\n                -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=101 rows=111) (actual time=0.0221..0.394 rows=116 loops=1)\n                    -> Table scan on Trips  (cost=101 rows=1000) (actual time=0.0209..0.233 rows=1000 loops=1)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=819e-6..0.00118 rows=1 loops=116)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=Trips.client_id)  (cost=0.25 rows=1) (actual time=626e-6..929e-6 rows=1 loops=116)\n            -> Filter: (Users.banned = 'No')  (cost=0.251 rows=0.5) (actual time=716e-6..805e-6 rows=0.94 loops=116)\n                -> Single-row index lookup on Users using PRIMARY (users_id=Trips.driver_id)  (cost=0.251 rows=1) (actual time=534e-6..564e-6 rows=1 loops=116)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Users": 240,
+        "Trips": 1000
+      },
+      "load_seconds": 0.031,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.0011786949999077478,
+          "times_s": [
+            0.0012653260000661248,
+            0.001166817000012088,
+            0.0011786949999077478
+          ],
+          "result_rows": 3,
+          "result_digest": "21827a6c01611bda2a60745b2371b8b9d9900d5e",
+          "explain_analyze": "-> Filter: ((select #9) > 0)  (cost=5.22..2.95 rows=4) (actual time=0.165..0.343 rows=3 loops=1)\n    -> Table scan on d  (cost=6.61..8.53 rows=4) (actual time=0.0415..0.0425 rows=3 loops=1)\n        -> Materialize  (cost=5.98..5.98 rows=4) (actual time=0.0406..0.0406 rows=3 loops=1)\n            -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=5.58 rows=4) (actual time=0.0156..0.0336 rows=3 loops=1)\n                -> Covering index skip scan for deduplication on Trips using idx_trips_day_users_status over ('2013-10-01' <= request_at <= '2013-10-03')  (cost=5.58 rows=4) (actual time=0.0142..0.0284 rows=3 loops=1)\n    -> Select #9 (subquery in condition; dependent)\n        -> Aggregate: count(0)  (cost=22.4 rows=1) (actual time=0.097..0.097 rows=1 loops=3)\n            -> Nested loop inner join  (cost=21.6 rows=8.33) (actual time=0.0163..0.0937 rows=36.3 loops=3)\n                -> Nested loop inner join  (cost=15.8 rows=16.7) (actual time=0.0148..0.0558 rows=38.7 loops=3)\n                    -> Covering index lookup on t using idx_trips_day_users_status (request_at=d.request_at)  (cost=4.09 rows=33.3) (actual time=0.0121..0.0188 rows=38.7 loops=3)\n                    -> Filter: (Users.banned = 'No')  (cost=0.252 rows=0.5) (actual time=687e-6..780e-6 rows=1 loops=116)\n                        -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.252 rows=1) (actual time=502e-6..533e-6 rows=1 loops=116)\n                -> Filter: (Users.banned = 'No')  (cost=0.253 rows=0.5) (actual time=724e-6..813e-6 rows=0.94 loops=116)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.253 rows=1) (actual time=538e-6..569e-6 rows=1 loops=116)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=15.2 rows=1) (actual time=0.0405..0.0405 rows=1 loops=3)\n        -> Nested loop inner join  (cost=14.6 rows=5.56) (actual time=0.0137..0.0394 rows=9 loops=3)\n            -> Nested loop inner join  (cost=10.8 rows=11.1) (actual time=0.0125..0.0299 rows=10 loops=3)\n                -> Filter: (t.`status` <> 'completed')  (cost=2.98 rows=22.2) (actual time=0.0113..0.02 rows=10 loops=3)\n                    -> Covering index lookup on t using idx_trips_day_users_status (request_at=d.request_at)  (cost=2.98 rows=33.3) (actual time=0.00984..0.0154 rows=38.7 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.252 rows=0.5) (actual time=716e-6..809e-6 rows=1 loops=30)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.252 rows=1) (actual time=536e-6..566e-6 rows=1 loops=30)\n            -> Filter: (Users.banned = 'No')  (cost=0.255 rows=0.5) (actual time=694e-6..780e-6 rows=0.9 loops=30)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.255 rows=1) (actual time=516e-6..547e-6 rows=1 loops=30)\n-> Select #5 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=22.4 rows=1) (actual time=0.0994..0.0994 rows=1 loops=3)\n        -> Nested loop inner join  (cost=21.6 rows=8.33) (actual time=0.0112..0.0969 rows=36.3 loops=3)\n            -> Nested loop inner join  (cost=15.8 rows=16.7) (actual time=0.0102..0.0599 rows=38.7 loops=3)\n                -> Covering index lookup on t using idx_trips_day_users_status (request_at=d.request_at)  (cost=4.09 rows=33.3) (actual time=0.00898..0.0152 rows=38.7 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.252 rows=0.5) (actual time=893e-6..988e-6 rows=1 loops=116)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.252 rows=1) (actual time=715e-6..746e-6 rows=1 loops=116)\n            -> Filter: (Users.banned = 'No')  (cost=0.253 rows=0.5) (actual time=708e-6..795e-6 rows=0.94 loops=116)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.253 rows=1) (actual time=524e-6..554e-6 rows=1 loops=116)\n"
+        },
+        {
+          "solution": "02_join_users_twice",
+          "status": "ok",
+          "median_s": 0.0008676469999500114,
+          "times_s": [
+            0.0009378929999002139,
+            0.0008676469999500114,
+            0.0008365999999568885
+          ],
+          "result_rows": 3,
+          "result_digest": "21827a6c01611bda2a60745b2371b8b9d9900d5e",
+          "explain_analyze": "-> Group aggregate: avg((t.`status` <> 'completed'))  (cost=88.1 rows=29) (actual time=0.147..0.426 rows=3 loops=1)\n    -> Nested loop inner join  (cost=85.2 rows=29) (actual time=0.0341..0.386 rows=109 loops=1)\n        -> Nested loop inner join  (cost=64.9 rows=58) (actual time=0.0325..0.234 rows=116 loops=1)\n            -> Filter: (t.request_at between '2013-10-01' and '2013-10-03')  (cost=24.3 rows=116) (actual time=0.0275..0.0995 rows=116 loops=1)\n                -> Covering index range scan on t using idx_trips_day_users_status over ('2013-10-01' <= request_at <= '2013-10-03')  (cost=24.3 rows=116) (actual time=0.026..0.0633 rows=116 loops=1)\n            -> Filter: (c.banned = 'No')  (cost=0.25 rows=0.5) (actual time=885e-6..983e-6 rows=1 loops=116)\n                -> Single-row index lookup on c using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=578e-6..611e-6 rows=1 loops=116)\n        -> Filter: (d.banned = 'No')  (cost=0.251 rows=0.5) (actual time=0.00104..0.00114 rows=0.94 loops=116)\n            -> Single-row index lookup on d using PRIMARY (users_id=t.driver_id)  (cost=0.251 rows=1) (actual time=635e-6..666e-6 rows=1 loops=116)\n"
+        },
+        {
+          "solution": "03_filter_then_aggregate",
+          "status": "ok",
+          "median_s": 0.0008351179999408487,
+          "times_s": [
+            0.0008351179999408487,
+            0.0008052519999637298,
+            0.000838082000200302
+          ],
+          "result_rows": 3,
+          "result_digest": "21827a6c01611bda2a60745b2371b8b9d9900d5e",
+          "explain_analyze": "-> Group aggregate: count(0), sum((Trips.`status` <> 'completed'))  (cost=88.1 rows=5.39) (actual time=0.136..0.333 rows=3 loops=1)\n    -> Nested loop inner join  (cost=85.2 rows=29) (actual time=0.0321..0.297 rows=109 loops=1)\n        -> Nested loop inner join  (cost=64.9 rows=58) (actual time=0.0307..0.187 rows=116 loops=1)\n            -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=24.3 rows=116) (actual time=0.0258..0.0772 rows=116 loops=1)\n                -> Covering index range scan on Trips using idx_trips_day_users_status over ('2013-10-01' <= request_at <= '2013-10-03')  (cost=24.3 rows=116) (actual time=0.0248..0.0491 rows=116 loops=1)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=680e-6..774e-6 rows=1 loops=116)\n                -> Single-row index lookup on Users using PRIMARY (users_id=Trips.client_id)  (cost=0.25 rows=1) (actual time=505e-6..535e-6 rows=1 loops=116)\n        -> Filter: (Users.banned = 'No')  (cost=0.251 rows=0.5) (actual time=707e-6..795e-6 rows=0.94 loops=116)\n            -> Single-row index lookup on Users using PRIMARY (users_id=Trips.driver_id)  (cost=0.251 rows=1) (actual time=524e-6..555e-6 rows=1 loops=116)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Users": 25000,
+        "Trips": 100000
+      },
+      "load_seconds": 1.255,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.3080423989999872,
+          "times_s": [
+            0.3067336090000481,
+            0.3080423989999872,
+            0.31146137400014595
+          ],
+          "result_rows": 3,
+          "result_digest": "541839f75d36bc35165454769902ee752df62fe1",
+          "explain_analyze": "-> Filter: ((select #9) > 0)  (cost=12034..1210 rows=10735) (actual time=76.9..157 rows=3 loops=1)\n    -> Table scan on d  (cost=12035..12171 rows=10735) (actual time=34.4..34.4 rows=3 loops=1)\n        -> Materialize  (cost=12035..12035 rows=10735) (actual time=34.4..34.4 rows=3 loops=1)\n            -> Table scan on <temporary>  (cost=10825..10961 rows=10735) (actual time=34.4..34.4 rows=3 loops=1)\n                -> Temporary table with deduplication  (cost=10825..10825 rows=10735) (actual time=34.4..34.4 rows=3 loops=1)\n                    -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=9751 rows=10735) (actual time=0.222..32.1 rows=12132 loops=1)\n                        -> Table scan on Trips  (cost=9751 rows=96628) (actual time=0.22..16.1 rows=100000 loops=1)\n    -> Select #9 (subquery in condition; dependent)\n        -> Aggregate: count(0)  (cost=6369 rows=1) (actual time=40.8..40.8 rows=1 loops=3)\n            -> Nested loop inner join  (cost=6128 rows=2416) (actual time=0.273..40.6 rows=3686 loops=3)\n                -> Nested loop inner join  (cost=4437 rows=4831) (actual time=0.269..35.8 rows=4044 loops=3)\n                    -> Filter: (t.request_at = d.request_at)  (cost=1055 rows=9663) (actual time=0.261..30.8 rows=4044 loops=3)\n                        -> Table scan on t  (cost=1055 rows=96628) (actual time=0.257..19.4 rows=100000 loops=3)\n                    -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=974e-6..0.00107 rows=1 loops=12132)\n                        -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=795e-6..827e-6 rows=1 loops=12132)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=951e-6..0.00104 rows=0.911 loops=12132)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=767e-6..798e-6 rows=1 loops=12132)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=7496 rows=1) (actual time=36.7..36.7 rows=1 loops=3)\n        -> Nested loop inner join  (cost=7335 rows=1610) (actual time=0.314..36.6 rows=1081 loops=3)\n            -> Nested loop inner join  (cost=6208 rows=3221) (actual time=0.311..35.1 rows=1186 loops=3)\n                -> Filter: ((t.request_at = d.request_at) and (t.`status` <> 'completed'))  (cost=3953 rows=6442) (actual time=0.306..33.4 rows=1186 loops=3)\n                    -> Table scan on t  (cost=3953 rows=96628) (actual time=0.278..20.8 rows=100000 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00114..0.00124 rows=1 loops=3557)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=954e-6..984e-6 rows=1 loops=3557)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00105..0.00113 rows=0.912 loops=3557)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=864e-6..894e-6 rows=1 loops=3557)\n-> Select #5 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=6369 rows=1) (actual time=44.3..44.3 rows=1 loops=3)\n        -> Nested loop inner join  (cost=6128 rows=2416) (actual time=0.321..44.1 rows=3686 loops=3)\n            -> Nested loop inner join  (cost=4437 rows=4831) (actual time=0.314..38.7 rows=4044 loops=3)\n                -> Filter: (t.request_at = d.request_at)  (cost=1055 rows=9663) (actual time=0.309..33.2 rows=4044 loops=3)\n                    -> Table scan on t  (cost=1055 rows=96628) (actual time=0.305..21.3 rows=100000 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.0011..0.0012 rows=1 loops=12132)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=923e-6..955e-6 rows=1 loops=12132)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00107..0.00116 rows=0.911 loops=12132)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=883e-6..914e-6 rows=1 loops=12132)\n"
+        },
+        {
+          "solution": "02_join_users_twice",
+          "status": "ok",
+          "median_s": 0.05835287800005062,
+          "times_s": [
+            0.05900952699994377,
+            0.05835287800005062,
+            0.0580524060001153
+          ],
+          "result_rows": 3,
+          "result_digest": "541839f75d36bc35165454769902ee752df62fe1",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=73.4..73.4 rows=3 loops=1)\n    -> Aggregate using temporary table  (actual time=73.4..73.4 rows=3 loops=1)\n        -> Nested loop inner join  (cost=15387 rows=2684) (actual time=0.37..66.5 rows=11057 loops=1)\n            -> Nested loop inner join  (cost=13508 rows=5368) (actual time=0.368..53 rows=12132 loops=1)\n                -> Filter: (t.request_at between '2013-10-01' and '2013-10-03')  (cost=9751 rows=10735) (actual time=0.36..38.5 rows=12132 loops=1)\n                    -> Table scan on t  (cost=9751 rows=96628) (actual time=0.358..22.2 rows=100000 loops=1)\n                -> Filter: (c.banned = 'No')  (cost=0.25 rows=0.5) (actual time=936e-6..0.00103 rows=1 loops=12132)\n                    -> Single-row index lookup on c using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=761e-6..791e-6 rows=1 loops=12132)\n            -> Filter: (d.banned = 'No')  (cost=0.25 rows=0.5) (actual time=863e-6..949e-6 rows=0.911 loops=12132)\n                -> Single-row index lookup on d using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=678e-6..708e-6 rows=1 loops=12132)\n"
+        },
+        {
+          "solution": "03_filter_then_aggregate",
+          "status": "ok",
+          "median_s": 0.0604790590000448,
+          "times_s": [
+            0.05910106500004986,
+            0.06605674599995837,
+            0.0604790590000448
+          ],
+          "result_rows": 3,
+          "result_digest": "541839f75d36bc35165454769902ee752df62fe1",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=76..76 rows=3 loops=1)\n    -> Aggregate using temporary table  (actual time=76..76 rows=3 loops=1)\n        -> Nested loop inner join  (cost=15387 rows=2684) (actual time=0.319..68.2 rows=11057 loops=1)\n            -> Nested loop inner join  (cost=13508 rows=5368) (actual time=0.317..53.9 rows=12132 loops=1)\n                -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=9751 rows=10735) (actual time=0.309..38.5 rows=12132 loops=1)\n                    -> Table scan on Trips  (cost=9751 rows=96628) (actual time=0.308..22.3 rows=100000 loops=1)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00101..0.00111 rows=1 loops=12132)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=Trips.client_id)  (cost=0.25 rows=1) (actual time=831e-6..861e-6 rows=1 loops=12132)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=926e-6..0.00101 rows=0.911 loops=12132)\n                -> Single-row index lookup on Users using PRIMARY (users_id=Trips.driver_id)  (cost=0.25 rows=1) (actual time=742e-6..773e-6 rows=1 loops=12132)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Users": 25000,
+        "Trips": 100000
+      },
+      "load_seconds": 1.255,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.04339764400015156,
+          "times_s": [
+            0.04145645199992032,
+            0.04604860400013422,
+            0.04339764400015156
+          ],
+          "result_rows": 3,
+          "result_digest": "541839f75d36bc35165454769902ee752df62fe1",
+          "explain_analyze": "-> Filter: ((select #9) > 0)  (cost=9.17..3.29 rows=7) (actual time=11.1..28.9 rows=3 loops=1)\n    -> Table scan on d  (cost=10.5..12.7 rows=7) (actual time=0.0426..0.0493 rows=3 loops=1)\n        -> Materialize  (cost=10.1..10.1 rows=7) (actual time=0.0414..0.0414 rows=3 loops=1)\n            -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=9.45 rows=7) (actual time=0.021..0.0335 rows=3 loops=1)\n                -> Covering index skip scan for deduplication on Trips using idx_trips_day_users_status over ('2013-10-01' <= request_at <= '2013-10-03')  (cost=9.45 rows=7) (actual time=0.0194..0.0313 rows=3 loops=1)\n    -> Select #9 (subquery in condition; dependent)\n        -> Aggregate: count(0)  (cost=2267 rows=1) (actual time=9.59..9.59 rows=1 loops=3)\n            -> Nested loop inner join  (cost=2181 rows=863) (actual time=0.0825..9.37 rows=3686 loops=3)\n                -> Nested loop inner join  (cost=1577 rows=1726) (actual time=0.0797..5.1 rows=4044 loops=3)\n                    -> Covering index lookup on t using idx_trips_day_users_status (request_at=d.request_at)  (cost=369 rows=3451) (actual time=0.0752..1.21 rows=4044 loops=3)\n                    -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=699e-6..793e-6 rows=1 loops=12132)\n                        -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=520e-6..551e-6 rows=1 loops=12132)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=809e-6..894e-6 rows=0.911 loops=12132)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=627e-6..657e-6 rows=1 loops=12132)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1520 rows=1) (actual time=4.2..4.2 rows=1 loops=3)\n        -> Nested loop inner join  (cost=1462 rows=575) (actual time=0.0911..4.14 rows=1081 loops=3)\n            -> Nested loop inner join  (cost=1059 rows=1150) (actual time=0.0874..2.92 rows=1186 loops=3)\n                -> Filter: (t.`status` <> 'completed')  (cost=254 rows=2301) (actual time=0.0834..1.7 rows=1186 loops=3)\n                    -> Covering index lookup on t using idx_trips_day_users_status (request_at=d.request_at)  (cost=254 rows=3451) (actual time=0.082..1.25 rows=4044 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=765e-6..858e-6 rows=1 loops=3557)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=589e-6..619e-6 rows=1 loops=3557)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=780e-6..865e-6 rows=0.912 loops=3557)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=600e-6..630e-6 rows=1 loops=3557)\n-> Select #5 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=2267 rows=1) (actual time=9.2..9.2 rows=1 loops=3)\n        -> Nested loop inner join  (cost=2181 rows=863) (actual time=0.0864..9.01 rows=3686 loops=3)\n            -> Nested loop inner join  (cost=1577 rows=1726) (actual time=0.0832..4.9 rows=4044 loops=3)\n                -> Covering index lookup on t using idx_trips_day_users_status (request_at=d.request_at)  (cost=369 rows=3451) (actual time=0.0748..1.2 rows=4044 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=655e-6..749e-6 rows=1 loops=12132)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=489e-6..519e-6 rows=1 loops=12132)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=769e-6..856e-6 rows=0.911 loops=12132)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=587e-6..618e-6 rows=1 loops=12132)\n"
+        },
+        {
+          "solution": "02_join_users_twice",
+          "status": "ok",
+          "median_s": 0.022598311000137983,
+          "times_s": [
+            0.022087721999923815,
+            0.022598311000137983,
+            0.02297407699984433
+          ],
+          "result_rows": 3,
+          "result_digest": "541839f75d36bc35165454769902ee752df62fe1",
+          "explain_analyze": "-> Group aggregate: avg((t.`status` <> 'completed'))  (cost=17579 rows=29) (actual time=12.5..33.3 rows=3 loops=1)\n    -> Nested loop inner join  (cost=16999 rows=5808) (actual time=0.607..30.2 rows=11057 loops=1)\n        -> Nested loop inner join  (cost=12933 rows=11615) (actual time=0.605..18.1 rows=12132 loops=1)\n            -> Filter: (t.request_at between '2013-10-01' and '2013-10-03')  (cost=4803 rows=23230) (actual time=0.599..6.99 rows=12132 loops=1)\n                -> Covering index range scan on t using idx_trips_day_users_status over ('2013-10-01' <= request_at <= '2013-10-03')  (cost=4803 rows=23230) (actual time=0.596..4.08 rows=12132 loops=1)\n            -> Filter: (c.banned = 'No')  (cost=0.25 rows=0.5) (actual time=658e-6..752e-6 rows=1 loops=12132)\n                -> Single-row index lookup on c using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=491e-6..521e-6 rows=1 loops=12132)\n        -> Filter: (d.banned = 'No')  (cost=0.25 rows=0.5) (actual time=754e-6..839e-6 rows=0.911 loops=12132)\n            -> Single-row index lookup on d using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=573e-6..603e-6 rows=1 loops=12132)\n"
+        },
+        {
+          "solution": "03_filter_then_aggregate",
+          "status": "ok",
+          "median_s": 0.023513347999823964,
+          "times_s": [
+            0.023020867000013823,
+            0.023513347999823964,
+            0.024228244999903836
+          ],
+          "result_rows": 3,
+          "result_digest": "541839f75d36bc35165454769902ee752df62fe1",
+          "explain_analyze": "-> Group aggregate: count(0), sum((Trips.`status` <> 'completed'))  (cost=17579 rows=76.2) (actual time=12.5..34.3 rows=3 loops=1)\n    -> Nested loop inner join  (cost=16999 rows=5808) (actual time=0.551..31 rows=11057 loops=1)\n        -> Nested loop inner join  (cost=12933 rows=11615) (actual time=0.549..18.6 rows=12132 loops=1)\n            -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=4803 rows=23230) (actual time=0.543..7.07 rows=12132 loops=1)\n                -> Covering index range scan on Trips using idx_trips_day_users_status over ('2013-10-01' <= request_at <= '2013-10-03')  (cost=4803 rows=23230) (actual time=0.542..4.05 rows=12132 loops=1)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=689e-6..784e-6 rows=1 loops=12132)\n                -> Single-row index lookup on Users using PRIMARY (users_id=Trips.client_id)  (cost=0.25 rows=1) (actual time=508e-6..538e-6 rows=1 loops=12132)\n        -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=782e-6..867e-6 rows=0.911 loops=12132)\n            -> Single-row index lookup on Users using PRIMARY (users_id=Trips.driver_id)  (cost=0.25 rows=1) (actual time=592e-6..623e-6 rows=1 loops=12132)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Users": 250000,
+        "Trips": 1000000
+      },
+      "load_seconds": 11.656,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 3.4452670959999523,
+          "times_s": [
+            3.4733510510000087,
+            3.4452670959999523,
+            3.390844356000116
+          ],
+          "result_rows": 3,
+          "result_digest": "5255c2e588e7818e149602af3a2c289e6fc087ec",
+          "explain_analyze": "-> Filter: ((select #9) > 0)  (cost=124046..12467 rows=110792) (actual time=813..1711 rows=3 loops=1)\n    -> Table scan on d  (cost=124047..125434 rows=110793) (actual time=340..340 rows=3 loops=1)\n        -> Materialize  (cost=124047..124047 rows=110793) (actual time=340..340 rows=3 loops=1)\n            -> Table scan on <temporary>  (cost=111580..112967 rows=110793) (actual time=340..340 rows=3 loops=1)\n                -> Temporary table with deduplication  (cost=111580..111580 rows=110793) (actual time=340..340 rows=3 loops=1)\n                    -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=100501 rows=110793) (actual time=0.226..316 rows=124158 loops=1)\n                        -> Table scan on Trips  (cost=100501 rows=997234) (actual time=0.224..157 rows=1e+6 loops=1)\n    -> Select #9 (subquery in condition; dependent)\n        -> Aggregate: count(0)  (cost=65597 rows=1) (actual time=457..457 rows=1 loops=3)\n            -> Nested loop inner join  (cost=63104 rows=24931) (actual time=0.267..455 rows=37713 loops=3)\n                -> Nested loop inner join  (cost=45653 rows=49862) (actual time=0.263..383 rows=41386 loops=3)\n                    -> Filter: (t.request_at = d.request_at)  (cost=10750 rows=99723) (actual time=0.254..310 rows=41386 loops=3)\n                        -> Table scan on t  (cost=10750 rows=997234) (actual time=0.25..194 rows=1e+6 loops=3)\n                    -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00151..0.0016 rows=1 loops=124158)\n                        -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=0.00133..0.00136 rows=1 loops=124158)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00149..0.00158 rows=0.911 loops=124158)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=0.00131..0.00134 rows=1 loops=124158)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=77232 rows=1) (actual time=381..381 rows=1 loops=3)\n        -> Nested loop inner join  (cost=75570 rows=16621) (actual time=0.322..380 rows=11253 loops=3)\n            -> Nested loop inner join  (cost=63935 rows=33241) (actual time=0.318..357 rows=12360 loops=3)\n                -> Filter: ((t.request_at = d.request_at) and (t.`status` <> 'completed'))  (cost=40667 rows=66482) (actual time=0.312..333 rows=12360 loops=3)\n                    -> Table scan on t  (cost=40667 rows=997234) (actual time=0.282..207 rows=1e+6 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00166..0.00176 rows=1 loops=37080)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=0.00148..0.00151 rows=1 loops=37080)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00162..0.00171 rows=0.91 loops=37080)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=0.00144..0.00147 rows=1 loops=37080)\n-> Select #5 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=65597 rows=1) (actual time=470..470 rows=1 loops=3)\n        -> Nested loop inner join  (cost=63104 rows=24931) (actual time=0.269..467 rows=37713 loops=3)\n            -> Nested loop inner join  (cost=45653 rows=49862) (actual time=0.265..394 rows=41386 loops=3)\n                -> Filter: (t.request_at = d.request_at)  (cost=10750 rows=99723) (actual time=0.259..318 rows=41386 loops=3)\n                    -> Table scan on t  (cost=10750 rows=997234) (actual time=0.252..200 rows=1e+6 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00155..0.00165 rows=1 loops=124158)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=0.00137..0.0014 rows=1 loops=124158)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00153..0.00162 rows=0.911 loops=124158)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=0.00135..0.00138 rows=1 loops=124158)\n"
+        },
+        {
+          "solution": "02_join_users_twice",
+          "status": "ok",
+          "median_s": 0.7420573110000532,
+          "times_s": [
+            0.7420573110000532,
+            0.7322364990000096,
+            0.7720924729999297
+          ],
+          "result_rows": 3,
+          "result_digest": "5255c2e588e7818e149602af3a2c289e6fc087ec",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=894..894 rows=3 loops=1)\n    -> Aggregate using temporary table  (actual time=894..894 rows=3 loops=1)\n        -> Nested loop inner join  (cost=158667 rows=27698) (actual time=0.326..821 rows=113139 loops=1)\n            -> Nested loop inner join  (cost=139278 rows=55396) (actual time=0.323..609 rows=124158 loops=1)\n                -> Filter: (t.request_at between '2013-10-01' and '2013-10-03')  (cost=100501 rows=110793) (actual time=0.314..389 rows=124158 loops=1)\n                    -> Table scan on t  (cost=100501 rows=997234) (actual time=0.312..224 rows=1e+6 loops=1)\n                -> Filter: (c.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00152..0.00161 rows=1 loops=124158)\n                    -> Single-row index lookup on c using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=0.00134..0.00137 rows=1 loops=124158)\n            -> Filter: (d.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00145..0.00154 rows=0.911 loops=124158)\n                -> Single-row index lookup on d using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=0.00127..0.0013 rows=1 loops=124158)\n"
+        },
+        {
+          "solution": "03_filter_then_aggregate",
+          "status": "ok",
+          "median_s": 0.7429696259998764,
+          "times_s": [
+            0.7429696259998764,
+            0.7300409810000019,
+            0.7725082590000056
+          ],
+          "result_rows": 3,
+          "result_digest": "5255c2e588e7818e149602af3a2c289e6fc087ec",
+          "explain_analyze": "-> Table scan on <temporary>  (actual time=930..930 rows=3 loops=1)\n    -> Aggregate using temporary table  (actual time=930..930 rows=3 loops=1)\n        -> Nested loop inner join  (cost=158667 rows=27698) (actual time=0.322..844 rows=113139 loops=1)\n            -> Nested loop inner join  (cost=139278 rows=55396) (actual time=0.32..629 rows=124158 loops=1)\n                -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=100501 rows=110793) (actual time=0.313..407 rows=124158 loops=1)\n                    -> Table scan on Trips  (cost=100501 rows=997234) (actual time=0.312..236 rows=1e+6 loops=1)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00153..0.00162 rows=1 loops=124158)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=Trips.client_id)  (cost=0.25 rows=1) (actual time=0.00134..0.00138 rows=1 loops=124158)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00146..0.00155 rows=0.911 loops=124158)\n                -> Single-row index lookup on Users using PRIMARY (users_id=Trips.driver_id)  (cost=0.25 rows=1) (actual time=0.00128..0.00131 rows=1 loops=124158)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Users": 250000,
+        "Trips": 1000000
+      },
+      "load_seconds": 11.656,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.6594027830001323,
+          "times_s": [
+            0.6535644619998493,
+            0.6594027830001323,
+            0.6692754949999653
+          ],
+          "result_rows": 3,
+          "result_digest": "5255c2e588e7818e149602af3a2c289e6fc087ec",
+          "explain_analyze": "-> Filter: ((select #9) > 0)  (cost=9.17..3.29 rows=7) (actual time=143..394 rows=3 loops=1)\n    -> Table scan on d  (cost=10.5..12.7 rows=7) (actual time=0.0571..0.0655 rows=3 loops=1)\n        -> Materialize  (cost=10.1..10.1 rows=7) (actual time=0.0556..0.0556 rows=3 loops=1)\n            -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=9.45 rows=7) (actual time=0.0276..0.0454 rows=3 loops=1)\n                -> Covering index skip scan for deduplication on Trips using idx_trips_day_users_status over ('2013-10-01' <= request_at <= '2013-10-03')  (cost=9.45 rows=7) (actual time=0.0259..0.043 rows=3 loops=1)\n    -> Select #9 (subquery in condition; dependent)\n        -> Aggregate: count(0)  (cost=24256 rows=1) (actual time=131..131 rows=1 loops=3)\n            -> Nested loop inner join  (cost=23333 rows=9234) (actual time=0.502..129 rows=37713 loops=3)\n                -> Nested loop inner join  (cost=16869 rows=18467) (actual time=0.498..64.8 rows=41386 loops=3)\n                    -> Covering index lookup on t using idx_trips_day_users_status (request_at=d.request_at)  (cost=3942 rows=36935) (actual time=0.492..12.9 rows=41386 loops=3)\n                    -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=991e-6..0.00109 rows=1 loops=124158)\n                        -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=818e-6..849e-6 rows=1 loops=124158)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00131..0.00139 rows=0.911 loops=124158)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=0.00112..0.00115 rows=1 loops=124158)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=16254 rows=1) (actual time=55.2..55.2 rows=1 loops=3)\n        -> Nested loop inner join  (cost=15638 rows=6156) (actual time=0.511..54.5 rows=11253 loops=3)\n            -> Nested loop inner join  (cost=11329 rows=12312) (actual time=0.507..35.1 rows=12360 loops=3)\n                -> Filter: (t.`status` <> 'completed')  (cost=2711 rows=24623) (actual time=0.503..17.4 rows=12360 loops=3)\n                    -> Covering index lookup on t using idx_trips_day_users_status (request_at=d.request_at)  (cost=2711 rows=36935) (actual time=0.5..12.7 rows=41386 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00117..0.00126 rows=1 loops=37080)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=989e-6..0.00102 rows=1 loops=37080)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00133..0.00141 rows=0.91 loops=37080)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=0.00114..0.00117 rows=1 loops=37080)\n-> Select #5 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=24256 rows=1) (actual time=131..131 rows=1 loops=3)\n        -> Nested loop inner join  (cost=23333 rows=9234) (actual time=0.482..129 rows=37713 loops=3)\n            -> Nested loop inner join  (cost=16869 rows=18467) (actual time=0.478..65 rows=41386 loops=3)\n                -> Covering index lookup on t using idx_trips_day_users_status (request_at=d.request_at)  (cost=3942 rows=36935) (actual time=0.473..13 rows=41386 loops=3)\n                -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=996e-6..0.00109 rows=1 loops=124158)\n                    -> Single-row index lookup on Users using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=823e-6..854e-6 rows=1 loops=124158)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.0013..0.00139 rows=0.911 loops=124158)\n                -> Single-row index lookup on Users using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=0.00112..0.00115 rows=1 loops=124158)\n"
+        },
+        {
+          "solution": "02_join_users_twice",
+          "status": "ok",
+          "median_s": 0.3359200699999292,
+          "times_s": [
+            0.3415563899998233,
+            0.33389939700009563,
+            0.3359200699999292
+          ],
+          "result_rows": 3,
+          "result_digest": "5255c2e588e7818e149602af3a2c289e6fc087ec",
+          "explain_analyze": "-> Group aggregate: avg((t.`status` <> 'completed'))  (cost=182417 rows=27) (actual time=168..452 rows=3 loops=1)\n    -> Nested loop inner join  (cost=176390 rows=60266) (actual time=0.557..420 rows=113139 loops=1)\n        -> Nested loop inner join  (cost=134204 rows=120532) (actual time=0.555..230 rows=124158 loops=1)\n            -> Filter: (t.request_at between '2013-10-01' and '2013-10-03')  (cost=49832 rows=241064) (actual time=0.547..74.1 rows=124158 loops=1)\n                -> Covering index range scan on t using idx_trips_day_users_status over ('2013-10-01' <= request_at <= '2013-10-03')  (cost=49832 rows=241064) (actual time=0.546..43.2 rows=124158 loops=1)\n            -> Filter: (c.banned = 'No')  (cost=0.25 rows=0.5) (actual time=993e-6..0.00109 rows=1 loops=124158)\n                -> Single-row index lookup on c using PRIMARY (users_id=t.client_id)  (cost=0.25 rows=1) (actual time=823e-6..854e-6 rows=1 loops=124158)\n        -> Filter: (d.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00129..0.00137 rows=0.911 loops=124158)\n            -> Single-row index lookup on d using PRIMARY (users_id=t.driver_id)  (cost=0.25 rows=1) (actual time=0.00111..0.00114 rows=1 loops=124158)\n"
+        },
+        {
+          "solution": "03_filter_then_aggregate",
+          "status": "ok",
+          "median_s": 0.3387657069999932,
+          "times_s": [
+            0.34104337799999485,
+            0.3387657069999932,
+            0.33569383899998684
+          ],
+          "result_rows": 3,
+          "result_digest": "5255c2e588e7818e149602af3a2c289e6fc087ec",
+          "explain_analyze": "-> Group aggregate: count(0), sum((Trips.`status` <> 'completed'))  (cost=182417 rows=245) (actual time=174..554 rows=3 loops=1)\n    -> Nested loop inner join  (cost=176390 rows=60266) (actual time=0.555..511 rows=113139 loops=1)\n        -> Nested loop inner join  (cost=134204 rows=120532) (actual time=0.553..283 rows=124158 loops=1)\n            -> Filter: (Trips.request_at between '2013-10-01' and '2013-10-03')  (cost=49832 rows=241064) (actual time=0.545..96.5 rows=124158 loops=1)\n                -> Covering index range scan on Trips using idx_trips_day_users_status over ('2013-10-01' <= request_at <= '2013-10-03')  (cost=49832 rows=241064) (actual time=0.544..58.5 rows=124158 loops=1)\n            -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00123..0.00133 rows=1 loops=124158)\n                -> Single-row index lookup on Users using PRIMARY (users_id=Trips.client_id)  (cost=0.25 rows=1) (actual time=0.00103..0.00106 rows=1 loops=124158)\n        -> Filter: (Users.banned = 'No')  (cost=0.25 rows=0.5) (actual time=0.00157..0.00166 rows=0.911 loops=124158)\n            -> Single-row index lookup on Users using PRIMARY (users_id=Trips.driver_id)  (cost=0.25 rows=1) (actual time=0.00136..0.00139 rows=1 loops=124158)\n"
+        }
+      ]
+    }
+  ]
+}

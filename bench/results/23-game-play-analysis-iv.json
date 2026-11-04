@@ -1,0 +1,200 @@
+{
+  "problem": "23-game-play-analysis-iv",
+  "generated_at": "2026-11-04T15:35:16+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes"
+    ]
+  },
+  "solutions": [
+    "01_join_first_login_and_count",
+    "02_first_row_and_lead",
+    "03_left_join_average"
+  ],
+  "optimal": "03_left_join_average",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Activity": 1000
+      },
+      "load_seconds": 0.024,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_join_first_login_and_count",
+          "status": "ok",
+          "median_s": 0.0016469580000375572,
+          "times_s": [
+            0.0017149949999293312,
+            0.0016469580000375572,
+            0.0015941090000524127
+          ],
+          "result_rows": 1,
+          "result_digest": "2dea8d533474de058505ee1509c39ba3a1ca98dc",
+          "explain_analyze": "-> Aggregate: count(distinct a.player_id)  (cost=223 rows=1) (actual time=1.15..1.15 rows=1 loops=1)\n    -> Nested loop inner join  (cost=197 rows=255) (actual time=0.495..1.14 rows=69 loops=1)\n        -> Table scan on f  (cost=103..108 rows=255) (actual time=0.48..0.511 rows=254 loops=1)\n            -> Materialize  (cost=102..102 rows=255) (actual time=0.479..0.479 rows=254 loops=1)\n                -> Covering index skip scan for grouping on Activity using PRIMARY  (cost=77 rows=255) (actual time=0.0095..0.404 rows=254 loops=1)\n        -> Filter: (a.event_date = (f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.00221..0.00223 rows=0.272 loops=254)\n            -> Single-row covering index lookup on a using PRIMARY (player_id=f.player_id, event_date=(f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.00204..0.00205 rows=0.272 loops=254)\n-> Select #2 (subquery in projection; run only once)\n    -> Aggregate: count(distinct Activity.player_id)  (cost=201 rows=1) (actual time=0.415..0.415 rows=1 loops=1)\n        -> Covering index scan on Activity using PRIMARY  (cost=101 rows=1000) (actual time=0.0484..0.226 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "02_first_row_and_lead",
+          "status": "ok",
+          "median_s": 0.0025687409997772193,
+          "times_s": [
+            0.0025687409997772193,
+            0.0024374459999307874,
+            0.0026350640000600833
+          ],
+          "result_rows": 1,
+          "result_digest": "2dea8d533474de058505ee1509c39ba3a1ca98dc",
+          "explain_analyze": "-> Aggregate: avg((case when ((to_days(x.next_date) - to_days(x.event_date)) = 1) then 1 else 0 end))  (cost=3.5..3.5 rows=1) (actual time=2.07..2.07 rows=1 loops=1)\n    -> Index lookup on x using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=2.01..2.04 rows=254 loops=1)\n        -> Materialize CTE x  (cost=0..0 rows=0) (actual time=2.01..2.01 rows=1000 loops=1)\n            -> Window aggregate with buffering: row_number() OVER w, lead(Activity.event_date) OVER w  (actual time=0.284..1.49 rows=1000 loops=1)\n                -> Sort: Activity.player_id, Activity.event_date  (cost=101 rows=1000) (actual time=0.277..0.317 rows=1000 loops=1)\n                    -> Index scan on Activity using PRIMARY  (cost=101 rows=1000) (actual time=0.0381..0.155 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_left_join_average",
+          "status": "ok",
+          "median_s": 0.0013938550000602845,
+          "times_s": [
+            0.001418209999883402,
+            0.0013938550000602845,
+            0.0013328110001111781
+          ],
+          "result_rows": 1,
+          "result_digest": "2dea8d533474de058505ee1509c39ba3a1ca98dc",
+          "explain_analyze": "-> Aggregate: avg((a.player_id is not null))  (cost=223 rows=1) (actual time=0.934..0.934 rows=1 loops=1)\n    -> Nested loop left join  (cost=197 rows=255) (actual time=0.446..0.913 rows=254 loops=1)\n        -> Table scan on f  (cost=103..108 rows=255) (actual time=0.441..0.466 rows=254 loops=1)\n            -> Materialize  (cost=102..102 rows=255) (actual time=0.441..0.441 rows=254 loops=1)\n                -> Covering index skip scan for grouping on Activity using PRIMARY  (cost=77 rows=255) (actual time=0.0127..0.374 rows=254 loops=1)\n        -> Filter: (a.event_date = (f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.0016..0.00162 rows=0.272 loops=254)\n            -> Single-row covering index lookup on a using PRIMARY (player_id=f.player_id, event_date=(f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.00146..0.00146 rows=0.272 loops=254)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Activity": 100000
+      },
+      "load_seconds": 1.136,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_join_first_login_and_count",
+          "status": "ok",
+          "median_s": 0.1009075900001335,
+          "times_s": [
+            0.10202716499998132,
+            0.1009075900001335,
+            0.10045885800013821
+          ],
+          "result_rows": 1,
+          "result_digest": "ac37a0bd229e50fb9a20a2ba23dae26dd66862e3",
+          "explain_analyze": "-> Aggregate: count(distinct a.player_id)  (cost=21247 rows=1) (actual time=85.9..85.9 rows=1 loops=1)\n    -> Nested loop inner join  (cost=18789 rows=24577) (actual time=43.6..84.4 rows=5762 loops=1)\n        -> Table scan on f  (cost=9878..10187 rows=24577) (actual time=43.5..45.9 rows=23830 loops=1)\n            -> Materialize  (cost=9878..9878 rows=24577) (actual time=43.5..43.5 rows=23830 loops=1)\n                -> Covering index skip scan for grouping on Activity using PRIMARY  (cost=7420 rows=24577) (actual time=0.0103..37.6 rows=23830 loops=1)\n        -> Filter: (a.event_date = (f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.00148..0.0015 rows=0.242 loops=23830)\n            -> Single-row covering index lookup on a using PRIMARY (player_id=f.player_id, event_date=(f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.00134..0.00135 rows=0.242 loops=23830)\n-> Select #2 (subquery in projection; run only once)\n    -> Aggregate: count(distinct Activity.player_id)  (cost=21935 rows=1) (actual time=28.1..28.1 rows=1 loops=1)\n        -> Covering index scan on Activity using PRIMARY  (cost=11012 rows=109236) (actual time=0.836..13.3 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "02_first_row_and_lead",
+          "status": "ok",
+          "median_s": 0.21673845200007236,
+          "times_s": [
+            0.21683187999997244,
+            0.21650577400009752,
+            0.21673845200007236
+          ],
+          "result_rows": 1,
+          "result_digest": "ac37a0bd229e50fb9a20a2ba23dae26dd66862e3",
+          "explain_analyze": "-> Aggregate: avg((case when ((to_days(x.next_date) - to_days(x.event_date)) = 1) then 1 else 0 end))  (cost=3.5..3.5 rows=1) (actual time=227..227 rows=1 loops=1)\n    -> Index lookup on x using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=221..224 rows=23830 loops=1)\n        -> Materialize CTE x  (cost=0..0 rows=0) (actual time=221..221 rows=100000 loops=1)\n            -> Window aggregate with buffering: row_number() OVER w, lead(Activity.event_date) OVER w  (actual time=31..148 rows=100000 loops=1)\n                -> Sort: Activity.player_id, Activity.event_date  (cost=11012 rows=109236) (actual time=31..35.1 rows=100000 loops=1)\n                    -> Index scan on Activity using PRIMARY  (cost=11012 rows=109236) (actual time=1.05..14.9 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_left_join_average",
+          "status": "ok",
+          "median_s": 0.07680733899996994,
+          "times_s": [
+            0.07710580299999492,
+            0.07680733899996994,
+            0.07674998800007415
+          ],
+          "result_rows": 1,
+          "result_digest": "ac37a0bd229e50fb9a20a2ba23dae26dd66862e3",
+          "explain_analyze": "-> Aggregate: avg((a.player_id is not null))  (cost=21247 rows=1) (actual time=87.1..87.1 rows=1 loops=1)\n    -> Nested loop left join  (cost=18789 rows=24577) (actual time=43.6..85.5 rows=23830 loops=1)\n        -> Table scan on f  (cost=9878..10187 rows=24577) (actual time=43.6..45.9 rows=23830 loops=1)\n            -> Materialize  (cost=9878..9878 rows=24577) (actual time=43.5..43.5 rows=23830 loops=1)\n                -> Covering index skip scan for grouping on Activity using PRIMARY  (cost=7420 rows=24577) (actual time=0.0118..37.8 rows=23830 loops=1)\n        -> Filter: (a.event_date = (f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.00151..0.00153 rows=0.242 loops=23830)\n            -> Single-row covering index lookup on a using PRIMARY (player_id=f.player_id, event_date=(f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.00137..0.00137 rows=0.242 loops=23830)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Activity": 1000000
+      },
+      "load_seconds": 11.268,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_join_first_login_and_count",
+          "status": "ok",
+          "median_s": 1.1528396230000908,
+          "times_s": [
+            1.1527648239998598,
+            1.1528396230000908,
+            1.1867895360001057
+          ],
+          "result_rows": 1,
+          "result_digest": "ac37a0bd229e50fb9a20a2ba23dae26dd66862e3",
+          "explain_analyze": "-> Aggregate: count(distinct a.player_id)  (cost=225973 rows=1) (actual time=992..992 rows=1 loops=1)\n    -> Nested loop inner join  (cost=201258 rows=247150) (actual time=506..971 rows=58075 loops=1)\n        -> Table scan on f  (cost=111664..114756 rows=247150) (actual time=506..530 rows=237145 loops=1)\n            -> Materialize  (cost=111664..111664 rows=247150) (actual time=506..506 rows=237145 loops=1)\n                -> Covering index skip scan for grouping on Activity using PRIMARY  (cost=86949 rows=247150) (actual time=0.0167..447 rows=237145 loops=1)\n        -> Filter: (a.event_date = (f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.00173..0.00175 rows=0.245 loops=237145)\n            -> Single-row covering index lookup on a using PRIMARY (player_id=f.player_id, event_date=(f.first_login + interval 1 day))  (cost=0.25 rows=1) (actual time=0.00159..0.00159 rows=0.245 loops=237145)\n-> Select #2 (subquery in projection; run only once)\n    -> Aggregate: count(distinct Activity.player_id)  (cost=209848 rows=1) (actual time=299..299 rows=1 loops=1)\n        -> Covering index scan on Activity using PRIMARY  (cost=105297 rows=1.05e+6) (actual time=0.857..136 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "02_first_row_and_lead",
+          "status": "ok",
+          "median_s": 5.6552940560000025,
+          "times_s": [
+            5.704730245000064,
+            5.650373266000088,
+            5.6552940560000025
+          ],
+          "result_rows": 1,
+          "result_digest": "ac37a0bd229e50fb9a20a2ba23dae26dd66862e3",
+          "explain_analyze": "-> Aggregate: avg((case when ((to_days(x.next_date) - to_days(x.event_date)) = 1) then 1 else 0 end))  (cost=3.5..3.5 rows=1) (actual time=5792..5792 rows=1 loops=1)\n    -> Index lookup on x using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=5505..5762 rows=237145 loops=1)\n        -> Materialize CTE x  (cost=0..0 rows=0) (actual time=5505..5505 rows=1e+6 loops=1)\n            -> Window aggregate with buffering: row_number() OVER w, lead(Activity.event_date) OVER w  (actual time=350..3584 rows=1e+6 loops=1)\n                -> Sort: Activity.player_id, Activity.event_date  (cost=99716 rows=989706) (actual time=350..397 rows=1e+6 loops=1)\n                    -> Index scan on Activity using PRIMARY  (cost=99716 rows=989706) (actual time=1.17..150 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_left_join_average",
+          "status": "ok",
+          "median_s": 0.8886354800001754,
+          "times_s": [
+            0.8886354800001754,
+            0.9102126789998692,
+            0.8875443619999714
+          ],
+          "result_rows": 1,
+          "result_digest": "ac37a0bd229e50fb9a20a2ba23dae26dd66862e3",
+          "explain_analyze": "-> Aggregate: avg((a.player_id is not null))  (cost=219559 rows=1) (actual time=999..999 rows=1 loops=1)\n    -> Nested loop left join  (cost=196163 rows=233958) (actual time=517..981 rows=237145 loops=1)\n        -> Table scan on f  (cost=105744..108671 rows=233958) (actual time=517..540 rows=237145 loops=1)\n            -> Materialize  (cost=105744..105744 rows=233958) (actual time=517..517 rows=237145 loops=1)\n                -> Covering index skip scan for grouping on Activity using PRIMARY  (cost=82348 rows=233958) (actual time=0.0142..456 rows=237145 loops=1)\n        -> Filter: (a.event_date = (f.first_login + interval 1 day))  (cost=0.274 rows=1) (actual time=0.0017..0.00173 rows=0.245 loops=237145)\n            -> Single-row covering index lookup on a using PRIMARY (player_id=f.player_id, event_date=(f.first_login + interval 1 day))  (cost=0.274 rows=1) (actual time=0.00156..0.00157 rows=0.245 loops=237145)\n"
+        }
+      ]
+    }
+  ]
+}

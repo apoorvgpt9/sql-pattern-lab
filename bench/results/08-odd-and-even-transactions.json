@@ -1,0 +1,336 @@
+{
+  "problem": "08-odd-and-even-transactions",
+  "generated_at": "2026-11-04T15:11:40+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subqueries",
+    "02_two_aggregates_joined",
+    "03_conditional_aggregation"
+  ],
+  "optimal": "03_conditional_aggregation",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "mem_total": "8121092 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "transactions": 1000
+      },
+      "load_seconds": 0.02,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.02464183800000086,
+          "times_s": [
+            0.024750558000000922,
+            0.02464183800000086,
+            0.024262061000001722
+          ],
+          "result_rows": 79,
+          "result_digest": "e06cdad29073affa3ecde24c5c05492c0c977dcb",
+          "explain_analyze": "-> Sort: d.transaction_date  (cost=1428..1428 rows=1000) (actual time=0.391..0.396 rows=79 loops=1)\n    -> Table scan on d  (cost=316..331 rows=1000) (actual time=0.367..0.373 rows=79 loops=1)\n        -> Materialize  (cost=316..316 rows=1000) (actual time=0.367..0.367 rows=79 loops=1)\n            -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.351..0.356 rows=79 loops=1)\n                -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.35..0.35 rows=79 loops=1)\n                    -> Table scan on transactions  (cost=101 rows=1000) (actual time=0.0375..0.162 rows=1000 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum(t.amount)  (cost=21 rows=1) (actual time=0.191..0.191 rows=1 loops=79)\n        -> Filter: ((t.transaction_date = d.transaction_date) and ((t.amount % 2) <> 0))  (cost=11 rows=100) (actual time=0.0846..0.191 rows=5.61 loops=79)\n            -> Table scan on t  (cost=11 rows=1000) (actual time=0.0271..0.133 rows=1000 loops=79)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: sum(t.amount)  (cost=21 rows=1) (actual time=0.189..0.189 rows=1 loops=79)\n        -> Filter: ((t.transaction_date = d.transaction_date) and ((t.amount % 2) = 0))  (cost=11 rows=100) (actual time=0.0748..0.189 rows=6.84 loops=79)\n            -> Table scan on t  (cost=11 rows=1000) (actual time=0.0277..0.134 rows=1000 loops=79)\n"
+        },
+        {
+          "solution": "02_two_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.0022758060000001024,
+          "times_s": [
+            0.0022874599999980205,
+            0.0022758060000001024,
+            0.002221104999996726
+          ],
+          "result_rows": 79,
+          "result_digest": "e06cdad29073affa3ecde24c5c05492c0c977dcb",
+          "explain_analyze": "-> Nested loop left join  (cost=28928 rows=0) (actual time=1.33..1.44 rows=79 loops=1)\n    -> Nested loop left join  (cost=3928 rows=0) (actual time=0.858..0.902 rows=79 loops=1)\n        -> Sort: d.transaction_date  (cost=1428..1428 rows=1000) (actual time=0.427..0.43 rows=79 loops=1)\n            -> Table scan on d  (cost=316..331 rows=1000) (actual time=0.407..0.412 rows=79 loops=1)\n                -> Materialize CTE days  (cost=316..316 rows=1000) (actual time=0.406..0.406 rows=79 loops=1)\n                    -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.391..0.396 rows=79 loops=1)\n                        -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.39..0.39 rows=79 loops=1)\n                            -> Table scan on transactions  (cost=101 rows=1000) (actual time=0.0353..0.194 rows=1000 loops=1)\n        -> Index lookup on o using <auto_key0> (transaction_date=d.transaction_date)  (cost=0.25..2.5 rows=10) (actual time=0.00578..0.00586 rows=0.772 loops=79)\n            -> Materialize CTE odd_day  (cost=0..0 rows=0) (actual time=0.429..0.429 rows=61 loops=1)\n                -> Table scan on <temporary>  (actual time=0.403..0.408 rows=61 loops=1)\n                    -> Aggregate using temporary table  (actual time=0.403..0.403 rows=61 loops=1)\n                        -> Filter: ((transactions.amount % 2) <> 0)  (cost=101 rows=1000) (actual time=0.0345..0.226 rows=443 loops=1)\n                            -> Table scan on transactions  (cost=101 rows=1000) (actual time=0.0337..0.156 rows=1000 loops=1)\n    -> Index lookup on e using <auto_key0> (transaction_date=d.transaction_date)  (cost=0.25..2.5 rows=10) (actual time=0.00662..0.00672 rows=0.848 loops=79)\n        -> Materialize CTE even_day  (cost=0..0 rows=0) (actual time=0.465..0.465 rows=67 loops=1)\n            -> Table scan on <temporary>  (actual time=0.441..0.445 rows=67 loops=1)\n                -> Aggregate using temporary table  (actual time=0.44..0.44 rows=67 loops=1)\n                    -> Filter: ((transactions.amount % 2) = 0)  (cost=101 rows=1000) (actual time=0.04..0.229 rows=540 loops=1)\n                        -> Table scan on transactions  (cost=101 rows=1000) (actual time=0.0395..0.163 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.0016311489999978335,
+          "times_s": [
+            0.0016930950000002554,
+            0.001626805000000786,
+            0.0016311489999978335
+          ],
+          "result_rows": 79,
+          "result_digest": "e06cdad29073affa3ecde24c5c05492c0c977dcb",
+          "explain_analyze": "-> Sort: transactions.transaction_date  (actual time=0.75..0.753 rows=79 loops=1)\n    -> Table scan on <temporary>  (actual time=0.731..0.736 rows=79 loops=1)\n        -> Aggregate using temporary table  (actual time=0.73..0.73 rows=79 loops=1)\n            -> Table scan on transactions  (cost=101 rows=1000) (actual time=0.0379..0.179 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "transactions": 1000
+      },
+      "load_seconds": 0.02,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.002176519000002486,
+          "times_s": [
+            0.0021163050000012618,
+            0.002176519000002486,
+            0.002438505999997176
+          ],
+          "result_rows": 79,
+          "result_digest": "e06cdad29073affa3ecde24c5c05492c0c977dcb",
+          "explain_analyze": "-> Sort: d.transaction_date  (cost=95.3..95.3 rows=80) (actual time=0.138..0.142 rows=79 loops=1)\n    -> Table scan on d  (cost=33.3..36.8 rows=80) (actual time=0.12..0.125 rows=79 loops=1)\n        -> Materialize  (cost=33.2..33.2 rows=80) (actual time=0.119..0.119 rows=79 loops=1)\n            -> Covering index skip scan for deduplication on transactions using idx_tx_date_amount  (cost=25.2 rows=80) (actual time=0.00959..0.102 rows=79 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum(t.amount)  (cost=3.17 rows=1) (actual time=0.0059..0.00592 rows=1 loops=79)\n        -> Filter: ((t.amount % 2) <> 0)  (cost=1.9 rows=12.7) (actual time=0.00269..0.00519 rows=5.61 loops=79)\n            -> Covering index lookup on t using idx_tx_date_amount (transaction_date=d.transaction_date)  (cost=1.9 rows=12.7) (actual time=0.00229..0.00424 rows=12.7 loops=79)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: sum(t.amount)  (cost=3.17 rows=1) (actual time=0.00563..0.00565 rows=1 loops=79)\n        -> Filter: ((t.amount % 2) = 0)  (cost=1.9 rows=12.7) (actual time=0.00247..0.00494 rows=6.84 loops=79)\n            -> Covering index lookup on t using idx_tx_date_amount (transaction_date=d.transaction_date)  (cost=1.9 rows=12.7) (actual time=0.00219..0.00392 rows=12.7 loops=79)\n"
+        },
+        {
+          "solution": "02_two_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.0018069809999943232,
+          "times_s": [
+            0.0018138490000012553,
+            0.0018069809999943232,
+            0.0017556199999972932
+          ],
+          "result_rows": 79,
+          "result_digest": "e06cdad29073affa3ecde24c5c05492c0c977dcb",
+          "explain_analyze": "-> Nested loop left join  (cost=52855 rows=499280) (actual time=0.711..0.796 rows=79 loops=1)\n    -> Nested loop left join  (cost=927 rows=6320) (actual time=0.436..0.479 rows=79 loops=1)\n        -> Sort: d.transaction_date  (cost=95.3..95.3 rows=80) (actual time=0.165..0.167 rows=79 loops=1)\n            -> Table scan on d  (cost=33.3..36.8 rows=80) (actual time=0.147..0.153 rows=79 loops=1)\n                -> Materialize CTE days  (cost=33.2..33.2 rows=80) (actual time=0.147..0.147 rows=79 loops=1)\n                    -> Covering index skip scan for deduplication on transactions using idx_tx_date_amount  (cost=25.2 rows=80) (actual time=0.00971..0.13 rows=79 loops=1)\n        -> Index lookup on o using <auto_key0> (transaction_date=d.transaction_date)  (cost=209..211 rows=10) (actual time=0.00374..0.00382 rows=0.772 loops=79)\n            -> Materialize CTE odd_day  (cost=209..209 rows=79) (actual time=0.268..0.268 rows=61 loops=1)\n                -> Group aggregate: sum(transactions.amount)  (cost=201 rows=79) (actual time=0.0357..0.24 rows=61 loops=1)\n                    -> Filter: ((transactions.amount % 2) <> 0)  (cost=101 rows=1000) (actual time=0.0314..0.202 rows=443 loops=1)\n                        -> Covering index scan on transactions using idx_tx_date_amount  (cost=101 rows=1000) (actual time=0.0306..0.143 rows=1000 loops=1)\n    -> Index lookup on e using <auto_key0> (transaction_date=d.transaction_date)  (cost=209..211 rows=10) (actual time=0.0038..0.00389 rows=0.848 loops=79)\n        -> Materialize CTE even_day  (cost=209..209 rows=79) (actual time=0.273..0.273 rows=67 loops=1)\n            -> Group aggregate: sum(transactions.amount)  (cost=201 rows=79) (actual time=0.0314..0.245 rows=67 loops=1)\n                -> Filter: ((transactions.amount % 2) = 0)  (cost=101 rows=1000) (actual time=0.03..0.202 rows=540 loops=1)\n                    -> Covering index scan on transactions using idx_tx_date_amount  (cost=101 rows=1000) (actual time=0.0295..0.14 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.0012529340000000388,
+          "times_s": [
+            0.0012529340000000388,
+            0.0012315489999963347,
+            0.0014380430000002775
+          ],
+          "result_rows": 79,
+          "result_digest": "e06cdad29073affa3ecde24c5c05492c0c977dcb",
+          "explain_analyze": "-> Group aggregate: sum((case when ((transactions.amount % 2) <> 0) then transactions.amount else 0 end)), sum((case when ((transactions.amount % 2) = 0) then transactions.amount else 0 end))  (cost=201 rows=79) (actual time=0.0717..0.594 rows=79 loops=1)\n    -> Covering index scan on transactions using idx_tx_date_amount  (cost=101 rows=1000) (actual time=0.0637..0.281 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "transactions": 100000
+      },
+      "load_seconds": 0.765,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_two_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.13041185699999858,
+          "times_s": [
+            0.1309935020000097,
+            0.13041185699999858,
+            0.1291953359999951
+          ],
+          "result_rows": 4058,
+          "result_digest": "084aea3724e1cf7bfe93313c3274dd559439f0d0",
+          "explain_analyze": "-> Nested loop left join  (cost=2.97e+6 rows=0) (actual time=125..130 rows=4058 loops=1)\n    -> Nested loop left join  (cost=460236 rows=0) (actual time=79.3..81.9 rows=4058 loops=1)\n        -> Sort: d.transaction_date  (cost=209391..209391 rows=100329) (actual time=37.7..37.9 rows=4058 loops=1)\n            -> Table scan on d  (cost=31412..32668 rows=100329) (actual time=37..37.3 rows=4058 loops=1)\n                -> Materialize CTE days  (cost=31412..31412 rows=100329) (actual time=37..37 rows=4058 loops=1)\n                    -> Table scan on <temporary>  (cost=20122..21379 rows=100329) (actual time=36.4..36.7 rows=4058 loops=1)\n                        -> Temporary table with deduplication  (cost=20122..20122 rows=100329) (actual time=36.4..36.4 rows=4058 loops=1)\n                            -> Table scan on transactions  (cost=10089 rows=100329) (actual time=0.972..15.6 rows=100000 loops=1)\n        -> Index lookup on o using <auto_key0> (transaction_date=d.transaction_date)  (cost=0.25..2.5 rows=10) (actual time=0.0107..0.0108 rows=0.595 loops=4058)\n            -> Materialize CTE odd_day  (cost=0..0 rows=0) (actual time=41.6..41.6 rows=2414 loops=1)\n                -> Table scan on <temporary>  (actual time=40.3..40.5 rows=2414 loops=1)\n                    -> Aggregate using temporary table  (actual time=40.3..40.3 rows=2414 loops=1)\n                        -> Filter: ((transactions.amount % 2) <> 0)  (cost=10089 rows=100329) (actual time=0.923..22 rows=44507 loops=1)\n                            -> Table scan on transactions  (cost=10089 rows=100329) (actual time=0.919..15.4 rows=100000 loops=1)\n    -> Index lookup on e using <auto_key0> (transaction_date=d.transaction_date)  (cost=0.25..2.5 rows=10) (actual time=0.0117..0.0118 rows=0.661 loops=4058)\n        -> Materialize CTE even_day  (cost=0..0 rows=0) (actual time=45.7..45.7 rows=2682 loops=1)\n            -> Table scan on <temporary>  (actual time=44.3..44.5 rows=2682 loops=1)\n                -> Aggregate using temporary table  (actual time=44.3..44.3 rows=2682 loops=1)\n                    -> Filter: ((transactions.amount % 2) = 0)  (cost=10089 rows=100329) (actual time=0.903..22.2 rows=53495 loops=1)\n                        -> Table scan on transactions  (cost=10089 rows=100329) (actual time=0.902..15.4 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.09363104800000599,
+          "times_s": [
+            0.09333491799999649,
+            0.09381918100000064,
+            0.09363104800000599
+          ],
+          "result_rows": 4058,
+          "result_digest": "084aea3724e1cf7bfe93313c3274dd559439f0d0",
+          "explain_analyze": "-> Sort: transactions.transaction_date  (actual time=75.2..75.4 rows=4058 loops=1)\n    -> Table scan on <temporary>  (actual time=74.5..74.7 rows=4058 loops=1)\n        -> Aggregate using temporary table  (actual time=74.5..74.5 rows=4058 loops=1)\n            -> Table scan on transactions  (cost=10089 rows=100329) (actual time=0.97..17.9 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "transactions": 100000
+      },
+      "load_seconds": 0.765,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.08119618100000991,
+          "times_s": [
+            0.08220864800000527,
+            0.08119618100000991,
+            0.0807121670000015
+          ],
+          "result_rows": 4058,
+          "result_digest": "084aea3724e1cf7bfe93313c3274dd559439f0d0",
+          "explain_analyze": "-> Sort: d.transaction_date  (cost=3890..3890 rows=2290) (actual time=7.69..7.87 rows=4058 loops=1)\n    -> Table scan on d  (cost=1074..1105 rows=2290) (actual time=7.06..7.31 rows=4058 loops=1)\n        -> Materialize  (cost=1074..1074 rows=2290) (actual time=7.06..7.06 rows=4058 loops=1)\n            -> Covering index skip scan for deduplication on transactions using idx_tx_date_amount  (cost=845 rows=2290) (actual time=0.0239..6.49 rows=4058 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum(t.amount)  (cost=9.82 rows=1) (actual time=0.00767..0.00769 rows=1 loops=4058)\n        -> Filter: ((t.amount % 2) <> 0)  (cost=5.44 rows=43.8) (actual time=0.00279..0.00685 rows=11 loops=4058)\n            -> Covering index lookup on t using idx_tx_date_amount (transaction_date=d.transaction_date)  (cost=5.44 rows=43.8) (actual time=0.00238..0.00527 rows=24.6 loops=4058)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: sum(t.amount)  (cost=9.82 rows=1) (actual time=0.00751..0.00753 rows=1 loops=4058)\n        -> Filter: ((t.amount % 2) = 0)  (cost=5.44 rows=43.8) (actual time=0.00254..0.00656 rows=13.2 loops=4058)\n            -> Covering index lookup on t using idx_tx_date_amount (transaction_date=d.transaction_date)  (cost=5.44 rows=43.8) (actual time=0.00221..0.00506 rows=24.6 loops=4058)\n"
+        },
+        {
+          "solution": "02_two_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.0719519719999937,
+          "times_s": [
+            0.07065502899999387,
+            0.0719519719999937,
+            0.07483214399999838
+          ],
+          "result_rows": 4058,
+          "result_digest": "084aea3724e1cf7bfe93313c3274dd559439f0d0",
+          "explain_analyze": "-> Nested loop left join  (cost=1.2e+9 rows=12e+9) (actual time=58.7..63.8 rows=4058 loops=1)\n    -> Nested loop left join  (cost=553146 rows=5.24e+6) (actual time=33.2..35.8 rows=4058 loops=1)\n        -> Sort: d.transaction_date  (cost=3890..3890 rows=2290) (actual time=8.29..8.43 rows=4058 loops=1)\n            -> Table scan on d  (cost=1074..1105 rows=2290) (actual time=7.66..7.92 rows=4058 loops=1)\n                -> Materialize CTE days  (cost=1074..1074 rows=2290) (actual time=7.66..7.66 rows=4058 loops=1)\n                    -> Covering index skip scan for deduplication on transactions using idx_tx_date_amount  (cost=845 rows=2290) (actual time=0.0233..7.15 rows=4058 loops=1)\n        -> Index lookup on o using <auto_key0> (transaction_date=d.transaction_date)  (cost=20345..20356 rows=43.8) (actual time=0.00658..0.00665 rows=0.595 loops=4058)\n            -> Materialize CTE odd_day  (cost=20345..20345 rows=2289) (actual time=24.9..24.9 rows=2414 loops=1)\n                -> Group aggregate: sum(transactions.amount)  (cost=20116 rows=2289) (actual time=0.863..23.4 rows=2414 loops=1)\n                    -> Filter: ((transactions.amount % 2) <> 0)  (cost=10086 rows=100299) (actual time=0.842..20.4 rows=44507 loops=1)\n                        -> Covering index scan on transactions using idx_tx_date_amount  (cost=10086 rows=100299) (actual time=0.837..14 rows=100000 loops=1)\n    -> Index lookup on e using <auto_key0> (transaction_date=d.transaction_date)  (cost=20345..20356 rows=43.8) (actual time=0.00672..0.00679 rows=0.661 loops=4058)\n        -> Materialize CTE even_day  (cost=20345..20345 rows=2289) (actual time=25.5..25.5 rows=2682 loops=1)\n            -> Group aggregate: sum(transactions.amount)  (cost=20116 rows=2289) (actual time=0.84..23.7 rows=2682 loops=1)\n                -> Filter: ((transactions.amount % 2) = 0)  (cost=10086 rows=100299) (actual time=0.822..20.2 rows=53495 loops=1)\n                    -> Covering index scan on transactions using idx_tx_date_amount  (cost=10086 rows=100299) (actual time=0.821..14 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.049085854000011864,
+          "times_s": [
+            0.07532376199999646,
+            0.04890302100000099,
+            0.049085854000011864
+          ],
+          "result_rows": 4058,
+          "result_digest": "084aea3724e1cf7bfe93313c3274dd559439f0d0",
+          "explain_analyze": "-> Group aggregate: sum((case when ((transactions.amount % 2) <> 0) then transactions.amount else 0 end)), sum((case when ((transactions.amount % 2) = 0) then transactions.amount else 0 end))  (cost=20116 rows=2289) (actual time=0.917..30 rows=4058 loops=1)\n    -> Covering index scan on transactions using idx_tx_date_amount  (cost=10086 rows=100299) (actual time=0.888..14.1 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "transactions": 1000000
+      },
+      "load_seconds": 6.373,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_two_aggregates_joined",
+          "status": "ok",
+          "median_s": 1.247288812999983,
+          "times_s": [
+            1.247288812999983,
+            1.2897296719999929,
+            1.2464390820000233
+          ],
+          "result_rows": 30892,
+          "result_digest": "4749831cb62dc048e6e95b862b762e05da4f5de0",
+          "explain_analyze": "-> Nested loop left join  (cost=29.9e+6 rows=0) (actual time=1250..1291 rows=30892 loops=1)\n    -> Nested loop left join  (cost=4.91e+6 rows=0) (actual time=790..810 rows=30892 loops=1)\n        -> Sort: d.transaction_date  (cost=2.42e+6..2.42e+6 rows=998699) (actual time=372..373 rows=30892 loops=1)\n            -> Table scan on d  (cost=312601..325087 rows=998699) (actual time=366..368 rows=30892 loops=1)\n                -> Materialize CTE days  (cost=312601..312601 rows=998699) (actual time=366..366 rows=30892 loops=1)\n                    -> Table scan on <temporary>  (cost=200245..212731 rows=998699) (actual time=362..364 rows=30892 loops=1)\n                        -> Temporary table with deduplication  (cost=200245..200245 rows=998699) (actual time=362..362 rows=30892 loops=1)\n                            -> Table scan on transactions  (cost=100375 rows=998699) (actual time=0.875..151 rows=1e+6 loops=1)\n        -> Index lookup on o using <auto_key0> (transaction_date=d.transaction_date)  (cost=0.25..2.5 rows=10) (actual time=0.014..0.0141 rows=0.464 loops=30892)\n            -> Materialize CTE odd_day  (cost=0..0 rows=0) (actual time=418..418 rows=14336 loops=1)\n                -> Table scan on <temporary>  (actual time=409..410 rows=14336 loops=1)\n                    -> Aggregate using temporary table  (actual time=409..409 rows=14336 loops=1)\n                        -> Filter: ((transactions.amount % 2) <> 0)  (cost=100375 rows=998699) (actual time=1.06..226 rows=443143 loops=1)\n                            -> Table scan on transactions  (cost=100375 rows=998699) (actual time=1.06..156 rows=1e+6 loops=1)\n    -> Index lookup on e using <auto_key0> (transaction_date=d.transaction_date)  (cost=0.25..2.5 rows=10) (actual time=0.0154..0.0155 rows=0.552 loops=30892)\n        -> Materialize CTE even_day  (cost=0..0 rows=0) (actual time=461..461 rows=17038 loops=1)\n            -> Table scan on <temporary>  (actual time=450..451 rows=17038 loops=1)\n                -> Aggregate using temporary table  (actual time=450..450 rows=17038 loops=1)\n                    -> Filter: ((transactions.amount % 2) = 0)  (cost=100375 rows=998699) (actual time=1.06..231 rows=536926 loops=1)\n                        -> Table scan on transactions  (cost=100375 rows=998699) (actual time=1.06..155 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.8728157449999969,
+          "times_s": [
+            0.8728157449999969,
+            0.9002717909999944,
+            0.8688509360000012
+          ],
+          "result_rows": 30892,
+          "result_digest": "4749831cb62dc048e6e95b862b762e05da4f5de0",
+          "explain_analyze": "-> Sort: transactions.transaction_date  (actual time=751..752 rows=30892 loops=1)\n    -> Table scan on <temporary>  (actual time=744..746 rows=30892 loops=1)\n        -> Aggregate using temporary table  (actual time=744..744 rows=30892 loops=1)\n            -> Table scan on transactions  (cost=100375 rows=998699) (actual time=1.04..178 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "transactions": 1000000
+      },
+      "load_seconds": 6.373,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.6705932650000079,
+          "times_s": [
+            0.7046141689999956,
+            0.6601660370000104,
+            0.6705932650000079
+          ],
+          "result_rows": 30892,
+          "result_digest": "4749831cb62dc048e6e95b862b762e05da4f5de0",
+          "explain_analyze": "-> Sort: d.transaction_date  (cost=2756..2756 rows=1072) (actual time=66.8..68.4 rows=30892 loops=1)\n    -> Table scan on d  (cost=1554..1570 rows=1072) (actual time=61.3..63.2 rows=30892 loops=1)\n        -> Materialize  (cost=1554..1554 rows=1072) (actual time=61.3..61.3 rows=30892 loops=1)\n            -> Covering index skip scan for deduplication on transactions using idx_tx_date_amount  (cost=1446 rows=1072) (actual time=0.0297..57.2 rows=30892 loops=1)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum(t.amount)  (cost=189 rows=1) (actual time=0.00868..0.0087 rows=1 loops=30892)\n        -> Filter: ((t.amount % 2) <> 0)  (cost=95.7 rows=932) (actual time=0.00262..0.00772 rows=14.3 loops=30892)\n            -> Covering index lookup on t using idx_tx_date_amount (transaction_date=d.transaction_date)  (cost=95.7 rows=932) (actual time=0.00223..0.00589 rows=32.4 loops=30892)\n-> Select #3 (subquery in projection; dependent)\n    -> Aggregate: sum(t.amount)  (cost=189 rows=1) (actual time=0.009..0.00902 rows=1 loops=30892)\n        -> Filter: ((t.amount % 2) = 0)  (cost=95.7 rows=932) (actual time=0.00246..0.00781 rows=17.4 loops=30892)\n            -> Covering index lookup on t using idx_tx_date_amount (transaction_date=d.transaction_date)  (cost=95.7 rows=932) (actual time=0.00209..0.00574 rows=32.4 loops=30892)\n"
+        },
+        {
+          "solution": "02_two_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.6270098990000008,
+          "times_s": [
+            0.6270098990000008,
+            0.6115091119999931,
+            0.6483565419999877
+          ],
+          "result_rows": 30892,
+          "result_digest": "4749831cb62dc048e6e95b862b762e05da4f5de0",
+          "explain_analyze": "-> Nested loop left join  (cost=356e+6 rows=1.23e+9) (actual time=542..585 rows=30892 loops=1)\n    -> Nested loop left join  (cost=367117 rows=1.15e+6) (actual time=304..326 rows=30892 loops=1)\n        -> Sort: d.transaction_date  (cost=2756..2756 rows=1072) (actual time=66.6..67.7 rows=30892 loops=1)\n            -> Table scan on d  (cost=1554..1570 rows=1072) (actual time=60.7..63 rows=30892 loops=1)\n                -> Materialize CTE days  (cost=1554..1554 rows=1072) (actual time=60.7..60.7 rows=30892 loops=1)\n                    -> Covering index skip scan for deduplication on transactions using idx_tx_date_amount  (cost=1446 rows=1072) (actual time=0.0253..56.6 rows=30892 loops=1)\n        -> Index lookup on o using <auto_key0> (transaction_date=d.transaction_date)  (cost=200252..200485 rows=931) (actual time=0.00819..0.00825 rows=0.464 loops=30892)\n            -> Materialize CTE odd_day  (cost=200252..200252 rows=1071) (actual time=238..238 rows=14336 loops=1)\n                -> Group aggregate: sum(transactions.amount)  (cost=200145 rows=1071) (actual time=1.13..227 rows=14336 loops=1)\n                    -> Filter: ((transactions.amount % 2) <> 0)  (cost=100325 rows=998198) (actual time=0.959..199 rows=443143 loops=1)\n                        -> Covering index scan on transactions using idx_tx_date_amount  (cost=100325 rows=998198) (actual time=0.951..137 rows=1e+6 loops=1)\n    -> Index lookup on e using <auto_key0> (transaction_date=d.transaction_date)  (cost=200252..200484 rows=931) (actual time=0.00821..0.00827 rows=0.552 loops=30892)\n        -> Materialize CTE even_day  (cost=200252..200252 rows=1071) (actual time=238..238 rows=17038 loops=1)\n            -> Group aggregate: sum(transactions.amount)  (cost=200145 rows=1071) (actual time=1.07..226 rows=17038 loops=1)\n                -> Filter: ((transactions.amount % 2) = 0)  (cost=100325 rows=998198) (actual time=0.935..191 rows=536926 loops=1)\n                    -> Covering index scan on transactions using idx_tx_date_amount  (cost=100325 rows=998198) (actual time=0.933..136 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.42000592699997696,
+          "times_s": [
+            0.42157579299998815,
+            0.41906886200001736,
+            0.42000592699997696
+          ],
+          "result_rows": 30892,
+          "result_digest": "4749831cb62dc048e6e95b862b762e05da4f5de0",
+          "explain_analyze": "-> Group aggregate: sum((case when ((transactions.amount % 2) <> 0) then transactions.amount else 0 end)), sum((case when ((transactions.amount % 2) = 0) then transactions.amount else 0 end))  (cost=200145 rows=1071) (actual time=1.14..297 rows=30892 loops=1)\n    -> Covering index scan on transactions using idx_tx_date_amount  (cost=100325 rows=998198) (actual time=0.935..140 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

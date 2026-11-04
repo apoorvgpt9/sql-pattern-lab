@@ -1,0 +1,357 @@
+{
+  "problem": "13-find-category-recommendation-pairs",
+  "generated_at": "2026-11-04T15:28:17+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_product_level_self_join",
+    "02_map_then_self_join",
+    "03_dedupe_then_self_join"
+  ],
+  "optimal": "03_dedupe_then_self_join",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "mem_total": "8121092 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "ProductInfo": 79,
+        "ProductPurchases": 1000
+      },
+      "load_seconds": 0.023,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_product_level_self_join",
+          "status": "ok",
+          "median_s": 0.01353241699996488,
+          "times_s": [
+            0.013579554999978427,
+            0.013518892999968557,
+            0.01353241699996488
+          ],
+          "result_rows": 27,
+          "result_digest": "6b112f43244c5fa3bb34afe4577930c1edd3817c",
+          "explain_analyze": "-> Sort: customer_count DESC, i1.category, i2.category  (actual time=15.6..15.6 rows=27 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=14.6..15.6 rows=27 loops=1)\n        -> Stream results  (actual time=14.6..15.6 rows=28 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=14.5..15.6 rows=28 loops=1)\n                -> Sort: i1.category, i2.category  (actual time=14.5..14.7 rows=3229 loops=1)\n                    -> Stream results  (cost=2786 rows=1543) (actual time=0.0596..13 rows=3229 loops=1)\n                        -> Nested loop inner join  (cost=2786 rows=1543) (actual time=0.0582..12.2 rows=3229 loops=1)\n                            -> Nested loop inner join  (cost=1166 rows=4630) (actual time=0.0539..4.62 rows=8896 loops=1)\n                                -> Nested loop inner join  (cost=451 rows=1000) (actual time=0.0509..0.918 rows=997 loops=1)\n                                    -> Covering index scan on a using PRIMARY  (cost=101 rows=1000) (actual time=0.0462..0.178 rows=1000 loops=1)\n                                    -> Single-row index lookup on i1 using PRIMARY (product_id=a.product_id)  (cost=0.25 rows=1) (actual time=619e-6..636e-6 rows=0.997 loops=1000)\n                                -> Covering index lookup on b using PRIMARY (user_id=a.user_id)  (cost=0.252 rows=4.63) (actual time=0.00125..0.00332 rows=8.92 loops=997)\n                            -> Filter: (i1.category < i2.category)  (cost=0.25 rows=0.333) (actual time=747e-6..767e-6 rows=0.363 loops=8896)\n                                -> Single-row index lookup on i2 using PRIMARY (product_id=b.product_id)  (cost=0.25 rows=1) (actual time=588e-6..604e-6 rows=0.999 loops=8896)\n"
+        },
+        {
+          "solution": "02_map_then_self_join",
+          "status": "ok",
+          "median_s": 0.014148993000048904,
+          "times_s": [
+            0.01424155699999119,
+            0.014148993000048904,
+            0.01408934699998099
+          ],
+          "result_rows": 27,
+          "result_digest": "6b112f43244c5fa3bb34afe4577930c1edd3817c",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category1, b.category2  (actual time=16.5..16.5 rows=27 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=15.4..16.5 rows=27 loops=1)\n        -> Stream results  (actual time=15.4..16.5 rows=28 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=15.4..16.5 rows=28 loops=1)\n                -> Sort: a.category1, b.category2  (actual time=15.4..15.6 rows=3229 loops=1)\n                    -> Stream results  (cost=2553 rows=1250) (actual time=0.0584..13.8 rows=3229 loops=1)\n                        -> Nested loop inner join  (cost=2553 rows=1250) (actual time=0.0569..12.7 rows=3229 loops=1)\n                            -> Nested loop inner join  (cost=1094 rows=4167) (actual time=0.0525..4.87 rows=8896 loops=1)\n                                -> Nested loop inner join  (cost=451 rows=900) (actual time=0.0495..1.06 rows=997 loops=1)\n                                    -> Covering index scan on pp using PRIMARY  (cost=101 rows=1000) (actual time=0.045..0.178 rows=1000 loops=1)\n                                    -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=707e-6..779e-6 rows=0.997 loops=1000)\n                                        -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=603e-6..639e-6 rows=0.997 loops=1000)\n                                -> Covering index lookup on pp using PRIMARY (user_id=pp.user_id)  (cost=0.252 rows=4.63) (actual time=0.00135..0.00342 rows=8.92 loops=997)\n                            -> Filter: ((pi.category > pi.category) and (pi.category is not null))  (cost=0.25 rows=0.3) (actual time=784e-6..804e-6 rows=0.363 loops=8896)\n                                -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=584e-6..601e-6 rows=0.999 loops=8896)\n"
+        },
+        {
+          "solution": "03_dedupe_then_self_join",
+          "status": "ok",
+          "median_s": 0.0030754590000015014,
+          "times_s": [
+            0.0031823250000115877,
+            0.0030754590000015014,
+            0.0030553969999118635
+          ],
+          "result_rows": 27,
+          "result_digest": "6b112f43244c5fa3bb34afe4577930c1edd3817c",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category, b.category  (actual time=3.09..3.09 rows=27 loops=1)\n    -> Filter: (`count(0)` >= 3)  (actual time=3.07..3.07 rows=27 loops=1)\n        -> Table scan on <temporary>  (actual time=3.07..3.07 rows=28 loops=1)\n            -> Aggregate using temporary table  (actual time=3.07..3.07 rows=28 loops=1)\n                -> Nested loop inner join  (cost=4121 rows=3300) (actual time=1.66..2.58 rows=817 loops=1)\n                    -> Table scan on a  (cost=645..658 rows=900) (actual time=1.66..1.71 rows=628 loops=1)\n                        -> Materialize CTE cust_cat if needed  (cost=645..645 rows=900) (actual time=1.66..1.66 rows=628 loops=1)\n                            -> Table scan on <temporary>  (cost=541..555 rows=900) (actual time=1.32..1.37 rows=628 loops=1)\n                                -> Temporary table with deduplication  (cost=541..541 rows=900) (actual time=1.32..1.32 rows=628 loops=1)\n                                    -> Nested loop inner join  (cost=451 rows=900) (actual time=0.0492..1.04 rows=997 loops=1)\n                                        -> Covering index scan on pp using PRIMARY  (cost=101 rows=1000) (actual time=0.0446..0.18 rows=1000 loops=1)\n                                        -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=671e-6..739e-6 rows=0.997 loops=1000)\n                                            -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=589e-6..606e-6 rows=0.997 loops=1000)\n                    -> Filter: (b.category > a.category)  (cost=470..2.75 rows=3.67) (actual time=981e-6..0.00121 rows=1.3 loops=628)\n                        -> Covering index lookup on b using <auto_key0> (user_id=a.user_id)  (cost=645..647 rows=11) (actual time=430e-6..836e-6 rows=3.6 loops=628)\n                            -> Materialize CTE cust_cat if needed (query plan printed elsewhere)  (cost=645..645 rows=900) (never executed)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "ProductInfo": 79,
+        "ProductPurchases": 1000
+      },
+      "load_seconds": 0.023,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_product_level_self_join",
+          "status": "ok",
+          "median_s": 0.013821741999890946,
+          "times_s": [
+            0.013827532000050269,
+            0.013754898000001958,
+            0.013821741999890946
+          ],
+          "result_rows": 27,
+          "result_digest": "6b112f43244c5fa3bb34afe4577930c1edd3817c",
+          "explain_analyze": "-> Sort: customer_count DESC, i1.category, i2.category  (actual time=16.1..16.1 rows=27 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=14.8..16 rows=27 loops=1)\n        -> Stream results  (actual time=14.8..16 rows=28 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=14.8..16 rows=28 loops=1)\n                -> Sort: i1.category, i2.category  (actual time=14.7..14.9 rows=3229 loops=1)\n                    -> Stream results  (cost=2786 rows=1543) (actual time=0.0602..13.1 rows=3229 loops=1)\n                        -> Nested loop inner join  (cost=2786 rows=1543) (actual time=0.0588..12.3 rows=3229 loops=1)\n                            -> Nested loop inner join  (cost=1166 rows=4630) (actual time=0.0546..4.67 rows=8896 loops=1)\n                                -> Nested loop inner join  (cost=451 rows=1000) (actual time=0.0515..0.911 rows=997 loops=1)\n                                    -> Covering index scan on a using PRIMARY  (cost=101 rows=1000) (actual time=0.0459..0.183 rows=1000 loops=1)\n                                    -> Single-row index lookup on i1 using PRIMARY (product_id=a.product_id)  (cost=0.25 rows=1) (actual time=602e-6..619e-6 rows=0.997 loops=1000)\n                                -> Covering index lookup on b using PRIMARY (user_id=a.user_id)  (cost=0.252 rows=4.63) (actual time=0.00128..0.00337 rows=8.92 loops=997)\n                            -> Filter: (i1.category < i2.category)  (cost=0.25 rows=0.333) (actual time=754e-6..773e-6 rows=0.363 loops=8896)\n                                -> Single-row index lookup on i2 using PRIMARY (product_id=b.product_id)  (cost=0.25 rows=1) (actual time=587e-6..604e-6 rows=0.999 loops=8896)\n"
+        },
+        {
+          "solution": "02_map_then_self_join",
+          "status": "ok",
+          "median_s": 0.014435554999977285,
+          "times_s": [
+            0.014450336999971114,
+            0.014435554999977285,
+            0.014313287000049968
+          ],
+          "result_rows": 27,
+          "result_digest": "6b112f43244c5fa3bb34afe4577930c1edd3817c",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category1, b.category2  (actual time=16.5..16.5 rows=27 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=15.4..16.5 rows=27 loops=1)\n        -> Stream results  (actual time=15.4..16.5 rows=28 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=15.4..16.5 rows=28 loops=1)\n                -> Sort: a.category1, b.category2  (actual time=15.4..15.6 rows=3229 loops=1)\n                    -> Stream results  (cost=2553 rows=1250) (actual time=0.0596..13.9 rows=3229 loops=1)\n                        -> Nested loop inner join  (cost=2553 rows=1250) (actual time=0.0582..12.8 rows=3229 loops=1)\n                            -> Nested loop inner join  (cost=1094 rows=4167) (actual time=0.0535..4.86 rows=8896 loops=1)\n                                -> Nested loop inner join  (cost=451 rows=900) (actual time=0.0502..1.06 rows=997 loops=1)\n                                    -> Covering index scan on pp using PRIMARY  (cost=101 rows=1000) (actual time=0.0452..0.18 rows=1000 loops=1)\n                                    -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=711e-6..765e-6 rows=0.997 loops=1000)\n                                        -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=610e-6..627e-6 rows=0.997 loops=1000)\n                                -> Covering index lookup on pp using PRIMARY (user_id=pp.user_id)  (cost=0.252 rows=4.63) (actual time=0.00133..0.0034 rows=8.92 loops=997)\n                            -> Filter: ((pi.category > pi.category) and (pi.category is not null))  (cost=0.25 rows=0.3) (actual time=785e-6..805e-6 rows=0.363 loops=8896)\n                                -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=591e-6..608e-6 rows=0.999 loops=8896)\n"
+        },
+        {
+          "solution": "03_dedupe_then_self_join",
+          "status": "ok",
+          "median_s": 0.003126939000026141,
+          "times_s": [
+            0.003348475000052531,
+            0.003126939000026141,
+            0.0030847760000369817
+          ],
+          "result_rows": 27,
+          "result_digest": "6b112f43244c5fa3bb34afe4577930c1edd3817c",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category, b.category  (actual time=3.08..3.08 rows=27 loops=1)\n    -> Filter: (`count(0)` >= 3)  (actual time=3.06..3.06 rows=27 loops=1)\n        -> Table scan on <temporary>  (actual time=3.05..3.06 rows=28 loops=1)\n            -> Aggregate using temporary table  (actual time=3.05..3.05 rows=28 loops=1)\n                -> Nested loop inner join  (cost=4121 rows=3300) (actual time=1.64..2.58 rows=817 loops=1)\n                    -> Table scan on a  (cost=645..658 rows=900) (actual time=1.63..1.69 rows=628 loops=1)\n                        -> Materialize CTE cust_cat if needed  (cost=645..645 rows=900) (actual time=1.63..1.63 rows=628 loops=1)\n                            -> Table scan on <temporary>  (cost=541..555 rows=900) (actual time=1.31..1.36 rows=628 loops=1)\n                                -> Temporary table with deduplication  (cost=541..541 rows=900) (actual time=1.31..1.31 rows=628 loops=1)\n                                    -> Nested loop inner join  (cost=451 rows=900) (actual time=0.0482..1.04 rows=997 loops=1)\n                                        -> Covering index scan on pp using PRIMARY  (cost=101 rows=1000) (actual time=0.0434..0.18 rows=1000 loops=1)\n                                        -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=669e-6..722e-6 rows=0.997 loops=1000)\n                                            -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=588e-6..605e-6 rows=0.997 loops=1000)\n                    -> Filter: (b.category > a.category)  (cost=470..2.75 rows=3.67) (actual time=0.00103..0.00127 rows=1.3 loops=628)\n                        -> Covering index lookup on b using <auto_key0> (user_id=a.user_id)  (cost=645..647 rows=11) (actual time=435e-6..869e-6 rows=3.6 loops=628)\n                            -> Materialize CTE cust_cat if needed (query plan printed elsewhere)  (cost=645..645 rows=900) (never executed)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "ProductInfo": 2469,
+        "ProductPurchases": 100000
+      },
+      "load_seconds": 0.704,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_product_level_self_join",
+          "status": "ok",
+          "median_s": 1.2054780920000212,
+          "times_s": [
+            1.2054780920000212,
+            1.2107262380000066,
+            1.1999264439999706
+          ],
+          "result_rows": 78,
+          "result_digest": "75dcda56f2e00966126c7b65f33d0fde835ec146",
+          "explain_analyze": "-> Sort: customer_count DESC, i1.category, i2.category  (actual time=1536..1536 rows=78 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=1410..1536 rows=78 loops=1)\n        -> Stream results  (actual time=1410..1536 rows=78 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=1410..1536 rows=78 loops=1)\n                -> Sort: i1.category, i2.category  (actual time=1405..1420 rows=310528 loops=1)\n                    -> Stream results  (cost=271392 rows=148947) (actual time=0.835..1241 rows=310528 loops=1)\n                        -> Nested loop inner join  (cost=271392 rows=148947) (actual time=0.833..1159 rows=310528 loops=1)\n                            -> Nested loop inner join  (cost=114982 rows=446885) (actual time=0.814..452 rows=830025 loops=1)\n                                -> Nested loop inner join  (cost=45100 rows=100098) (actual time=0.809..88.3 rows=99203 loops=1)\n                                    -> Covering index scan on a using PRIMARY  (cost=10066 rows=100098) (actual time=0.778..17.2 rows=100000 loops=1)\n                                    -> Single-row index lookup on i1 using PRIMARY (product_id=a.product_id)  (cost=0.25 rows=1) (actual time=588e-6..605e-6 rows=0.992 loops=100000)\n                                -> Covering index lookup on b using PRIMARY (user_id=a.user_id)  (cost=0.252 rows=4.46) (actual time=0.00131..0.00328 rows=8.37 loops=99203)\n                            -> Filter: (i1.category < i2.category)  (cost=0.25 rows=0.333) (actual time=748e-6..769e-6 rows=0.374 loops=830025)\n                                -> Single-row index lookup on i2 using PRIMARY (product_id=b.product_id)  (cost=0.25 rows=1) (actual time=582e-6..599e-6 rows=0.993 loops=830025)\n"
+        },
+        {
+          "solution": "02_map_then_self_join",
+          "status": "ok",
+          "median_s": 1.2576825750001035,
+          "times_s": [
+            1.2576825750001035,
+            1.255029520999983,
+            1.2909155730000066
+          ],
+          "result_rows": 78,
+          "result_digest": "75dcda56f2e00966126c7b65f33d0fde835ec146",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category1, b.category2  (actual time=1581..1581 rows=78 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=1453..1581 rows=78 loops=1)\n        -> Stream results  (actual time=1453..1581 rows=78 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=1453..1581 rows=78 loops=1)\n                -> Sort: a.category1, b.category2  (actual time=1447..1462 rows=310528 loops=1)\n                    -> Stream results  (cost=248763 rows=120647) (actual time=0.801..1283 rows=310528 loops=1)\n                        -> Nested loop inner join  (cost=248763 rows=120647) (actual time=0.798..1177 rows=310528 loops=1)\n                            -> Nested loop inner join  (cost=107994 rows=402197) (actual time=0.779..457 rows=826065 loops=1)\n                                -> Nested loop inner join  (cost=45100 rows=90088) (actual time=0.774..102 rows=98740 loops=1)\n                                    -> Covering index scan on pp using PRIMARY  (cost=10066 rows=100098) (actual time=0.765..17 rows=100000 loops=1)\n                                    -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=693e-6..746e-6 rows=0.987 loops=100000)\n                                        -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=586e-6..602e-6 rows=0.992 loops=100000)\n                                -> Covering index lookup on pp using PRIMARY (user_id=pp.user_id)  (cost=0.252 rows=4.46) (actual time=0.00132..0.00321 rows=8.37 loops=98740)\n                            -> Filter: ((pi.category > pi.category) and (pi.category is not null))  (cost=0.25 rows=0.3) (actual time=769e-6..789e-6 rows=0.376 loops=826065)\n                                -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=566e-6..583e-6 rows=0.993 loops=826065)\n"
+        },
+        {
+          "solution": "03_dedupe_then_self_join",
+          "status": "ok",
+          "median_s": 0.3097286489999078,
+          "times_s": [
+            0.3080652489999238,
+            0.31194170399999166,
+            0.3097286489999078
+          ],
+          "result_rows": 78,
+          "result_digest": "75dcda56f2e00966126c7b65f33d0fde835ec146",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category, b.category  (actual time=394..394 rows=78 loops=1)\n    -> Filter: (`count(0)` >= 3)  (actual time=394..394 rows=78 loops=1)\n        -> Table scan on <temporary>  (actual time=394..394 rows=78 loops=1)\n            -> Aggregate using temporary table  (actual time=394..394 rows=78 loops=1)\n                -> Nested loop inner join  (cost=28.4e+6 rows=27e+6) (actual time=204..324 rows=114461 loops=1)\n                    -> Table scan on a  (cost=64247..65375 rows=90088) (actual time=204..210 rows=69570 loops=1)\n                        -> Materialize CTE cust_cat if needed  (cost=64247..64247 rows=90088) (actual time=204..204 rows=69570 loops=1)\n                            -> Table scan on <temporary>  (cost=54109..55238 rows=90088) (actual time=148..154 rows=69570 loops=1)\n                                -> Temporary table with deduplication  (cost=54109..54109 rows=90088) (actual time=148..148 rows=69570 loops=1)\n                                    -> Nested loop inner join  (cost=45100 rows=90088) (actual time=0.806..102 rows=98740 loops=1)\n                                        -> Covering index scan on pp using PRIMARY  (cost=10066 rows=100098) (actual time=0.794..17.6 rows=100000 loops=1)\n                                        -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=683e-6..736e-6 rows=0.987 loops=100000)\n                                            -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=600e-6..617e-6 rows=0.992 loops=100000)\n                    -> Filter: (b.category > a.category)  (cost=64033..225 rows=300) (actual time=0.00118..0.00149 rows=1.65 loops=69570)\n                        -> Covering index lookup on b using <auto_key0> (user_id=a.user_id)  (cost=64247..64472 rows=900) (actual time=552e-6..0.00105 rows=4.29 loops=69570)\n                            -> Materialize CTE cust_cat if needed (query plan printed elsewhere)  (cost=64247..64247 rows=90088) (never executed)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "ProductInfo": 2469,
+        "ProductPurchases": 100000
+      },
+      "load_seconds": 0.704,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_product_level_self_join",
+          "status": "ok",
+          "median_s": 1.202612682999984,
+          "times_s": [
+            1.2530300720000014,
+            1.202612682999984,
+            1.2014681399999745
+          ],
+          "result_rows": 78,
+          "result_digest": "75dcda56f2e00966126c7b65f33d0fde835ec146",
+          "explain_analyze": "-> Sort: customer_count DESC, i1.category, i2.category  (actual time=1502..1502 rows=78 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=1374..1502 rows=78 loops=1)\n        -> Stream results  (actual time=1374..1502 rows=78 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=1374..1502 rows=78 loops=1)\n                -> Sort: i1.category, i2.category  (actual time=1369..1384 rows=310528 loops=1)\n                    -> Stream results  (cost=272575 rows=149822) (actual time=0.875..1208 rows=310528 loops=1)\n                        -> Nested loop inner join  (cost=272575 rows=149822) (actual time=0.873..1127 rows=310528 loops=1)\n                            -> Nested loop inner join  (cost=115246 rows=449511) (actual time=0.855..443 rows=830025 loops=1)\n                                -> Nested loop inner join  (cost=45100 rows=100098) (actual time=0.849..86.9 rows=99203 loops=1)\n                                    -> Covering index scan on a using PRIMARY  (cost=10066 rows=100098) (actual time=0.84..17.1 rows=100000 loops=1)\n                                    -> Single-row index lookup on i1 using PRIMARY (product_id=a.product_id)  (cost=0.25 rows=1) (actual time=578e-6..595e-6 rows=0.992 loops=100000)\n                                -> Covering index lookup on b using PRIMARY (user_id=a.user_id)  (cost=0.252 rows=4.49) (actual time=0.00128..0.00321 rows=8.37 loops=99203)\n                            -> Filter: (i1.category < i2.category)  (cost=0.25 rows=0.333) (actual time=723e-6..743e-6 rows=0.374 loops=830025)\n                                -> Single-row index lookup on i2 using PRIMARY (product_id=b.product_id)  (cost=0.25 rows=1) (actual time=562e-6..579e-6 rows=0.993 loops=830025)\n"
+        },
+        {
+          "solution": "02_map_then_self_join",
+          "status": "ok",
+          "median_s": 1.2562064290000308,
+          "times_s": [
+            1.2548024999999825,
+            1.2562064290000308,
+            1.2572154350000346
+          ],
+          "result_rows": 78,
+          "result_digest": "75dcda56f2e00966126c7b65f33d0fde835ec146",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category1, b.category2  (actual time=1612..1612 rows=78 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=1485..1611 rows=78 loops=1)\n        -> Stream results  (actual time=1485..1611 rows=78 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=1485..1611 rows=78 loops=1)\n                -> Sort: a.category1, b.category2  (actual time=1479..1494 rows=310528 loops=1)\n                    -> Stream results  (cost=249828 rows=121356) (actual time=0.84..1310 rows=310528 loops=1)\n                        -> Nested loop inner join  (cost=249828 rows=121356) (actual time=0.838..1203 rows=310528 loops=1)\n                            -> Nested loop inner join  (cost=108232 rows=404560) (actual time=0.818..468 rows=826065 loops=1)\n                                -> Nested loop inner join  (cost=45100 rows=90088) (actual time=0.813..105 rows=98740 loops=1)\n                                    -> Covering index scan on pp using PRIMARY  (cost=10066 rows=100098) (actual time=0.804..18 rows=100000 loops=1)\n                                    -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=707e-6..762e-6 rows=0.987 loops=100000)\n                                        -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=603e-6..620e-6 rows=0.992 loops=100000)\n                                -> Covering index lookup on pp using PRIMARY (user_id=pp.user_id)  (cost=0.252 rows=4.49) (actual time=0.00135..0.00328 rows=8.37 loops=98740)\n                            -> Filter: ((pi.category > pi.category) and (pi.category is not null))  (cost=0.25 rows=0.3) (actual time=784e-6..804e-6 rows=0.376 loops=826065)\n                                -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=576e-6..594e-6 rows=0.993 loops=826065)\n"
+        },
+        {
+          "solution": "03_dedupe_then_self_join",
+          "status": "ok",
+          "median_s": 0.30918351100001473,
+          "times_s": [
+            0.3104451749999271,
+            0.30918351100001473,
+            0.30842903699999624
+          ],
+          "result_rows": 78,
+          "result_digest": "75dcda56f2e00966126c7b65f33d0fde835ec146",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category, b.category  (actual time=395..395 rows=78 loops=1)\n    -> Filter: (`count(0)` >= 3)  (actual time=395..395 rows=78 loops=1)\n        -> Table scan on <temporary>  (actual time=395..395 rows=78 loops=1)\n            -> Aggregate using temporary table  (actual time=395..395 rows=78 loops=1)\n                -> Nested loop inner join  (cost=28.4e+6 rows=27e+6) (actual time=205..326 rows=114461 loops=1)\n                    -> Table scan on a  (cost=64247..65375 rows=90088) (actual time=205..211 rows=69570 loops=1)\n                        -> Materialize CTE cust_cat if needed  (cost=64247..64247 rows=90088) (actual time=205..205 rows=69570 loops=1)\n                            -> Table scan on <temporary>  (cost=54109..55238 rows=90088) (actual time=149..155 rows=69570 loops=1)\n                                -> Temporary table with deduplication  (cost=54109..54109 rows=90088) (actual time=149..149 rows=69570 loops=1)\n                                    -> Nested loop inner join  (cost=45100 rows=90088) (actual time=0.823..102 rows=98740 loops=1)\n                                        -> Covering index scan on pp using PRIMARY  (cost=10066 rows=100098) (actual time=0.812..17.7 rows=100000 loops=1)\n                                        -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=685e-6..738e-6 rows=0.987 loops=100000)\n                                            -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=602e-6..619e-6 rows=0.992 loops=100000)\n                    -> Filter: (b.category > a.category)  (cost=64033..225 rows=300) (actual time=0.00118..0.0015 rows=1.65 loops=69570)\n                        -> Covering index lookup on b using <auto_key0> (user_id=a.user_id)  (cost=64247..64472 rows=900) (actual time=552e-6..0.00106 rows=4.29 loops=69570)\n                            -> Materialize CTE cust_cat if needed (query plan printed elsewhere)  (cost=64247..64247 rows=90088) (never executed)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "ProductInfo": 24735,
+        "ProductPurchases": 1000000
+      },
+      "load_seconds": 6.915,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_product_level_self_join",
+          "status": "ok",
+          "median_s": 12.800654509999958,
+          "times_s": [
+            12.81345164000004,
+            12.800654509999958,
+            12.794325731000072
+          ],
+          "result_rows": 190,
+          "result_digest": "62ea555316e05fa4aa8c54dbbecd57a3c55ed643",
+          "explain_analyze": "-> Sort: customer_count DESC, i1.category, i2.category  (actual time=15916..15916 rows=190 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=14314..15916 rows=190 loops=1)\n        -> Stream results  (actual time=14314..15916 rows=190 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=14314..15916 rows=190 loops=1)\n                -> Sort: i1.category, i2.category  (actual time=14314..14473 rows=3.18e+6 loops=1)\n                    -> Stream results  (cost=2.69e+6 rows=1.48e+6) (actual time=1.51..12285 rows=3.18e+6 loops=1)\n                        -> Nested loop inner join  (cost=2.69e+6 rows=1.48e+6) (actual time=1.5..11446 rows=3.18e+6 loops=1)\n                            -> Nested loop inner join  (cost=1.14e+6 rows=4.43e+6) (actual time=1.49..4548 rows=8.26e+6 loops=1)\n                                -> Nested loop inner join  (cost=449826 rows=998490) (actual time=1.48..866 rows=992132 loops=1)\n                                    -> Covering index scan on a using PRIMARY  (cost=100354 rows=998490) (actual time=1.47..173 rows=1e+6 loops=1)\n                                    -> Single-row index lookup on i1 using PRIMARY (product_id=a.product_id)  (cost=0.25 rows=1) (actual time=569e-6..586e-6 rows=0.992 loops=1e+6)\n                                -> Covering index lookup on b using PRIMARY (user_id=a.user_id)  (cost=0.252 rows=4.43) (actual time=0.0014..0.00332 rows=8.33 loops=992132)\n                            -> Filter: (i1.category < i2.category)  (cost=0.25 rows=0.333) (actual time=731e-6..752e-6 rows=0.385 loops=8.26e+6)\n                                -> Single-row index lookup on i2 using PRIMARY (product_id=b.product_id)  (cost=0.25 rows=1) (actual time=571e-6..588e-6 rows=0.993 loops=8.26e+6)\n"
+        },
+        {
+          "solution": "02_map_then_self_join",
+          "status": "ok",
+          "median_s": 13.370663828000033,
+          "times_s": [
+            13.370663828000033,
+            13.340946830999997,
+            13.441198228999951
+          ],
+          "result_rows": 190,
+          "result_digest": "62ea555316e05fa4aa8c54dbbecd57a3c55ed643",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category1, b.category2  (actual time=16589..16589 rows=190 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=14973..16589 rows=190 loops=1)\n        -> Stream results  (actual time=14973..16589 rows=190 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=14973..16588 rows=190 loops=1)\n                -> Sort: a.category1, b.category2  (actual time=14973..15137 rows=3.18e+6 loops=1)\n                    -> Stream results  (cost=2.47e+6 rows=1.2e+6) (actual time=1.22..12916 rows=3.18e+6 loops=1)\n                        -> Nested loop inner join  (cost=2.47e+6 rows=1.2e+6) (actual time=1.21..11845 rows=3.18e+6 loops=1)\n                            -> Nested loop inner join  (cost=1.07e+6 rows=3.99e+6) (actual time=1.2..4656 rows=8.21e+6 loops=1)\n                                -> Nested loop inner join  (cost=449826 rows=898641) (actual time=1.19..1014 rows=985809 loops=1)\n                                    -> Covering index scan on pp using PRIMARY  (cost=100354 rows=998490) (actual time=1.18..174 rows=1e+6 loops=1)\n                                    -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=679e-6..733e-6 rows=0.986 loops=1e+6)\n                                        -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=576e-6..593e-6 rows=0.992 loops=1e+6)\n                                -> Covering index lookup on pp using PRIMARY (user_id=pp.user_id)  (cost=0.252 rows=4.43) (actual time=0.00143..0.00331 rows=8.32 loops=985809)\n                            -> Filter: ((pi.category > pi.category) and (pi.category is not null))  (cost=0.25 rows=0.3) (actual time=769e-6..790e-6 rows=0.387 loops=8.21e+6)\n                                -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=569e-6..586e-6 rows=0.993 loops=8.21e+6)\n"
+        },
+        {
+          "solution": "03_dedupe_then_self_join",
+          "status": "ok",
+          "median_s": 10.422168173999921,
+          "times_s": [
+            10.350690792000023,
+            10.422168173999921,
+            10.455768252000098
+          ],
+          "result_rows": 190,
+          "result_digest": "62ea555316e05fa4aa8c54dbbecd57a3c55ed643",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category, b.category  (actual time=11519..11519 rows=190 loops=1)\n    -> Filter: (`count(0)` >= 3)  (actual time=11519..11519 rows=190 loops=1)\n        -> Table scan on <temporary>  (actual time=11519..11519 rows=190 loops=1)\n            -> Aggregate using temporary table  (actual time=11519..11519 rows=190 loops=1)\n                -> Nested loop inner join  (cost=2.83e+9 rows=2.69e+9) (actual time=4729..10626 rows=1.41e+6 loops=1)\n                    -> Table scan on a  (cost=640789..652025 rows=898641) (actual time=4729..4903 rows=744420 loops=1)\n                        -> Materialize CTE cust_cat if needed  (cost=640789..640789 rows=898641) (actual time=4729..4729 rows=744420 loops=1)\n                            -> Table scan on <temporary>  (cost=539690..550925 rows=898641) (actual time=3117..3285 rows=744420 loops=1)\n                                -> Temporary table with deduplication  (cost=539690..539690 rows=898641) (actual time=3117..3117 rows=744420 loops=1)\n                                    -> Nested loop inner join  (cost=449826 rows=898641) (actual time=1.22..1276 rows=985809 loops=1)\n                                        -> Covering index scan on pp using PRIMARY  (cost=100354 rows=998490) (actual time=1.2..183 rows=1e+6 loops=1)\n                                        -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=933e-6..986e-6 rows=0.986 loops=1e+6)\n                                            -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=851e-6..868e-6 rows=0.992 loops=1e+6)\n                    -> Filter: (b.category > a.category)  (cost=640576..2247 rows=2995) (actual time=0.00574..0.00747 rows=1.9 loops=744420)\n                        -> Covering index lookup on b using <auto_key0> (user_id=a.user_id)  (cost=640789..643036 rows=8986) (actual time=0.00234..0.00692 rows=4.8 loops=744420)\n                            -> Materialize CTE cust_cat if needed (query plan printed elsewhere)  (cost=640789..640789 rows=898641) (never executed)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "ProductInfo": 24735,
+        "ProductPurchases": 1000000
+      },
+      "load_seconds": 6.915,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_product_level_self_join",
+          "status": "ok",
+          "median_s": 12.80903575299999,
+          "times_s": [
+            12.763645895999957,
+            12.80903575299999,
+            12.895383092999964
+          ],
+          "result_rows": 190,
+          "result_digest": "62ea555316e05fa4aa8c54dbbecd57a3c55ed643",
+          "explain_analyze": "-> Sort: customer_count DESC, i1.category, i2.category  (actual time=15902..15902 rows=190 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=14338..15901 rows=190 loops=1)\n        -> Stream results  (actual time=14338..15901 rows=190 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=14338..15901 rows=190 loops=1)\n                -> Sort: i1.category, i2.category  (actual time=14337..14491 rows=3.18e+6 loops=1)\n                    -> Stream results  (cost=2.71e+6 rows=1.49e+6) (actual time=1.16..12334 rows=3.18e+6 loops=1)\n                        -> Nested loop inner join  (cost=2.71e+6 rows=1.49e+6) (actual time=1.16..11501 rows=3.18e+6 loops=1)\n                            -> Nested loop inner join  (cost=1.15e+6 rows=4.46e+6) (actual time=1.15..4529 rows=8.26e+6 loops=1)\n                                -> Nested loop inner join  (cost=449826 rows=998490) (actual time=1.14..855 rows=992132 loops=1)\n                                    -> Covering index scan on a using PRIMARY  (cost=100354 rows=998490) (actual time=1.13..169 rows=1e+6 loops=1)\n                                    -> Single-row index lookup on i1 using PRIMARY (product_id=a.product_id)  (cost=0.25 rows=1) (actual time=562e-6..579e-6 rows=0.992 loops=1e+6)\n                                -> Covering index lookup on b using PRIMARY (user_id=a.user_id)  (cost=0.252 rows=4.46) (actual time=0.0014..0.00332 rows=8.33 loops=992132)\n                            -> Filter: (i1.category < i2.category)  (cost=0.25 rows=0.333) (actual time=739e-6..759e-6 rows=0.385 loops=8.26e+6)\n                                -> Single-row index lookup on i2 using PRIMARY (product_id=b.product_id)  (cost=0.25 rows=1) (actual time=568e-6..585e-6 rows=0.993 loops=8.26e+6)\n"
+        },
+        {
+          "solution": "02_map_then_self_join",
+          "status": "ok",
+          "median_s": 13.341854119000118,
+          "times_s": [
+            13.297008774000005,
+            13.46791611599997,
+            13.341854119000118
+          ],
+          "result_rows": 190,
+          "result_digest": "62ea555316e05fa4aa8c54dbbecd57a3c55ed643",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category1, b.category2  (actual time=16605..16605 rows=190 loops=1)\n    -> Filter: (`count(distinct ProductPurchases.user_id)` >= 3)  (actual time=15043..16604 rows=190 loops=1)\n        -> Stream results  (actual time=15043..16604 rows=190 loops=1)\n            -> Group aggregate: count(distinct ProductPurchases.user_id), count(distinct ProductPurchases.user_id)  (actual time=15043..16604 rows=190 loops=1)\n                -> Sort: a.category1, b.category2  (actual time=15042..15196 rows=3.18e+6 loops=1)\n                    -> Stream results  (cost=2.48e+6 rows=1.2e+6) (actual time=1.21..12990 rows=3.18e+6 loops=1)\n                        -> Nested loop inner join  (cost=2.48e+6 rows=1.2e+6) (actual time=1.21..11901 rows=3.18e+6 loops=1)\n                            -> Nested loop inner join  (cost=1.08e+6 rows=4.01e+6) (actual time=1.2..4665 rows=8.21e+6 loops=1)\n                                -> Nested loop inner join  (cost=449826 rows=898641) (actual time=1.19..1014 rows=985809 loops=1)\n                                    -> Covering index scan on pp using PRIMARY  (cost=100354 rows=998490) (actual time=1.18..172 rows=1e+6 loops=1)\n                                    -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=681e-6..734e-6 rows=0.986 loops=1e+6)\n                                        -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=576e-6..593e-6 rows=0.992 loops=1e+6)\n                                -> Covering index lookup on pp using PRIMARY (user_id=pp.user_id)  (cost=0.252 rows=4.46) (actual time=0.00142..0.00331 rows=8.32 loops=985809)\n                            -> Filter: ((pi.category > pi.category) and (pi.category is not null))  (cost=0.25 rows=0.3) (actual time=776e-6..797e-6 rows=0.387 loops=8.21e+6)\n                                -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=571e-6..588e-6 rows=0.993 loops=8.21e+6)\n"
+        },
+        {
+          "solution": "03_dedupe_then_self_join",
+          "status": "ok",
+          "median_s": 10.344814639000106,
+          "times_s": [
+            10.344814639000106,
+            10.446348034000039,
+            10.340496190000067
+          ],
+          "result_rows": 190,
+          "result_digest": "62ea555316e05fa4aa8c54dbbecd57a3c55ed643",
+          "explain_analyze": "-> Sort: customer_count DESC, a.category, b.category  (actual time=11481..11481 rows=190 loops=1)\n    -> Filter: (`count(0)` >= 3)  (actual time=11481..11481 rows=190 loops=1)\n        -> Table scan on <temporary>  (actual time=11481..11481 rows=190 loops=1)\n            -> Aggregate using temporary table  (actual time=11481..11481 rows=190 loops=1)\n                -> Nested loop inner join  (cost=2.83e+9 rows=2.69e+9) (actual time=4739..10597 rows=1.41e+6 loops=1)\n                    -> Table scan on a  (cost=640789..652025 rows=898641) (actual time=4739..4909 rows=744420 loops=1)\n                        -> Materialize CTE cust_cat if needed  (cost=640789..640789 rows=898641) (actual time=4739..4739 rows=744420 loops=1)\n                            -> Table scan on <temporary>  (cost=539690..550925 rows=898641) (actual time=3155..3322 rows=744420 loops=1)\n                                -> Temporary table with deduplication  (cost=539690..539690 rows=898641) (actual time=3155..3155 rows=744420 loops=1)\n                                    -> Nested loop inner join  (cost=449826 rows=898641) (actual time=1.34..1295 rows=985809 loops=1)\n                                        -> Covering index scan on pp using PRIMARY  (cost=100354 rows=998490) (actual time=1.33..185 rows=1e+6 loops=1)\n                                        -> Filter: (pi.category is not null)  (cost=0.25 rows=0.9) (actual time=949e-6..0.001 rows=0.986 loops=1e+6)\n                                            -> Single-row index lookup on pi using PRIMARY (product_id=pp.product_id)  (cost=0.25 rows=1) (actual time=864e-6..881e-6 rows=0.992 loops=1e+6)\n                    -> Filter: (b.category > a.category)  (cost=640576..2247 rows=2995) (actual time=0.00571..0.00742 rows=1.9 loops=744420)\n                        -> Covering index lookup on b using <auto_key0> (user_id=a.user_id)  (cost=640789..643036 rows=8986) (actual time=0.00234..0.00688 rows=4.8 loops=744420)\n                            -> Materialize CTE cust_cat if needed (query plan printed elsewhere)  (cost=640789..640789 rows=898641) (never executed)\n"
+        }
+      ]
+    }
+  ]
+}

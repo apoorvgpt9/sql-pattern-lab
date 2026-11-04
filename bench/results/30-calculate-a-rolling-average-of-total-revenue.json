@@ -1,0 +1,363 @@
+{
+  "problem": "30-calculate-a-rolling-average-of-total-revenue",
+  "generated_at": "2026-11-04T15:29:34+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_sum_per_day",
+    "02_calendar_join_then_window",
+    "03_filter_aggregate_then_spine"
+  ],
+  "optimal": "03_filter_aggregate_then_spine",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "members": 21,
+        "facilities": 9,
+        "bookings": 1000
+      },
+      "load_seconds": 0.037,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_sum_per_day",
+          "status": "ok",
+          "median_s": 0.013334072999896307,
+          "times_s": [
+            0.013349411999797667,
+            0.013224348999983704,
+            0.013334072999896307
+          ],
+          "result_rows": 31,
+          "result_digest": "6419a43ec040c4c40155540d5f9c3c6ad0956a91",
+          "explain_analyze": "-> Sort: a.`day`  (cost=5.85..5.85 rows=2) (actual time=0.0337..0.0382 rows=31 loops=1)\n    -> Table scan on a  (cost=4.19..5.45 rows=2) (actual time=0.0199..0.0229 rows=31 loops=1)\n        -> Materialize recursive CTE august  (cost=2.93..2.93 rows=2) (actual time=0.0195..0.0195 rows=31 loops=1)\n            -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=50e-6..90e-6 rows=1 loops=1)\n            -> Repeat until convergence\n                -> Filter: (august.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=0.0011..0.00295 rows=15 loops=2)\n                    -> Scan new records on august  (cost=2.73 rows=2) (actual time=636e-6..0.00121 rows=15.5 loops=2)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum((b.slots * (case when (b.memid = 0) then f.guestcost else f.membercost end)))  (cost=62.3 rows=1) (actual time=0.463..0.463 rows=1 loops=31)\n        -> Nested loop inner join  (cost=51.2 rows=111) (actual time=0.0302..0.444 rows=95.4 loops=31)\n            -> Filter: ((b.starttime >= cast((a.`day` - interval 14 day) as datetime)) and (b.starttime < cast((a.`day` + interval 1 day) as datetime)) and (b.facid is not null))  (cost=12.4 rows=111) (actual time=0.0287..0.369 rows=95.4 loops=31)\n                -> Table scan on b  (cost=12.4 rows=1000) (actual time=0.0262..0.213 rows=1000 loops=31)\n            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.251 rows=1) (actual time=599e-6..627e-6 rows=1 loops=2957)\n"
+        },
+        {
+          "solution": "02_calendar_join_then_window",
+          "status": "ok",
+          "median_s": 0.001792578999811667,
+          "times_s": [
+            0.0018553560000782454,
+            0.001744952000080957,
+            0.001792578999811667
+          ],
+          "result_rows": 31,
+          "result_digest": "6419a43ec040c4c40155540d5f9c3c6ad0956a91",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=0.905..0.906 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=0.895..0.9 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=0.892..0.896 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=0.892..0.892 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(daily.revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=0.844..0.884 rows=45 loops=1)\n                    -> Sort: daily.`day`  (cost=2.6..2.6 rows=0) (actual time=0.84..0.842 rows=45 loops=1)\n                        -> Table scan on daily  (cost=2.5..2.5 rows=0) (actual time=0.826..0.83 rows=45 loops=1)\n                            -> Materialize CTE daily  (cost=0..0 rows=0) (actual time=0.826..0.826 rows=45 loops=1)\n                                -> Table scan on <temporary>  (actual time=0.812..0.816 rows=45 loops=1)\n                                    -> Aggregate using temporary table  (actual time=0.811..0.811 rows=45 loops=1)\n                                        -> Nested loop left join  (cost=685 rows=2000) (actual time=0.371..0.625 rows=282 loops=1)\n                                            -> Left hash join (cast(b.starttime as date) = c.`day`)  (cost=235 rows=2000) (actual time=0.367..0.399 rows=282 loops=1)\n                                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0169..0.0218 rows=45 loops=1)\n                                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0166..0.0166 rows=45 loops=1)\n                                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=50e-6..100e-6 rows=1 loops=1)\n                                                        -> Repeat until convergence\n                                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=656e-6..0.0034 rows=22 loops=2)\n                                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=331e-6..0.00112 rows=22.5 loops=2)\n                                                -> Hash\n                                                    -> Table scan on b  (cost=33.8 rows=1000) (actual time=0.0337..0.204 rows=1000 loops=1)\n                                            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.0834 rows=1) (actual time=617e-6..646e-6 rows=0.996 loops=282)\n"
+        },
+        {
+          "solution": "03_filter_aggregate_then_spine",
+          "status": "ok",
+          "median_s": 0.0016860589998941578,
+          "times_s": [
+            0.0016896360000373534,
+            0.0016860589998941578,
+            0.001638081000010061
+          ],
+          "result_rows": 31,
+          "result_digest": "6419a43ec040c4c40155540d5f9c3c6ad0956a91",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=0.879..0.881 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=0.868..0.873 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=0.865..0.869 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=0.865..0.865 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=0.786..0.856 rows=45 loops=1)\n                    -> Sort: daily.`day`  (actual time=0.782..0.784 rows=45 loops=1)\n                        -> Stream results  (cost=13 rows=0) (actual time=0.724..0.771 rows=45 loops=1)\n                            -> Nested loop left join  (cost=13 rows=0) (actual time=0.722..0.758 rows=45 loops=1)\n                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0159..0.0202 rows=45 loops=1)\n                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0155..0.0155 rows=45 loops=1)\n                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=60e-6..100e-6 rows=1 loops=1)\n                                        -> Repeat until convergence\n                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=706e-6..0.00324 rows=22 loops=2)\n                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=330e-6..0.00114 rows=22.5 loops=2)\n                                -> Index lookup on k using <auto_key0> (day=c.`day`)  (cost=0.283..2.86 rows=10.1) (actual time=0.0161..0.0162 rows=0.978 loops=45)\n                                    -> Materialize CTE booked  (cost=0..0 rows=0) (actual time=0.704..0.704 rows=44 loops=1)\n                                        -> Table scan on <temporary>  (actual time=0.685..0.689 rows=44 loops=1)\n                                            -> Aggregate using temporary table  (actual time=0.685..0.685 rows=44 loops=1)\n                                                -> Nested loop inner join  (cost=140 rows=111) (actual time=0.0373..0.543 rows=281 loops=1)\n                                                    -> Filter: ((b.starttime >= TIMESTAMP'2012-07-18 00:00:00') and (b.starttime < TIMESTAMP'2012-09-01 00:00:00') and (b.facid is not null))  (cost=101 rows=111) (actual time=0.033..0.319 rows=281 loops=1)\n                                                        -> Table scan on b  (cost=101 rows=1000) (actual time=0.0322..0.234 rows=1000 loops=1)\n                                                    -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.251 rows=1) (actual time=615e-6..643e-6 rows=1 loops=281)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "members": 21,
+        "facilities": 9,
+        "bookings": 1000
+      },
+      "load_seconds": 0.037,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_sum_per_day",
+          "status": "ok",
+          "median_s": 0.01350655399983225,
+          "times_s": [
+            0.013828821000060998,
+            0.013390809999918929,
+            0.01350655399983225
+          ],
+          "result_rows": 31,
+          "result_digest": "6419a43ec040c4c40155540d5f9c3c6ad0956a91",
+          "explain_analyze": "-> Sort: a.`day`  (cost=5.85..5.85 rows=2) (actual time=0.0325..0.0361 rows=31 loops=1)\n    -> Table scan on a  (cost=4.19..5.45 rows=2) (actual time=0.019..0.0219 rows=31 loops=1)\n        -> Materialize recursive CTE august  (cost=2.93..2.93 rows=2) (actual time=0.0185..0.0185 rows=31 loops=1)\n            -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=60e-6..141e-6 rows=1 loops=1)\n            -> Repeat until convergence\n                -> Filter: (august.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=952e-6..0.00301 rows=15 loops=2)\n                    -> Scan new records on august  (cost=2.73 rows=2) (actual time=451e-6..0.00127 rows=15.5 loops=2)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum((b.slots * (case when (b.memid = 0) then f.guestcost else f.membercost end)))  (cost=62.3 rows=1) (actual time=0.523..0.523 rows=1 loops=31)\n        -> Nested loop inner join  (cost=51.2 rows=111) (actual time=0.0336..0.504 rows=95.4 loops=31)\n            -> Filter: ((b.starttime >= cast((a.`day` - interval 14 day) as datetime)) and (b.starttime < cast((a.`day` + interval 1 day) as datetime)) and (b.facid is not null))  (cost=12.4 rows=111) (actual time=0.0312..0.429 rows=95.4 loops=31)\n                -> Index range scan on b (re-planned for each iteration)  (cost=12.4 rows=1000) (actual time=0.0283..0.274 rows=1000 loops=31)\n            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.251 rows=1) (actual time=600e-6..628e-6 rows=1 loops=2957)\n"
+        },
+        {
+          "solution": "02_calendar_join_then_window",
+          "status": "ok",
+          "median_s": 0.001734407999947507,
+          "times_s": [
+            0.0017309239999576675,
+            0.0017724720000842353,
+            0.001734407999947507
+          ],
+          "result_rows": 31,
+          "result_digest": "6419a43ec040c4c40155540d5f9c3c6ad0956a91",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=1.01..1.01 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=0.999..1 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=0.997..1 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=0.997..0.997 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(daily.revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=0.935..0.986 rows=45 loops=1)\n                    -> Sort: daily.`day`  (cost=2.6..2.6 rows=0) (actual time=0.926..0.929 rows=45 loops=1)\n                        -> Table scan on daily  (cost=2.5..2.5 rows=0) (actual time=0.913..0.917 rows=45 loops=1)\n                            -> Materialize CTE daily  (cost=0..0 rows=0) (actual time=0.912..0.912 rows=45 loops=1)\n                                -> Table scan on <temporary>  (actual time=0.897..0.902 rows=45 loops=1)\n                                    -> Aggregate using temporary table  (actual time=0.897..0.897 rows=45 loops=1)\n                                        -> Nested loop left join  (cost=685 rows=2000) (actual time=0.402..0.715 rows=282 loops=1)\n                                            -> Left hash join (cast(b.starttime as date) = c.`day`)  (cost=235 rows=2000) (actual time=0.396..0.43 rows=282 loops=1)\n                                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0176..0.0232 rows=45 loops=1)\n                                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0171..0.0171 rows=45 loops=1)\n                                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=60e-6..111e-6 rows=1 loops=1)\n                                                        -> Repeat until convergence\n                                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=716e-6..0.00366 rows=22 loops=2)\n                                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=366e-6..0.00153 rows=22.5 loops=2)\n                                                -> Hash\n                                                    -> Covering index scan on b using idx_bookings_starttime  (cost=33.8 rows=1000) (actual time=0.0324..0.226 rows=1000 loops=1)\n                                            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.0834 rows=1) (actual time=722e-6..751e-6 rows=0.996 loops=282)\n"
+        },
+        {
+          "solution": "03_filter_aggregate_then_spine",
+          "status": "ok",
+          "median_s": 0.0016236239998761448,
+          "times_s": [
+            0.0015066249998199055,
+            0.0017530449999867415,
+            0.0016236239998761448
+          ],
+          "result_rows": 31,
+          "result_digest": "6419a43ec040c4c40155540d5f9c3c6ad0956a91",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=0.713..0.714 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=0.701..0.706 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=0.699..0.703 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=0.698..0.698 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=0.641..0.689 rows=45 loops=1)\n                    -> Sort: daily.`day`  (actual time=0.636..0.638 rows=45 loops=1)\n                        -> Stream results  (cost=13 rows=0) (actual time=0.57..0.623 rows=45 loops=1)\n                            -> Nested loop left join  (cost=13 rows=0) (actual time=0.568..0.609 rows=45 loops=1)\n                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0156..0.0207 rows=45 loops=1)\n                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0151..0.0151 rows=45 loops=1)\n                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=50e-6..100e-6 rows=1 loops=1)\n                                        -> Repeat until convergence\n                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=692e-6..0.00318 rows=22 loops=2)\n                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=360e-6..0.00116 rows=22.5 loops=2)\n                                -> Index lookup on k using <auto_key0> (day=c.`day`)  (cost=0.283..2.84 rows=10) (actual time=0.0127..0.0129 rows=0.978 loops=45)\n                                    -> Materialize CTE booked  (cost=0..0 rows=0) (actual time=0.551..0.551 rows=44 loops=1)\n                                        -> Table scan on <temporary>  (actual time=0.53..0.535 rows=44 loops=1)\n                                            -> Aggregate using temporary table  (actual time=0.529..0.529 rows=44 loops=1)\n                                                -> Nested loop inner join  (cost=156 rows=281) (actual time=0.043..0.384 rows=281 loops=1)\n                                                    -> Filter: ((b.starttime >= TIMESTAMP'2012-07-18 00:00:00') and (b.starttime < TIMESTAMP'2012-09-01 00:00:00') and (b.facid is not null))  (cost=57.4 rows=281) (actual time=0.0388..0.123 rows=281 loops=1)\n                                                        -> Covering index range scan on b using idx_bookings_starttime over ('2012-07-18 00:00:00' <= starttime < '2012-09-01 00:00:00')  (cost=57.4 rows=281) (actual time=0.0378..0.0858 rows=281 loops=1)\n                                                    -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=747e-6..776e-6 rows=1 loops=281)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "members": 501,
+        "facilities": 9,
+        "bookings": 100000
+      },
+      "load_seconds": 1.213,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_sum_per_day",
+          "status": "ok",
+          "median_s": 1.186382653999999,
+          "times_s": [
+            1.2228250989999196,
+            1.186382653999999,
+            1.1857134929998665
+          ],
+          "result_rows": 31,
+          "result_digest": "f9cbb28a6d5317f02adf63c69066a3138b110769",
+          "explain_analyze": "-> Sort: a.`day`  (cost=5.85..5.85 rows=2) (actual time=0.0319..0.0561 rows=31 loops=1)\n    -> Table scan on a  (cost=4.19..5.45 rows=2) (actual time=0.0183..0.0213 rows=31 loops=1)\n        -> Materialize recursive CTE august  (cost=2.93..2.93 rows=2) (actual time=0.0176..0.0176 rows=31 loops=1)\n            -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=60e-6..110e-6 rows=1 loops=1)\n            -> Repeat until convergence\n                -> Filter: (august.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=827e-6..0.0026 rows=15 loops=2)\n                    -> Scan new records on august  (cost=2.73 rows=2) (actual time=406e-6..956e-6 rows=15.5 loops=2)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum((b.slots * (case when (b.memid = 0) then f.guestcost else f.membercost end)))  (cost=6190 rows=1) (actual time=45.8..45.8 rows=1 loops=31)\n        -> Nested loop inner join  (cost=5077 rows=11123) (actual time=0.76..44.1 rows=9745 loops=31)\n            -> Filter: ((b.starttime >= cast((a.`day` - interval 14 day) as datetime)) and (b.starttime < cast((a.`day` + interval 1 day) as datetime)) and (b.facid is not null))  (cost=1185 rows=11123) (actual time=0.757..36.6 rows=9745 loops=31)\n                -> Table scan on b  (cost=1185 rows=100125) (actual time=0.754..20.8 rows=100000 loops=31)\n            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=587e-6..615e-6 rows=1 loops=302082)\n"
+        },
+        {
+          "solution": "02_calendar_join_then_window",
+          "status": "ok",
+          "median_s": 0.08617042099990613,
+          "times_s": [
+            0.08663380500001949,
+            0.08617042099990613,
+            0.08598985000003267
+          ],
+          "result_rows": 31,
+          "result_digest": "f9cbb28a6d5317f02adf63c69066a3138b110769",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=100..100 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=100..100 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=100..100 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=100..100 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(daily.revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=100..100 rows=45 loops=1)\n                    -> Sort: daily.`day`  (cost=2.6..2.6 rows=0) (actual time=100..100 rows=45 loops=1)\n                        -> Table scan on daily  (cost=2.5..2.5 rows=0) (actual time=100..100 rows=45 loops=1)\n                            -> Materialize CTE daily  (cost=0..0 rows=0) (actual time=100..100 rows=45 loops=1)\n                                -> Table scan on <temporary>  (actual time=100..100 rows=45 loops=1)\n                                    -> Aggregate using temporary table  (actual time=100..100 rows=45 loops=1)\n                                        -> Nested loop left join  (cost=68515 rows=200250) (actual time=37.3..82.9 rows=29510 loops=1)\n                                            -> Left hash join (cast(b.starttime as date) = c.`day`)  (cost=23459 rows=200250) (actual time=37.3..57.9 rows=29510 loops=1)\n                                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0388..0.044 rows=45 loops=1)\n                                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0382..0.0382 rows=45 loops=1)\n                                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=321e-6..361e-6 rows=1 loops=1)\n                                                        -> Repeat until convergence\n                                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=0.00237..0.00505 rows=22 loops=2)\n                                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=876e-6..0.0017 rows=22.5 loops=2)\n                                                -> Hash\n                                                    -> Table scan on b  (cost=3362 rows=100125) (actual time=1.28..21.5 rows=100000 loops=1)\n                                            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.0833 rows=1) (actual time=657e-6..686e-6 rows=1 loops=29510)\n"
+        },
+        {
+          "solution": "03_filter_aggregate_then_spine",
+          "status": "ok",
+          "median_s": 0.058546697000110726,
+          "times_s": [
+            0.05805824700019002,
+            0.05930252699999983,
+            0.058546697000110726
+          ],
+          "result_rows": 31,
+          "result_digest": "f9cbb28a6d5317f02adf63c69066a3138b110769",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=69.3..69.3 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=69.3..69.3 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=69.3..69.3 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=69.3..69.3 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=69.2..69.3 rows=45 loops=1)\n                    -> Sort: daily.`day`  (actual time=69.2..69.2 rows=45 loops=1)\n                        -> Stream results  (cost=88.9 rows=0) (actual time=69.2..69.2 rows=45 loops=1)\n                            -> Nested loop left join  (cost=88.9 rows=0) (actual time=69.1..69.2 rows=45 loops=1)\n                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0177..0.0225 rows=45 loops=1)\n                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0171..0.0171 rows=45 loops=1)\n                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=59e-6..150e-6 rows=1 loops=1)\n                                        -> Repeat until convergence\n                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=786e-6..0.00335 rows=22 loops=2)\n                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=336e-6..0.0011 rows=22.5 loops=2)\n                                -> Index lookup on k using <auto_key0> (day=c.`day`)  (cost=0.283..31.5 rows=111) (actual time=1.54..1.54 rows=1 loops=45)\n                                    -> Materialize CTE booked  (cost=0..0 rows=0) (actual time=69.1..69.1 rows=45 loops=1)\n                                        -> Table scan on <temporary>  (actual time=69.1..69.1 rows=45 loops=1)\n                                            -> Aggregate using temporary table  (actual time=69.1..69.1 rows=45 loops=1)\n                                                -> Nested loop inner join  (cost=13978 rows=11123) (actual time=0.977..55 rows=29510 loops=1)\n                                                    -> Filter: ((b.starttime >= TIMESTAMP'2012-07-18 00:00:00') and (b.starttime < TIMESTAMP'2012-09-01 00:00:00') and (b.facid is not null))  (cost=10085 rows=11123) (actual time=0.971..32 rows=29510 loops=1)\n                                                        -> Table scan on b  (cost=10085 rows=100125) (actual time=0.97..23 rows=100000 loops=1)\n                                                    -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=594e-6..623e-6 rows=1 loops=29510)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "members": 501,
+        "facilities": 9,
+        "bookings": 100000
+      },
+      "load_seconds": 1.213,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_sum_per_day",
+          "status": "ok",
+          "median_s": 1.1808160079999652,
+          "times_s": [
+            1.1808160079999652,
+            1.1831294659998548,
+            1.1793917079999119
+          ],
+          "result_rows": 31,
+          "result_digest": "f9cbb28a6d5317f02adf63c69066a3138b110769",
+          "explain_analyze": "-> Sort: a.`day`  (cost=5.85..5.85 rows=2) (actual time=0.0327..0.0639 rows=31 loops=1)\n    -> Table scan on a  (cost=4.19..5.45 rows=2) (actual time=0.0187..0.0217 rows=31 loops=1)\n        -> Materialize recursive CTE august  (cost=2.93..2.93 rows=2) (actual time=0.018..0.018 rows=31 loops=1)\n            -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=70e-6..110e-6 rows=1 loops=1)\n            -> Repeat until convergence\n                -> Filter: (august.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=846e-6..0.00262 rows=15 loops=2)\n                    -> Scan new records on august  (cost=2.73 rows=2) (actual time=456e-6..0.00101 rows=15.5 loops=2)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum((b.slots * (case when (b.memid = 0) then f.guestcost else f.membercost end)))  (cost=6190 rows=1) (actual time=52.5..52.5 rows=1 loops=31)\n        -> Nested loop inner join  (cost=5077 rows=11123) (actual time=0.788..50.7 rows=9745 loops=31)\n            -> Filter: ((b.starttime >= cast((a.`day` - interval 14 day) as datetime)) and (b.starttime < cast((a.`day` + interval 1 day) as datetime)) and (b.facid is not null))  (cost=1185 rows=11123) (actual time=0.785..42.9 rows=9745 loops=31)\n                -> Index range scan on b (re-planned for each iteration)  (cost=1185 rows=100125) (actual time=0.781..27 rows=100000 loops=31)\n            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=610e-6..639e-6 rows=1 loops=302082)\n"
+        },
+        {
+          "solution": "02_calendar_join_then_window",
+          "status": "ok",
+          "median_s": 0.07252745100004176,
+          "times_s": [
+            0.07223584500002289,
+            0.07299965099991823,
+            0.07252745100004176
+          ],
+          "result_rows": 31,
+          "result_digest": "f9cbb28a6d5317f02adf63c69066a3138b110769",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=79.3..79.3 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=79.3..79.3 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=79.3..79.3 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=79.3..79.3 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(daily.revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=79.3..79.3 rows=45 loops=1)\n                    -> Sort: daily.`day`  (cost=2.6..2.6 rows=0) (actual time=79.2..79.2 rows=45 loops=1)\n                        -> Table scan on daily  (cost=2.5..2.5 rows=0) (actual time=79.2..79.2 rows=45 loops=1)\n                            -> Materialize CTE daily  (cost=0..0 rows=0) (actual time=79.2..79.2 rows=45 loops=1)\n                                -> Table scan on <temporary>  (actual time=79.2..79.2 rows=45 loops=1)\n                                    -> Aggregate using temporary table  (actual time=79.2..79.2 rows=45 loops=1)\n                                        -> Nested loop left join  (cost=68515 rows=200250) (actual time=34..64.5 rows=29510 loops=1)\n                                            -> Left hash join (cast(b.starttime as date) = c.`day`)  (cost=23459 rows=200250) (actual time=34..50.1 rows=29510 loops=1)\n                                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0367..0.0437 rows=45 loops=1)\n                                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0358..0.0358 rows=45 loops=1)\n                                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=171e-6..221e-6 rows=1 loops=1)\n                                                        -> Repeat until convergence\n                                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=0.00202..0.0047 rows=22 loops=2)\n                                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=906e-6..0.00171 rows=22.5 loops=2)\n                                                -> Hash\n                                                    -> Covering index scan on b using idx_bookings_starttime  (cost=3362 rows=100125) (actual time=0.807..18.8 rows=100000 loops=1)\n                                            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.0833 rows=1) (actual time=304e-6..333e-6 rows=1 loops=29510)\n"
+        },
+        {
+          "solution": "03_filter_aggregate_then_spine",
+          "status": "ok",
+          "median_s": 0.03271231700000499,
+          "times_s": [
+            0.03240098800006308,
+            0.03310586099996726,
+            0.03271231700000499
+          ],
+          "result_rows": 31,
+          "result_digest": "f9cbb28a6d5317f02adf63c69066a3138b110769",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=39.1..39.1 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=39.1..39.1 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=39.1..39.1 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=39.1..39.1 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=39..39.1 rows=45 loops=1)\n                    -> Sort: daily.`day`  (actual time=39..39 rows=45 loops=1)\n                        -> Stream results  (cost=381 rows=0) (actual time=39..39 rows=45 loops=1)\n                            -> Nested loop left join  (cost=381 rows=0) (actual time=39..39 rows=45 loops=1)\n                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.017..0.0215 rows=45 loops=1)\n                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0165..0.0165 rows=45 loops=1)\n                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=70e-6..191e-6 rows=1 loops=1)\n                                        -> Repeat until convergence\n                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=732e-6..0.00326 rows=22 loops=2)\n                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=346e-6..0.00114 rows=22.5 loops=2)\n                                -> Index lookup on k using <auto_key0> (day=c.`day`)  (cost=0.283..142 rows=501) (actual time=0.866..0.866 rows=1 loops=45)\n                                    -> Materialize CTE booked  (cost=0..0 rows=0) (actual time=38.9..38.9 rows=45 loops=1)\n                                        -> Table scan on <temporary>  (actual time=38.9..38.9 rows=45 loops=1)\n                                            -> Aggregate using temporary table  (actual time=38.9..38.9 rows=45 loops=1)\n                                                -> Nested loop inner join  (cost=27687 rows=50062) (actual time=0.784..25.5 rows=29510 loops=1)\n                                                    -> Filter: ((b.starttime >= TIMESTAMP'2012-07-18 00:00:00') and (b.starttime < TIMESTAMP'2012-09-01 00:00:00') and (b.facid is not null))  (cost=10165 rows=50062) (actual time=0.779..11.3 rows=29510 loops=1)\n                                                        -> Covering index range scan on b using idx_bookings_starttime over ('2012-07-18 00:00:00' <= starttime < '2012-09-01 00:00:00')  (cost=10165 rows=50062) (actual time=0.778..7.77 rows=29510 loops=1)\n                                                    -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=301e-6..329e-6 rows=1 loops=29510)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "members": 5001,
+        "facilities": 9,
+        "bookings": 1000000
+      },
+      "load_seconds": 11.604,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_sum_per_day",
+          "status": "ok",
+          "median_s": 11.837314302999857,
+          "times_s": [
+            11.840677308000068,
+            11.756239575000109,
+            11.837314302999857
+          ],
+          "result_rows": 31,
+          "result_digest": "dfd96ea7ef6c272fe4905d98fb35ec80929c9aaa",
+          "explain_analyze": "-> Sort: a.`day`  (cost=5.85..5.85 rows=2) (actual time=0.0321..0.0632 rows=31 loops=1)\n    -> Table scan on a  (cost=4.19..5.45 rows=2) (actual time=0.0183..0.0213 rows=31 loops=1)\n        -> Materialize recursive CTE august  (cost=2.93..2.93 rows=2) (actual time=0.0177..0.0177 rows=31 loops=1)\n            -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=50e-6..100e-6 rows=1 loops=1)\n            -> Repeat until convergence\n                -> Filter: (august.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=852e-6..0.00266 rows=15 loops=2)\n                    -> Scan new records on august  (cost=2.73 rows=2) (actual time=426e-6..0.00102 rows=15.5 loops=2)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum((b.slots * (case when (b.memid = 0) then f.guestcost else f.membercost end)))  (cost=61650 rows=1) (actual time=454..454 rows=1 loops=31)\n        -> Nested loop inner join  (cost=50565 rows=110853) (actual time=0.769..436 rows=97159 loops=31)\n            -> Filter: ((b.starttime >= cast((a.`day` - interval 14 day) as datetime)) and (b.starttime < cast((a.`day` + interval 1 day) as datetime)) and (b.facid is not null))  (cost=11766 rows=110853) (actual time=0.766..361 rows=97159 loops=31)\n                -> Table scan on b  (cost=11766 rows=997875) (actual time=0.762..210 rows=1e+6 loops=31)\n            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=593e-6..621e-6 rows=1 loops=3.01e+6)\n"
+        },
+        {
+          "solution": "02_calendar_join_then_window",
+          "status": "ok",
+          "median_s": 0.7467141470001479,
+          "times_s": [
+            0.7862931939998816,
+            0.7467141470001479,
+            0.7431287440001597
+          ],
+          "result_rows": 31,
+          "result_digest": "dfd96ea7ef6c272fe4905d98fb35ec80929c9aaa",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=866..866 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=866..866 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=866..866 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=866..866 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(daily.revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=866..866 rows=45 loops=1)\n                    -> Sort: daily.`day`  (cost=2.6..2.6 rows=0) (actual time=866..866 rows=45 loops=1)\n                        -> Table scan on daily  (cost=2.5..2.5 rows=0) (actual time=866..866 rows=45 loops=1)\n                            -> Materialize CTE daily  (cost=0..0 rows=0) (actual time=866..866 rows=45 loops=1)\n                                -> Table scan on <temporary>  (actual time=866..866 rows=45 loops=1)\n                                    -> Aggregate using temporary table  (actual time=866..866 rows=45 loops=1)\n                                        -> Nested loop left join  (cost=682789 rows=2e+6) (actual time=331..711 rows=294192 loops=1)\n                                            -> Left hash join (cast(b.starttime as date) = c.`day`)  (cost=233746 rows=2e+6) (actual time=331..482 rows=294192 loops=1)\n                                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0393..0.0445 rows=45 loops=1)\n                                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0387..0.0387 rows=45 loops=1)\n                                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=59e-6..109e-6 rows=1 loops=1)\n                                                        -> Repeat until convergence\n                                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=0.00194..0.00473 rows=22 loops=2)\n                                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=791e-6..0.00159 rows=22.5 loops=2)\n                                                -> Hash\n                                                    -> Table scan on b  (cost=33490 rows=997875) (actual time=1.01..209 rows=1e+6 loops=1)\n                                            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.0833 rows=1) (actual time=595e-6..624e-6 rows=1 loops=294192)\n"
+        },
+        {
+          "solution": "03_filter_aggregate_then_spine",
+          "status": "ok",
+          "median_s": 0.5644116529999792,
+          "times_s": [
+            0.5636267559998487,
+            0.5644116529999792,
+            0.6111956109998573
+          ],
+          "result_rows": 31,
+          "result_digest": "dfd96ea7ef6c272fe4905d98fb35ec80929c9aaa",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=685..685 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=685..685 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=685..685 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=685..685 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=685..685 rows=45 loops=1)\n                    -> Sort: daily.`day`  (actual time=685..685 rows=45 loops=1)\n                        -> Stream results  (cost=837 rows=0) (actual time=685..685 rows=45 loops=1)\n                            -> Nested loop left join  (cost=837 rows=0) (actual time=685..685 rows=45 loops=1)\n                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0179..0.0226 rows=45 loops=1)\n                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0173..0.0173 rows=45 loops=1)\n                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=50e-6..180e-6 rows=1 loops=1)\n                                        -> Repeat until convergence\n                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=798e-6..0.00338 rows=22 loops=2)\n                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=315e-6..0.00109 rows=22.5 loops=2)\n                                -> Index lookup on k using <auto_key0> (day=c.`day`)  (cost=0.283..314 rows=1109) (actual time=15.2..15.2 rows=1 loops=45)\n                                    -> Materialize CTE booked  (cost=0..0 rows=0) (actual time=685..685 rows=45 loops=1)\n                                        -> Table scan on <temporary>  (actual time=685..685 rows=45 loops=1)\n                                            -> Aggregate using temporary table  (actual time=685..685 rows=45 loops=1)\n                                                -> Nested loop inner join  (cost=139267 rows=110853) (actual time=0.87..544 rows=294192 loops=1)\n                                                    -> Filter: ((b.starttime >= TIMESTAMP'2012-07-18 00:00:00') and (b.starttime < TIMESTAMP'2012-09-01 00:00:00') and (b.facid is not null))  (cost=100468 rows=110853) (actual time=0.865..316 rows=294192 loops=1)\n                                                        -> Table scan on b  (cost=100468 rows=997875) (actual time=0.864..230 rows=1e+6 loops=1)\n                                                    -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=593e-6..621e-6 rows=1 loops=294192)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "members": 5001,
+        "facilities": 9,
+        "bookings": 1000000
+      },
+      "load_seconds": 11.604,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_sum_per_day",
+          "status": "ok",
+          "median_s": 11.78060309600005,
+          "times_s": [
+            11.78060309600005,
+            11.768664797999918,
+            11.811355561000028
+          ],
+          "result_rows": 31,
+          "result_digest": "dfd96ea7ef6c272fe4905d98fb35ec80929c9aaa",
+          "explain_analyze": "-> Sort: a.`day`  (cost=5.85..5.85 rows=2) (actual time=0.0322..0.0596 rows=31 loops=1)\n    -> Table scan on a  (cost=4.19..5.45 rows=2) (actual time=0.0186..0.0215 rows=31 loops=1)\n        -> Materialize recursive CTE august  (cost=2.93..2.93 rows=2) (actual time=0.0176..0.0176 rows=31 loops=1)\n            -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=50e-6..90e-6 rows=1 loops=1)\n            -> Repeat until convergence\n                -> Filter: (august.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=816e-6..0.00273 rows=15 loops=2)\n                    -> Scan new records on august  (cost=2.73 rows=2) (actual time=361e-6..0.00103 rows=15.5 loops=2)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: sum((b.slots * (case when (b.memid = 0) then f.guestcost else f.membercost end)))  (cost=61650 rows=1) (actual time=530..530 rows=1 loops=31)\n        -> Nested loop inner join  (cost=50565 rows=110853) (actual time=0.807..512 rows=97159 loops=31)\n            -> Filter: ((b.starttime >= cast((a.`day` - interval 14 day) as datetime)) and (b.starttime < cast((a.`day` + interval 1 day) as datetime)) and (b.facid is not null))  (cost=11766 rows=110853) (actual time=0.803..434 rows=97159 loops=31)\n                -> Index range scan on b (re-planned for each iteration)  (cost=11766 rows=997875) (actual time=0.8..276 rows=1e+6 loops=31)\n            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=617e-6..645e-6 rows=1 loops=3.01e+6)\n"
+        },
+        {
+          "solution": "02_calendar_join_then_window",
+          "status": "ok",
+          "median_s": 0.5474389690000407,
+          "times_s": [
+            0.5474389690000407,
+            0.5497120539998832,
+            0.5469759759998851
+          ],
+          "result_rows": 31,
+          "result_digest": "dfd96ea7ef6c272fe4905d98fb35ec80929c9aaa",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=660..660 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=660..660 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=660..660 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=660..660 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(daily.revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=660..660 rows=45 loops=1)\n                    -> Sort: daily.`day`  (cost=2.6..2.6 rows=0) (actual time=660..660 rows=45 loops=1)\n                        -> Table scan on daily  (cost=2.5..2.5 rows=0) (actual time=660..660 rows=45 loops=1)\n                            -> Materialize CTE daily  (cost=0..0 rows=0) (actual time=660..660 rows=45 loops=1)\n                                -> Table scan on <temporary>  (actual time=660..660 rows=45 loops=1)\n                                    -> Aggregate using temporary table  (actual time=660..660 rows=45 loops=1)\n                                        -> Nested loop left join  (cost=682789 rows=2e+6) (actual time=302..524 rows=294192 loops=1)\n                                            -> Left hash join (cast(b.starttime as date) = c.`day`)  (cost=233746 rows=2e+6) (actual time=302..437 rows=294192 loops=1)\n                                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0371..0.0427 rows=45 loops=1)\n                                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0365..0.0365 rows=45 loops=1)\n                                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=60e-6..110e-6 rows=1 loops=1)\n                                                        -> Repeat until convergence\n                                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=0.00204..0.00479 rows=22 loops=2)\n                                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=792e-6..0.0016 rows=22.5 loops=2)\n                                                -> Hash\n                                                    -> Covering index scan on b using idx_bookings_starttime  (cost=33490 rows=997875) (actual time=0.969..187 rows=1e+6 loops=1)\n                                            -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.0833 rows=1) (actual time=115e-6..143e-6 rows=1 loops=294192)\n"
+        },
+        {
+          "solution": "03_filter_aggregate_then_spine",
+          "status": "ok",
+          "median_s": 0.24481937500013373,
+          "times_s": [
+            0.24414410600002157,
+            0.24481937500013373,
+            0.29058252300001186
+          ],
+          "result_rows": 31,
+          "result_digest": "dfd96ea7ef6c272fe4905d98fb35ec80929c9aaa",
+          "explain_analyze": "-> Sort: windowed.`day`  (cost=2.6..2.6 rows=0) (actual time=327..327 rows=31 loops=1)\n    -> Filter: (windowed.`day` >= DATE'2012-08-01')  (cost=2.5..2.5 rows=0) (actual time=327..327 rows=31 loops=1)\n        -> Table scan on windowed  (cost=2.5..2.5 rows=0) (actual time=327..327 rows=45 loops=1)\n            -> Materialize CTE windowed  (cost=0..0 rows=0) (actual time=327..327 rows=45 loops=1)\n                -> Window aggregate with buffering: sum(revenue) OVER (ORDER BY daily.`day` ROWS BETWEEN 14 PRECEDING AND CURRENT ROW)   (actual time=327..327 rows=45 loops=1)\n                    -> Sort: daily.`day`  (actual time=327..327 rows=45 loops=1)\n                        -> Stream results  (cost=3747 rows=0) (actual time=327..327 rows=45 loops=1)\n                            -> Nested loop left join  (cost=3747 rows=0) (actual time=327..327 rows=45 loops=1)\n                                -> Table scan on c  (cost=4.19..5.45 rows=2) (actual time=0.0172..0.0217 rows=45 loops=1)\n                                    -> Materialize recursive CTE calendar  (cost=2.93..2.93 rows=2) (actual time=0.0167..0.0167 rows=45 loops=1)\n                                        -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=62e-6..103e-6 rows=1 loops=1)\n                                        -> Repeat until convergence\n                                            -> Filter: (calendar.`day` < DATE'2012-08-31')  (cost=2.73 rows=1) (actual time=716e-6..0.00325 rows=22 loops=2)\n                                                -> Scan new records on calendar  (cost=2.73 rows=2) (actual time=321e-6..0.0011 rows=22.5 loops=2)\n                                -> Index lookup on k using <auto_key0> (day=c.`day`)  (cost=0.283..1414 rows=4989) (actual time=7.27..7.27 rows=1 loops=45)\n                                    -> Materialize CTE booked  (cost=0..0 rows=0) (actual time=327..327 rows=45 loops=1)\n                                        -> Table scan on <temporary>  (actual time=327..327 rows=45 loops=1)\n                                            -> Aggregate using temporary table  (actual time=327..327 rows=45 loops=1)\n                                                -> Nested loop inner join  (cost=275937 rows=498937) (actual time=0.955..200 rows=294192 loops=1)\n                                                    -> Filter: ((b.starttime >= TIMESTAMP'2012-07-18 00:00:00') and (b.starttime < TIMESTAMP'2012-09-01 00:00:00') and (b.facid is not null))  (cost=101309 rows=498937) (actual time=0.95..111 rows=294192 loops=1)\n                                                        -> Covering index range scan on b using idx_bookings_starttime over ('2012-07-18 00:00:00' <= starttime < '2012-09-01 00:00:00')  (cost=101309 rows=498937) (actual time=0.949..76.5 rows=294192 loops=1)\n                                                    -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=118e-6..147e-6 rows=1 loops=294192)\n"
+        }
+      ]
+    }
+  ]
+}

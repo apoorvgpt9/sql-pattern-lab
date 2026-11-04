@@ -1,0 +1,336 @@
+{
+  "problem": "24-immediate-food-delivery-ii",
+  "generated_at": "2026-11-04T15:37:43+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_first_order",
+    "02_join_to_first_date",
+    "03_row_number_first"
+  ],
+  "optimal": "03_row_number_first",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Delivery": 1000
+      },
+      "load_seconds": 0.026,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_first_order",
+          "status": "ok",
+          "median_s": 0.14533749199995327,
+          "times_s": [
+            0.15032436900014545,
+            0.14533749199995327,
+            0.14525783599992792
+          ],
+          "result_rows": 1,
+          "result_digest": "480b10feafa0e0a8cc163e604772ae900b4da245",
+          "explain_analyze": "-> Aggregate: count(0), sum((d.customer_pref_delivery_date = d.order_date))  (cost=201 rows=1) (actual time=200..200 rows=1 loops=1)\n    -> Filter: (d.order_date = (select #2))  (cost=101 rows=1000) (actual time=0.474..200 rows=346 loops=1)\n        -> Table scan on d  (cost=101 rows=1000) (actual time=0.0359..0.19 rows=1000 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: min(x.order_date)  (cost=21 rows=1) (actual time=0.199..0.199 rows=1 loops=1000)\n                -> Filter: (x.customer_id = d.customer_id)  (cost=11 rows=100) (actual time=0.115..0.199 rows=4.29 loops=1000)\n                    -> Table scan on x  (cost=11 rows=1000) (actual time=0.0341..0.158 rows=1000 loops=1000)\n"
+        },
+        {
+          "solution": "02_join_to_first_date",
+          "status": "ok",
+          "median_s": 0.0016403449999415898,
+          "times_s": [
+            0.0016403449999415898,
+            0.0016250310000032187,
+            0.0016680780001934181
+          ],
+          "result_rows": 1,
+          "result_digest": "480b10feafa0e0a8cc163e604772ae900b4da245",
+          "explain_analyze": "-> Aggregate: avg((d.customer_pref_delivery_date = d.order_date))  (cost=2601 rows=1) (actual time=1.56..1.56 rows=1 loops=1)\n    -> Nested loop inner join  (cost=2601 rows=0) (actual time=0.695..1.52 rows=346 loops=1)\n        -> Table scan on d  (cost=101 rows=1000) (actual time=0.0452..0.227 rows=1000 loops=1)\n        -> Covering index lookup on f using <auto_key0> (customer_id=d.customer_id, first_date=d.order_date)  (cost=0.25..2.5 rows=10) (actual time=0.00113..0.00117 rows=0.346 loops=1000)\n            -> Materialize  (cost=0..0 rows=0) (actual time=0.645..0.645 rows=346 loops=1)\n                -> Table scan on <temporary>  (actual time=0.473..0.504 rows=346 loops=1)\n                    -> Aggregate using temporary table  (actual time=0.472..0.472 rows=346 loops=1)\n                        -> Table scan on Delivery  (cost=101 rows=1000) (actual time=0.0523..0.231 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_row_number_first",
+          "status": "ok",
+          "median_s": 0.0016558879999593046,
+          "times_s": [
+            0.0015984240001216676,
+            0.0016558879999593046,
+            0.0016854699999839795
+          ],
+          "result_rows": 1,
+          "result_digest": "480b10feafa0e0a8cc163e604772ae900b4da245",
+          "explain_analyze": "-> Aggregate: avg((first_orders.customer_pref_delivery_date = first_orders.order_date))  (cost=3.5..3.5 rows=1) (actual time=1.18..1.18 rows=1 loops=1)\n    -> Index lookup on first_orders using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=1.11..1.15 rows=346 loops=1)\n        -> Materialize CTE first_orders  (cost=0..0 rows=0) (actual time=1.11..1.11 rows=1000 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY Delivery.customer_id ORDER BY Delivery.order_date )   (actual time=0.347..0.631 rows=1000 loops=1)\n                -> Sort: Delivery.customer_id, Delivery.order_date  (cost=101 rows=1000) (actual time=0.344..0.4 rows=1000 loops=1)\n                    -> Table scan on Delivery  (cost=101 rows=1000) (actual time=0.0428..0.198 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Delivery": 1000
+      },
+      "load_seconds": 0.026,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_first_order",
+          "status": "ok",
+          "median_s": 0.003692821999948137,
+          "times_s": [
+            0.003692821999948137,
+            0.0045062529998176615,
+            0.003621752000071865
+          ],
+          "result_rows": 1,
+          "result_digest": "480b10feafa0e0a8cc163e604772ae900b4da245",
+          "explain_analyze": "-> Aggregate: count(0), sum((d.customer_pref_delivery_date = d.order_date))  (cost=201 rows=1) (actual time=3.63..3.63 rows=1 loops=1)\n    -> Filter: (d.order_date = (select #2))  (cost=101 rows=1000) (actual time=0.0627..3.58 rows=346 loops=1)\n        -> Covering index scan on d using idx_delivery_customer_date  (cost=101 rows=1000) (actual time=0.0499..0.2 rows=1000 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: min(x.order_date)  (cost=1.21 rows=1) (actual time=0.00278..0.00281 rows=1 loops=1000)\n                -> Covering index lookup on x using idx_delivery_customer_date (customer_id=d.customer_id)  (cost=0.916 rows=2.89) (actual time=0.00137..0.00225 rows=4.29 loops=1000)\n"
+        },
+        {
+          "solution": "02_join_to_first_date",
+          "status": "ok",
+          "median_s": 0.001825852000138184,
+          "times_s": [
+            0.001825852000138184,
+            0.0018143879999570345,
+            0.001826444000016636
+          ],
+          "result_rows": 1,
+          "result_digest": "480b10feafa0e0a8cc163e604772ae900b4da245",
+          "explain_analyze": "-> Aggregate: avg((d.customer_pref_delivery_date = d.order_date))  (cost=328 rows=1) (actual time=1.58..1.58 rows=1 loops=1)\n    -> Nested loop inner join  (cost=293 rows=349) (actual time=0.775..1.53 rows=346 loops=1)\n        -> Filter: (f.first_date is not null)  (cost=140..41.5 rows=347) (actual time=0.77..0.827 rows=346 loops=1)\n            -> Table scan on f  (cost=140..147 rows=347) (actual time=0.77..0.803 rows=346 loops=1)\n                -> Materialize  (cost=140..140 rows=347) (actual time=0.769..0.769 rows=346 loops=1)\n                    -> Covering index skip scan for grouping on Delivery using idx_delivery_customer_date  (cost=105 rows=347) (actual time=0.00999..0.659 rows=346 loops=1)\n        -> Covering index lookup on d using idx_delivery_customer_date (customer_id=f.customer_id, order_date=f.first_date)  (cost=0.625 rows=1.01) (actual time=0.00152..0.00185 rows=1 loops=346)\n"
+        },
+        {
+          "solution": "03_row_number_first",
+          "status": "ok",
+          "median_s": 0.001651687000048696,
+          "times_s": [
+            0.0016573179998431442,
+            0.0015695039999172877,
+            0.001651687000048696
+          ],
+          "result_rows": 1,
+          "result_digest": "480b10feafa0e0a8cc163e604772ae900b4da245",
+          "explain_analyze": "-> Aggregate: avg((first_orders.customer_pref_delivery_date = first_orders.order_date))  (cost=3.5..3.5 rows=1) (actual time=1.2..1.2 rows=1 loops=1)\n    -> Index lookup on first_orders using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=1.12..1.17 rows=346 loops=1)\n        -> Materialize CTE first_orders  (cost=0..0 rows=0) (actual time=1.12..1.12 rows=1000 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY Delivery.customer_id ORDER BY Delivery.order_date )   (actual time=0.369..0.627 rows=1000 loops=1)\n                -> Sort: Delivery.customer_id, Delivery.order_date  (cost=101 rows=1000) (actual time=0.366..0.412 rows=1000 loops=1)\n                    -> Index scan on Delivery using idx_delivery_customer_date  (cost=101 rows=1000) (actual time=0.0377..0.234 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Delivery": 100000
+      },
+      "load_seconds": 1.092,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_first_order",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_join_to_first_date",
+          "status": "ok",
+          "median_s": 0.12451892199987924,
+          "times_s": [
+            0.12451892199987924,
+            0.12392084399994019,
+            0.12470299599999635
+          ],
+          "result_rows": 1,
+          "result_digest": "eb7c887743cf38484976ec9346d6e0e8abcc7c5d",
+          "explain_analyze": "-> Aggregate: avg((d.customer_pref_delivery_date = d.order_date))  (cost=261122 rows=1) (actual time=166..166 rows=1 loops=1)\n    -> Nested loop inner join  (cost=261122 rows=0) (actual time=63.3..163 rows=33248 loops=1)\n        -> Table scan on d  (cost=10097 rows=100405) (actual time=1.34..22.5 rows=100000 loops=1)\n        -> Covering index lookup on f using <auto_key0> (customer_id=d.customer_id, first_date=d.order_date)  (cost=0.25..2.5 rows=10) (actual time=0.00124..0.00128 rows=0.332 loops=100000)\n            -> Materialize  (cost=0..0 rows=0) (actual time=62..62 rows=33248 loops=1)\n                -> Table scan on <temporary>  (actual time=37.3..40.4 rows=33248 loops=1)\n                    -> Aggregate using temporary table  (actual time=37.3..37.3 rows=33248 loops=1)\n                        -> Table scan on Delivery  (cost=10097 rows=100405) (actual time=1.08..16.3 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_row_number_first",
+          "status": "ok",
+          "median_s": 0.13426321399992958,
+          "times_s": [
+            0.13376840899991294,
+            0.13441205200001605,
+            0.13426321399992958
+          ],
+          "result_rows": 1,
+          "result_digest": "eb7c887743cf38484976ec9346d6e0e8abcc7c5d",
+          "explain_analyze": "-> Aggregate: avg((first_orders.customer_pref_delivery_date = first_orders.order_date))  (cost=3.5..3.5 rows=1) (actual time=144..144 rows=1 loops=1)\n    -> Index lookup on first_orders using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=137..141 rows=33248 loops=1)\n        -> Materialize CTE first_orders  (cost=0..0 rows=0) (actual time=137..137 rows=100000 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY Delivery.customer_id ORDER BY Delivery.order_date )   (actual time=36.1..64.1 rows=100000 loops=1)\n                -> Sort: Delivery.customer_id, Delivery.order_date  (cost=10097 rows=100405) (actual time=36.1..41.7 rows=100000 loops=1)\n                    -> Table scan on Delivery  (cost=10097 rows=100405) (actual time=1.06..17.7 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Delivery": 100000
+      },
+      "load_seconds": 1.092,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_first_order",
+          "status": "ok",
+          "median_s": 0.31658912800003236,
+          "times_s": [
+            0.28637148899997555,
+            0.31658912800003236,
+            0.45610913400014397
+          ],
+          "result_rows": 1,
+          "result_digest": "eb7c887743cf38484976ec9346d6e0e8abcc7c5d",
+          "explain_analyze": "-> Aggregate: count(0), sum((d.customer_pref_delivery_date = d.order_date))  (cost=19307 rows=1) (actual time=513..513 rows=1 loops=1)\n    -> Filter: (d.order_date = (select #2))  (cost=9682 rows=96255) (actual time=1.89..507 rows=33248 loops=1)\n        -> Covering index scan on d using idx_delivery_customer_date  (cost=9682 rows=96255) (actual time=1.87..30 rows=100000 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: min(x.order_date)  (cost=1.58 rows=1) (actual time=0.00393..0.00396 rows=1 loops=100000)\n                -> Covering index lookup on x using idx_delivery_customer_date (customer_id=d.customer_id)  (cost=1.29 rows=2.93) (actual time=0.00203..0.00321 rows=4.45 loops=100000)\n"
+        },
+        {
+          "solution": "02_join_to_first_date",
+          "status": "ok",
+          "median_s": 0.16030181899986928,
+          "times_s": [
+            0.19105985200008035,
+            0.16030181899986928,
+            0.12026324800012844
+          ],
+          "result_rows": 1,
+          "result_digest": "eb7c887743cf38484976ec9346d6e0e8abcc7c5d",
+          "explain_analyze": "-> Aggregate: avg((d.customer_pref_delivery_date = d.order_date))  (cost=42901 rows=1) (actual time=138..138 rows=1 loops=1)\n    -> Nested loop inner join  (cost=39617 rows=32840) (actual time=70.2..135 rows=33248 loops=1)\n        -> Filter: (f.first_date is not null)  (cost=13300..3697 rows=32840) (actual time=70.2..75.7 rows=33248 loops=1)\n            -> Table scan on f  (cost=13300..13713 rows=32840) (actual time=70.2..73.6 rows=33248 loops=1)\n                -> Materialize  (cost=13300..13300 rows=32840) (actual time=70.2..70.2 rows=33248 loops=1)\n                    -> Covering index skip scan for grouping on Delivery using idx_delivery_customer_date  (cost=10016 rows=32840) (actual time=0.0131..61.5 rows=33248 loops=1)\n        -> Covering index lookup on d using idx_delivery_customer_date (customer_id=f.customer_id, order_date=f.first_date)  (cost=0.994 rows=1) (actual time=0.0013..0.0016 rows=1 loops=33248)\n"
+        },
+        {
+          "solution": "03_row_number_first",
+          "status": "ok",
+          "median_s": 0.13135363599985794,
+          "times_s": [
+            0.13135363599985794,
+            0.1309444139999414,
+            0.13354876799985504
+          ],
+          "result_rows": 1,
+          "result_digest": "eb7c887743cf38484976ec9346d6e0e8abcc7c5d",
+          "explain_analyze": "-> Aggregate: avg((first_orders.customer_pref_delivery_date = first_orders.order_date))  (cost=3.5..3.5 rows=1) (actual time=142..142 rows=1 loops=1)\n    -> Index lookup on first_orders using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=135..140 rows=33248 loops=1)\n        -> Materialize CTE first_orders  (cost=0..0 rows=0) (actual time=135..135 rows=100000 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY Delivery.customer_id ORDER BY Delivery.order_date )   (actual time=34.3..62.5 rows=100000 loops=1)\n                -> Sort: Delivery.customer_id, Delivery.order_date  (cost=9682 rows=96255) (actual time=34.3..39.9 rows=100000 loops=1)\n                    -> Index scan on Delivery using idx_delivery_customer_date  (cost=9682 rows=96255) (actual time=1.03..17.1 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Delivery": 1000000
+      },
+      "load_seconds": 10.298,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_first_order",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_join_to_first_date",
+          "status": "ok",
+          "median_s": 3.354974418999973,
+          "times_s": [
+            3.354974418999973,
+            3.2880339240000467,
+            3.362004228999922
+          ],
+          "result_rows": 1,
+          "result_digest": "a6c9d0400e8d280665b2b0eb5687e901c1ce6c7a",
+          "explain_analyze": "-> Aggregate: avg((d.customer_pref_delivery_date = d.order_date))  (cost=2.6e+6 rows=1) (actual time=3772..3772 rows=1 loops=1)\n    -> Nested loop inner join  (cost=2.6e+6 rows=0) (actual time=2018..3736 rows=335308 loops=1)\n        -> Table scan on d  (cost=100382 rows=998446) (actual time=0.942..203 rows=1e+6 loops=1)\n        -> Covering index lookup on f using <auto_key0> (customer_id=d.customer_id, first_date=d.order_date)  (cost=0.25..2.5 rows=10) (actual time=0.00334..0.00341 rows=0.335 loops=1e+6)\n            -> Materialize  (cost=0..0 rows=0) (actual time=2017..2017 rows=335308 loops=1)\n                -> Table scan on <temporary>  (actual time=1325..1403 rows=335308 loops=1)\n                    -> Aggregate using temporary table  (actual time=1325..1325 rows=335307 loops=1)\n                        -> Table scan on Delivery  (cost=100382 rows=998446) (actual time=1.68..213 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_row_number_first",
+          "status": "ok",
+          "median_s": 2.769112906000146,
+          "times_s": [
+            2.7702403059997778,
+            2.769112906000146,
+            2.737133932000006
+          ],
+          "result_rows": 1,
+          "result_digest": "a6c9d0400e8d280665b2b0eb5687e901c1ce6c7a",
+          "explain_analyze": "-> Aggregate: avg((first_orders.customer_pref_delivery_date = first_orders.order_date))  (cost=3.5..3.5 rows=1) (actual time=2914..2914 rows=1 loops=1)\n    -> Index lookup on first_orders using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=2538..2884 rows=335308 loops=1)\n        -> Materialize CTE first_orders  (cost=0..0 rows=0) (actual time=2538..2538 rows=1e+6 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY Delivery.customer_id ORDER BY Delivery.order_date )   (actual time=404..728 rows=1e+6 loops=1)\n                -> Sort: Delivery.customer_id, Delivery.order_date  (cost=100382 rows=998446) (actual time=404..457 rows=1e+6 loops=1)\n                    -> Table scan on Delivery  (cost=100382 rows=998446) (actual time=1.11..178 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Delivery": 1000000
+      },
+      "load_seconds": 10.298,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_first_order",
+          "status": "ok",
+          "median_s": 2.8531847629999447,
+          "times_s": [
+            2.850601976000007,
+            2.8988645659999293,
+            2.8531847629999447
+          ],
+          "result_rows": 1,
+          "result_digest": "a6c9d0400e8d280665b2b0eb5687e901c1ce6c7a",
+          "explain_analyze": "-> Aggregate: count(0), sum((d.customer_pref_delivery_date = d.order_date))  (cost=200226 rows=1) (actual time=3927..3927 rows=1 loops=1)\n    -> Filter: (d.order_date = (select #2))  (cost=100382 rows=998446) (actual time=0.904..3879 rows=335308 loops=1)\n        -> Covering index scan on d using idx_delivery_customer_date  (cost=100382 rows=998446) (actual time=0.889..204 rows=1e+6 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: min(x.order_date)  (cost=1.61 rows=1) (actual time=0.00305..0.00308 rows=1 loops=1e+6)\n                -> Covering index lookup on x using idx_delivery_customer_date (customer_id=d.customer_id)  (cost=1.3 rows=3.02) (actual time=0.00168..0.0025 rows=4.41 loops=1e+6)\n"
+        },
+        {
+          "solution": "02_join_to_first_date",
+          "status": "ok",
+          "median_s": 1.559096060999991,
+          "times_s": [
+            1.5935741640000742,
+            1.559096060999991,
+            1.5473254989999532
+          ],
+          "result_rows": 1,
+          "result_digest": "a6c9d0400e8d280665b2b0eb5687e901c1ce6c7a",
+          "explain_analyze": "-> Aggregate: avg((d.customer_pref_delivery_date = d.order_date))  (cost=434270 rows=1) (actual time=1741..1741 rows=1 loops=1)\n    -> Nested loop inner join  (cost=401116 rows=331533) (actual time=890..1704 rows=335308 loops=1)\n        -> Filter: (f.first_date is not null)  (cost=150624..37233 rows=330936) (actual time=890..948 rows=335308 loops=1)\n            -> Table scan on f  (cost=150624..154763 rows=330936) (actual time=890..926 rows=335308 loops=1)\n                -> Materialize  (cost=150624..150624 rows=330936) (actual time=890..890 rows=335308 loops=1)\n                    -> Covering index skip scan for grouping on Delivery using idx_delivery_customer_date  (cost=117531 rows=330936) (actual time=0.0153..806 rows=335308 loops=1)\n        -> Covering index lookup on d using idx_delivery_customer_date (customer_id=f.customer_id, order_date=f.first_date)  (cost=0.999 rows=1) (actual time=0.00177..0.00208 rows=1 loops=335308)\n"
+        },
+        {
+          "solution": "03_row_number_first",
+          "status": "ok",
+          "median_s": 2.7588604119998763,
+          "times_s": [
+            2.7923188279999067,
+            2.7155943549998938,
+            2.7588604119998763
+          ],
+          "result_rows": 1,
+          "result_digest": "a6c9d0400e8d280665b2b0eb5687e901c1ce6c7a",
+          "explain_analyze": "-> Aggregate: avg((first_orders.customer_pref_delivery_date = first_orders.order_date))  (cost=3.5..3.5 rows=1) (actual time=2847..2847 rows=1 loops=1)\n    -> Index lookup on first_orders using <auto_key0> (rn=1)  (cost=0.35..3.5 rows=10) (actual time=2474..2817 rows=335308 loops=1)\n        -> Materialize CTE first_orders  (cost=0..0 rows=0) (actual time=2474..2474 rows=1e+6 loops=1)\n            -> Window aggregate: row_number() OVER (PARTITION BY Delivery.customer_id ORDER BY Delivery.order_date )   (actual time=386..702 rows=1e+6 loops=1)\n                -> Sort: Delivery.customer_id, Delivery.order_date  (cost=101060 rows=998446) (actual time=386..436 rows=1e+6 loops=1)\n                    -> Index scan on Delivery using idx_delivery_customer_date  (cost=101060 rows=998446) (actual time=1.01..171 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

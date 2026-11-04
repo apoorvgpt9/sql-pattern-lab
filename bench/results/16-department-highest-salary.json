@@ -1,0 +1,342 @@
+{
+  "problem": "16-department-highest-salary",
+  "generated_at": "2026-11-04T15:13:44+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subquery",
+    "02_join_to_group_max",
+    "03_rank_window"
+  ],
+  "optimal": "03_rank_window",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Department": 50,
+        "Employee": 1000
+      },
+      "load_seconds": 0.03,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 0.15934956499999942,
+          "times_s": [
+            0.15942454600000389,
+            0.15934956499999942,
+            0.15892719099999653
+          ],
+          "result_rows": 62,
+          "result_digest": "59f0f40af3d0525d2ffbff8f66ed3df179247dd3",
+          "explain_analyze": "-> Nested loop inner join  (cost=451 rows=1000) (actual time=1.51..210 rows=62 loops=1)\n    -> Filter: ((e.salary = (select #2)) and (e.departmentId is not null))  (cost=101 rows=1000) (actual time=1.5..210 rows=80 loops=1)\n        -> Table scan on e  (cost=101 rows=1000) (actual time=0.0283..0.256 rows=1000 loops=1)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: max(e2.salary)  (cost=21.3 rows=1) (actual time=0.209..0.209 rows=1 loops=1000)\n                -> Filter: (e2.departmentId = e.departmentId)  (cost=11.3 rows=100) (actual time=0.0204..0.207 rows=39.7 loops=1000)\n                    -> Table scan on e2  (cost=11.3 rows=1000) (actual time=0.0107..0.163 rows=1000 loops=1000)\n    -> Single-row index lookup on d using PRIMARY (id=e.departmentId)  (cost=0.25 rows=1) (actual time=0.00186..0.00189 rows=0.775 loops=80)\n"
+        },
+        {
+          "solution": "02_join_to_group_max",
+          "status": "ok",
+          "median_s": 0.002510830000005626,
+          "times_s": [
+            0.0024849090000031993,
+            0.0025489359999966155,
+            0.002510830000005626
+          ],
+          "result_rows": 62,
+          "result_digest": "59f0f40af3d0525d2ffbff8f66ed3df179247dd3",
+          "explain_analyze": "-> Nested loop inner join  (cost=2951 rows=0) (actual time=0.45..2.08 rows=62 loops=1)\n    -> Nested loop inner join  (cost=451 rows=1000) (actual time=0.0226..1.08 rows=964 loops=1)\n        -> Filter: (e.departmentId is not null)  (cost=101 rows=1000) (actual time=0.0187..0.294 rows=985 loops=1)\n            -> Table scan on e  (cost=101 rows=1000) (actual time=0.0184..0.229 rows=1000 loops=1)\n        -> Single-row index lookup on d using PRIMARY (id=e.departmentId)  (cost=0.25 rows=1) (actual time=619e-6..646e-6 rows=0.979 loops=985)\n    -> Covering index lookup on m using <auto_key0> (departmentId=e.departmentId, max_salary=e.salary)  (cost=0.25..2.5 rows=10) (actual time=917e-6..926e-6 rows=0.0643 loops=964)\n        -> Materialize  (cost=0..0 rows=0) (actual time=0.413..0.413 rows=66 loops=1)\n            -> Table scan on <temporary>  (actual time=0.386..0.393 rows=66 loops=1)\n                -> Aggregate using temporary table  (actual time=0.386..0.386 rows=66 loops=1)\n                    -> Table scan on Employee  (cost=101 rows=1000) (actual time=0.0134..0.211 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_rank_window",
+          "status": "ok",
+          "median_s": 0.0017235709999994242,
+          "times_s": [
+            0.0017109980000000746,
+            0.001833637999993698,
+            0.0017235709999994242
+          ],
+          "result_rows": 62,
+          "result_digest": "59f0f40af3d0525d2ffbff8f66ed3df179247dd3",
+          "explain_analyze": "-> Nested loop inner join  (cost=150 rows=100) (actual time=0.852..1.07 rows=62 loops=1)\n    -> Filter: ((r.rnk = 1) and (r.departmentId is not null))  (cost=1.15..115 rows=100) (actual time=0.846..0.996 rows=80 loops=1)\n        -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=0.843..0.95 rows=1000 loops=1)\n            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=0.842..0.842 rows=1000 loops=1)\n                -> Window aggregate: rank() OVER (PARTITION BY Employee.departmentId ORDER BY Employee.salary desc )   (actual time=0.408..0.663 rows=1000 loops=1)\n                    -> Sort: Employee.departmentId, Employee.salary DESC  (cost=101 rows=1000) (actual time=0.406..0.447 rows=1000 loops=1)\n                        -> Table scan on Employee  (cost=101 rows=1000) (actual time=0.0202..0.206 rows=1000 loops=1)\n    -> Single-row index lookup on d using PRIMARY (id=r.departmentId)  (cost=0.251 rows=1) (actual time=780e-6..802e-6 rows=0.775 loops=80)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Department": 50,
+        "Employee": 1000
+      },
+      "load_seconds": 0.03,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 0.010849696999997605,
+          "times_s": [
+            0.010849696999997605,
+            0.010808442999994838,
+            0.011084680000003289
+          ],
+          "result_rows": 62,
+          "result_digest": "59f0f40af3d0525d2ffbff8f66ed3df179247dd3",
+          "explain_analyze": "-> Nested loop inner join  (cost=269 rows=758) (actual time=4.97..12.4 rows=62 loops=1)\n    -> Table scan on d  (cost=5.25 rows=50) (actual time=0.00737..0.0203 rows=50 loops=1)\n    -> Filter: (e.salary = (select #2))  (cost=3.78 rows=15.2) (actual time=0.243..0.247 rows=1.24 loops=50)\n        -> Index lookup on e using idx_employee_dept_salary (departmentId=d.id)  (cost=3.78 rows=15.2) (actual time=0.00658..0.0151 rows=19.3 loops=50)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: max(e2.salary)  (cost=3.67 rows=1) (actual time=0.0116..0.0116 rows=1 loops=964)\n                -> Covering index lookup on e2 using idx_employee_dept_salary (departmentId=e.departmentId)  (cost=2.15 rows=15.2) (actual time=0.00211..0.00902 rows=41.1 loops=964)\n"
+        },
+        {
+          "solution": "02_join_to_group_max",
+          "status": "ok",
+          "median_s": 0.0012787069999973255,
+          "times_s": [
+            0.0012787069999973255,
+            0.0013080920000021479,
+            0.0012400650000046198
+          ],
+          "result_rows": 62,
+          "result_digest": "59f0f40af3d0525d2ffbff8f66ed3df179247dd3",
+          "explain_analyze": "-> Nested loop inner join  (cost=72.1 rows=110) (actual time=0.186..0.382 rows=62 loops=1)\n    -> Nested loop inner join  (cost=33.5 rows=67) (actual time=0.179..0.259 rows=47 loops=1)\n        -> Filter: ((m.departmentId is not null) and (m.max_salary is not null))  (cost=27.8..10 rows=67) (actual time=0.176..0.187 rows=65 loops=1)\n            -> Table scan on m  (cost=28.1..31.4 rows=67) (actual time=0.175..0.181 rows=66 loops=1)\n                -> Materialize  (cost=28.1..28.1 rows=67) (actual time=0.174..0.174 rows=66 loops=1)\n                    -> Covering index skip scan for grouping on Employee using idx_employee_dept_salary  (cost=21.4 rows=67) (actual time=0.0128..0.164 rows=66 loops=1)\n        -> Single-row index lookup on d using PRIMARY (id=m.departmentId)  (cost=0.251 rows=1) (actual time=944e-6..965e-6 rows=0.723 loops=65)\n    -> Index lookup on e using idx_employee_dept_salary (departmentId=m.departmentId, salary=m.max_salary)  (cost=0.414 rows=1.65) (actual time=0.00205..0.00241 rows=1.32 loops=47)\n"
+        },
+        {
+          "solution": "03_rank_window",
+          "status": "ok",
+          "median_s": 0.0018319770000019275,
+          "times_s": [
+            0.0018331959999997594,
+            0.0018319770000019275,
+            0.0017981789999979014
+          ],
+          "result_rows": 62,
+          "result_digest": "59f0f40af3d0525d2ffbff8f66ed3df179247dd3",
+          "explain_analyze": "-> Nested loop inner join  (cost=150 rows=100) (actual time=0.896..1.12 rows=62 loops=1)\n    -> Filter: ((r.rnk = 1) and (r.departmentId is not null))  (cost=1.15..115 rows=100) (actual time=0.891..1.04 rows=80 loops=1)\n        -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=0.887..0.993 rows=1000 loops=1)\n            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=0.886..0.886 rows=1000 loops=1)\n                -> Window aggregate: rank() OVER (PARTITION BY Employee.departmentId ORDER BY Employee.salary desc )   (actual time=0.44..0.707 rows=1000 loops=1)\n                    -> Sort: Employee.departmentId, Employee.salary DESC  (cost=101 rows=1000) (actual time=0.437..0.479 rows=1000 loops=1)\n                        -> Table scan on Employee  (cost=101 rows=1000) (actual time=0.0332..0.23 rows=1000 loops=1)\n    -> Single-row index lookup on d using PRIMARY (id=r.departmentId)  (cost=0.251 rows=1) (actual time=786e-6..808e-6 rows=0.775 loops=80)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Department": 5000,
+        "Employee": 100000
+      },
+      "load_seconds": 0.89,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_join_to_group_max",
+          "status": "ok",
+          "median_s": 0.2101818470000012,
+          "times_s": [
+            0.21102529400000947,
+            0.2101818470000012,
+            0.21001357500000495
+          ],
+          "result_rows": 7013,
+          "result_digest": "5c02ef41f8c1b88fa797d04b0846ab43e98a2227",
+          "explain_analyze": "-> Nested loop inner join  (cost=545041 rows=0) (actual time=40.3..269 rows=7013 loops=1)\n    -> Nested loop inner join  (cost=45071 rows=99997) (actual time=0.0469..141 rows=96013 loops=1)\n        -> Filter: (e.departmentId is not null)  (cost=10072 rows=99997) (actual time=0.0424..34.2 rows=98035 loops=1)\n            -> Table scan on e  (cost=10072 rows=99997) (actual time=0.0419..27.3 rows=100000 loops=1)\n        -> Single-row index lookup on d using PRIMARY (id=e.departmentId)  (cost=0.25 rows=1) (actual time=897e-6..929e-6 rows=0.979 loops=98035)\n    -> Covering index lookup on m using <auto_key0> (departmentId=e.departmentId, max_salary=e.salary)  (cost=0.25..5 rows=20) (actual time=0.0012..0.00122 rows=0.073 loops=96013)\n        -> Materialize  (cost=0..0 rows=0) (actual time=40.1..40.1 rows=4801 loops=1)\n            -> Table scan on <temporary>  (actual time=37.8..38.3 rows=4801 loops=1)\n                -> Aggregate using temporary table  (actual time=37.8..37.8 rows=4801 loops=1)\n                    -> Table scan on Employee  (cost=10072 rows=99997) (actual time=0.0415..17.9 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_rank_window",
+          "status": "ok",
+          "median_s": 0.1318584300000083,
+          "times_s": [
+            0.1318584300000083,
+            0.13124899000000312,
+            0.13635191100000554
+          ],
+          "result_rows": 7013,
+          "result_digest": "5c02ef41f8c1b88fa797d04b0846ab43e98a2227",
+          "explain_analyze": "-> Nested loop inner join  (cost=14752 rows=10000) (actual time=99.7..119 rows=7013 loops=1)\n    -> Filter: ((r.rnk = 1) and (r.departmentId is not null))  (cost=1.13..11252 rows=10000) (actual time=99.7..115 rows=7124 loops=1)\n        -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=99.4..110 rows=100000 loops=1)\n            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=99.4..99.4 rows=100000 loops=1)\n                -> Window aggregate: rank() OVER (PARTITION BY Employee.departmentId ORDER BY Employee.salary desc )   (actual time=55.7..80.5 rows=100000 loops=1)\n                    -> Sort: Employee.departmentId, Employee.salary DESC  (cost=10072 rows=99997) (actual time=55.7..60.5 rows=100000 loops=1)\n                        -> Table scan on Employee  (cost=10072 rows=99997) (actual time=0.0749..19.7 rows=100000 loops=1)\n    -> Single-row index lookup on d using PRIMARY (id=r.departmentId)  (cost=0.25 rows=1) (actual time=449e-6..476e-6 rows=0.984 loops=7124)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Department": 5000,
+        "Employee": 100000
+      },
+      "load_seconds": 0.89,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 1.3686919409999945,
+          "times_s": [
+            1.3686919409999945,
+            1.4200905550000016,
+            1.3654409890000068
+          ],
+          "result_rows": 7013,
+          "result_digest": "5c02ef41f8c1b88fa797d04b0846ab43e98a2227",
+          "explain_analyze": "-> Nested loop inner join  (cost=35993 rows=101400) (actual time=422..2010 rows=7013 loops=1)\n    -> Table scan on d  (cost=503 rows=5000) (actual time=0.0405..2.09 rows=5000 loops=1)\n    -> Filter: (e.salary = (select #2))  (cost=5.07 rows=20.3) (actual time=0.39..0.401 rows=1.4 loops=5000)\n        -> Index lookup on e using idx_employee_dept_salary (departmentId=d.id)  (cost=5.07 rows=20.3) (actual time=0.011..0.0232 rows=19.2 loops=5000)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: max(e2.salary)  (cost=5.09 rows=1) (actual time=0.0191..0.0191 rows=1 loops=96013)\n                -> Covering index lookup on e2 using idx_employee_dept_salary (departmentId=e.departmentId)  (cost=3.06 rows=20.3) (actual time=0.003..0.015 rows=62.8 loops=96013)\n"
+        },
+        {
+          "solution": "02_join_to_group_max",
+          "status": "ok",
+          "median_s": 0.10668077699999401,
+          "times_s": [
+            0.10668077699999401,
+            0.10300040799999977,
+            0.10816804600000296
+          ],
+          "result_rows": 7013,
+          "result_digest": "5c02ef41f8c1b88fa797d04b0846ab43e98a2227",
+          "explain_analyze": "-> Nested loop inner join  (cost=5143 rows=8160) (actual time=28.4..63.4 rows=7013 loops=1)\n    -> Nested loop inner join  (cost=2287 rows=4939) (actual time=28.4..36.2 rows=4750 loops=1)\n        -> Filter: ((m.departmentId is not null) and (m.max_salary is not null))  (cost=2133..558 rows=4939) (actual time=28.4..29.8 rows=4800 loops=1)\n            -> Table scan on m  (cost=2134..2198 rows=4939) (actual time=28.4..29.1 rows=4801 loops=1)\n                -> Materialize  (cost=2134..2134 rows=4939) (actual time=28.4..28.4 rows=4801 loops=1)\n                    -> Covering index skip scan for grouping on Employee using idx_employee_dept_salary  (cost=1640 rows=4939) (actual time=0.0192..27.4 rows=4801 loops=1)\n        -> Single-row index lookup on d using PRIMARY (id=m.departmentId)  (cost=0.25 rows=1) (actual time=0.00113..0.00116 rows=0.99 loops=4800)\n    -> Index lookup on e using idx_employee_dept_salary (departmentId=m.departmentId, salary=m.max_salary)  (cost=0.413 rows=1.65) (actual time=0.00484..0.00547 rows=1.48 loops=4750)\n"
+        },
+        {
+          "solution": "03_rank_window",
+          "status": "ok",
+          "median_s": 0.13247398499999008,
+          "times_s": [
+            0.13244736599999385,
+            0.13422575799999947,
+            0.13247398499999008
+          ],
+          "result_rows": 7013,
+          "result_digest": "5c02ef41f8c1b88fa797d04b0846ab43e98a2227",
+          "explain_analyze": "-> Nested loop inner join  (cost=14774 rows=10014) (actual time=98..118 rows=7013 loops=1)\n    -> Filter: ((r.rnk = 1) and (r.departmentId is not null))  (cost=1.13..11269 rows=10014) (actual time=98..113 rows=7124 loops=1)\n        -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=97.7..109 rows=100000 loops=1)\n            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=97.7..97.7 rows=100000 loops=1)\n                -> Window aggregate: rank() OVER (PARTITION BY Employee.departmentId ORDER BY Employee.salary desc )   (actual time=55.6..79.3 rows=100000 loops=1)\n                    -> Sort: Employee.departmentId, Employee.salary DESC  (cost=10087 rows=100143) (actual time=55.5..60.3 rows=100000 loops=1)\n                        -> Table scan on Employee  (cost=10087 rows=100143) (actual time=0.057..19.6 rows=100000 loops=1)\n    -> Single-row index lookup on d using PRIMARY (id=r.departmentId)  (cost=0.25 rows=1) (actual time=444e-6..473e-6 rows=0.984 loops=7124)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Department": 50000,
+        "Employee": 1000000
+      },
+      "load_seconds": 8.464,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_join_to_group_max",
+          "status": "ok",
+          "median_s": 2.3931033199999945,
+          "times_s": [
+            2.3931033199999945,
+            2.4317717099999925,
+            2.356612038999998
+          ],
+          "result_rows": 70927,
+          "result_digest": "76596c31a879fc4ecb26cdceacc18a79f58ad1dd",
+          "explain_analyze": "-> Nested loop inner join  (cost=5.41e+6 rows=0) (actual time=436..2594 rows=70927 loops=1)\n    -> Nested loop inner join  (cost=449457 rows=997280) (actual time=0.0729..1231 rows=959924 loops=1)\n        -> Filter: (e.departmentId is not null)  (cost=100409 rows=997280) (actual time=0.0639..292 rows=980035 loops=1)\n            -> Table scan on e  (cost=100409 rows=997280) (actual time=0.063..226 rows=1e+6 loops=1)\n        -> Single-row index lookup on d using PRIMARY (id=e.departmentId)  (cost=0.25 rows=1) (actual time=774e-6..802e-6 rows=0.979 loops=980035)\n    -> Covering index lookup on m using <auto_key0> (departmentId=e.departmentId, max_salary=e.salary)  (cost=0.25..4.97 rows=19.9) (actual time=0.0013..0.00131 rows=0.0739 loops=959924)\n        -> Materialize  (cost=0..0 rows=0) (actual time=436..436 rows=47551 loops=1)\n            -> Table scan on <temporary>  (actual time=407..411 rows=47551 loops=1)\n                -> Aggregate using temporary table  (actual time=407..407 rows=47551 loops=1)\n                    -> Table scan on Employee  (cost=100409 rows=997280) (actual time=0.055..179 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_rank_window",
+          "status": "ok",
+          "median_s": 1.8051040849999822,
+          "times_s": [
+            1.8051040849999822,
+            1.83540972199998,
+            1.8008670669999844
+          ],
+          "result_rows": 70927,
+          "result_digest": "76596c31a879fc4ecb26cdceacc18a79f58ad1dd",
+          "explain_analyze": "-> Nested loop inner join  (cost=147101 rows=99728) (actual time=1365..1688 rows=70927 loops=1)\n    -> Filter: ((r.rnk = 1) and (r.departmentId is not null))  (cost=1.13..112196 rows=99728) (actual time=1365..1637 rows=71759 loops=1)\n        -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=1359..1591 rows=1e+6 loops=1)\n            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=1359..1359 rows=1e+6 loops=1)\n                -> Window aggregate: rank() OVER (PARTITION BY Employee.departmentId ORDER BY Employee.salary desc )   (actual time=627..883 rows=1e+6 loops=1)\n                    -> Sort: Employee.departmentId, Employee.salary DESC  (cost=100409 rows=997280) (actual time=627..675 rows=1e+6 loops=1)\n                        -> Table scan on Employee  (cost=100409 rows=997280) (actual time=0.0832..199 rows=1e+6 loops=1)\n    -> Single-row index lookup on d using PRIMARY (id=r.departmentId)  (cost=0.25 rows=1) (actual time=526e-6..554e-6 rows=0.988 loops=71759)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Department": 50000,
+        "Employee": 1000000
+      },
+      "load_seconds": 8.464,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subquery",
+          "status": "ok",
+          "median_s": 17.356832722000007,
+          "times_s": [
+            17.925705817000022,
+            17.204519738000016,
+            17.356832722000007
+          ],
+          "result_rows": 70927,
+          "result_digest": "76596c31a879fc4ecb26cdceacc18a79f58ad1dd",
+          "explain_analyze": "-> Nested loop inner join  (cost=358210 rows=1.01e+6) (actual time=4058..20885 rows=70927 loops=1)\n    -> Table scan on d  (cost=5065 rows=50251) (actual time=0.105..13 rows=50000 loops=1)\n    -> Filter: (e.salary = (select #2))  (cost=5.02 rows=20.1) (actual time=0.404..0.417 rows=1.42 loops=50000)\n        -> Index lookup on e using idx_employee_dept_salary (departmentId=d.id)  (cost=5.02 rows=20.1) (actual time=0.0183..0.0371 rows=19.2 loops=50000)\n        -> Select #2 (subquery in condition; dependent)\n            -> Aggregate: max(e2.salary)  (cost=5.05 rows=1) (actual time=0.0194..0.0194 rows=1 loops=959924)\n                -> Covering index lookup on e2 using idx_employee_dept_salary (departmentId=e.departmentId)  (cost=3.04 rows=20.1) (actual time=0.00224..0.0151 rows=73.6 loops=959924)\n"
+        },
+        {
+          "solution": "02_join_to_group_max",
+          "status": "ok",
+          "median_s": 1.7442859290000001,
+          "times_s": [
+            1.7661223770000163,
+            1.7442859290000001,
+            1.7264926500000115
+          ],
+          "result_rows": 70927,
+          "result_digest": "76596c31a879fc4ecb26cdceacc18a79f58ad1dd",
+          "explain_analyze": "-> Nested loop inner join  (cost=51981 rows=82868) (actual time=765..1545 rows=70927 loops=1)\n    -> Nested loop inner join  (cost=22977 rows=49675) (actual time=765..824 rows=47500 loops=1)\n        -> Filter: ((m.departmentId is not null) and (m.max_salary is not null))  (cost=23934..5591 rows=49675) (actual time=765..775 rows=47550 loops=1)\n            -> Table scan on m  (cost=23935..24558 rows=49675) (actual time=765..771 rows=47551 loops=1)\n                -> Materialize  (cost=23935..23935 rows=49675) (actual time=765..765 rows=47551 loops=1)\n                    -> Covering index skip scan for grouping on Employee using idx_employee_dept_salary  (cost=18967 rows=49675) (actual time=0.0351..759 rows=47551 loops=1)\n        -> Single-row index lookup on d using PRIMARY (id=m.departmentId)  (cost=0.25 rows=1) (actual time=834e-6..863e-6 rows=0.999 loops=47550)\n    -> Index lookup on e using idx_employee_dept_salary (departmentId=m.departmentId, salary=m.max_salary)  (cost=0.417 rows=1.67) (actual time=0.0145..0.015 rows=1.49 loops=47500)\n"
+        },
+        {
+          "solution": "03_rank_window",
+          "status": "ok",
+          "median_s": 1.839908362000017,
+          "times_s": [
+            2.0376641140000515,
+            1.839908362000017,
+            1.7932880420000288
+          ],
+          "result_rows": 70927,
+          "result_digest": "76596c31a879fc4ecb26cdceacc18a79f58ad1dd",
+          "explain_analyze": "-> Nested loop inner join  (cost=147121 rows=99742) (actual time=1360..1690 rows=70927 loops=1)\n    -> Filter: ((r.rnk = 1) and (r.departmentId is not null))  (cost=1.13..112212 rows=99742) (actual time=1360..1636 rows=71759 loops=1)\n        -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=1355..1589 rows=1e+6 loops=1)\n            -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=1355..1355 rows=1e+6 loops=1)\n                -> Window aggregate: rank() OVER (PARTITION BY Employee.departmentId ORDER BY Employee.salary desc )   (actual time=624..879 rows=1e+6 loops=1)\n                    -> Sort: Employee.departmentId, Employee.salary DESC  (cost=100450 rows=997415) (actual time=624..674 rows=1e+6 loops=1)\n                        -> Table scan on Employee  (cost=100450 rows=997415) (actual time=0.113..198 rows=1e+6 loops=1)\n    -> Single-row index lookup on d using PRIMARY (id=r.departmentId)  (cost=0.25 rows=1) (actual time=574e-6..602e-6 rows=0.988 loops=71759)\n"
+        }
+      ]
+    }
+  ]
+}

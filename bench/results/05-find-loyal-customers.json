@@ -1,0 +1,336 @@
+{
+  "problem": "05-find-loyal-customers",
+  "generated_at": "2026-11-04T15:27:23+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subqueries",
+    "02_one_aggregate_per_criterion",
+    "03_group_by_having"
+  ],
+  "optimal": "03_group_by_having",
+  "machine": {
+    "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "python": "3.11.18",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "mem_total": "8122100 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261101.186.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "customer_transactions": 1000
+      },
+      "load_seconds": 0.021,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.09880161000000953,
+          "times_s": [
+            0.09969631100000242,
+            0.09880161000000953,
+            0.09815675799995915
+          ],
+          "result_rows": 49,
+          "result_digest": "501fd4c9651da527bbd30b662a82e9e1c543ff43",
+          "explain_analyze": "-> Sort: c.customer_id  (cost=1528..1528 rows=1000) (actual time=127..127 rows=49 loops=1)\n    -> Filter: (((select #3) >= 3) and ((to_days((select #4)) - to_days((select #5))) >= 30) and (((select #6) / (select #7)) < 0.2))  (cost=316..431 rows=1000) (actual time=3.37..127 rows=49 loops=1)\n        -> Table scan on c  (cost=316..331 rows=1000) (actual time=0.368..0.408 rows=186 loops=1)\n            -> Materialize  (cost=316..316 rows=1000) (actual time=0.368..0.368 rows=186 loops=1)\n                -> Table scan on <temporary>  (cost=201..216 rows=1000) (actual time=0.332..0.351 rows=186 loops=1)\n                    -> Temporary table with deduplication  (cost=201..201 rows=1000) (actual time=0.332..0.332 rows=186 loops=1)\n                        -> Table scan on customer_transactions  (cost=101 rows=1000) (actual time=0.059..0.172 rows=1000 loops=1)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=93.2 rows=1) (actual time=0.297..0.297 rows=1 loops=186)\n                -> Filter: ((t.transaction_type = 'purchase') and (t.customer_id = c.customer_id))  (cost=92.2 rows=10) (actual time=0.152..0.296 rows=4.62 loops=186)\n                    -> Table scan on t  (cost=92.2 rows=1000) (actual time=0.0106..0.177 rows=1000 loops=186)\n        -> Select #4 (subquery in condition; dependent)\n            -> Aggregate: max(t.transaction_date)  (cost=21.3 rows=1) (actual time=0.201..0.201 rows=1 loops=108)\n                -> Filter: (t.customer_id = c.customer_id)  (cost=11.3 rows=100) (actual time=0.116..0.2 rows=7.96 loops=108)\n                    -> Table scan on t  (cost=11.3 rows=1000) (actual time=0.0354..0.156 rows=1000 loops=108)\n        -> Select #5 (subquery in condition; dependent)\n            -> Aggregate: min(t.transaction_date)  (cost=21.3 rows=1) (actual time=0.202..0.202 rows=1 loops=108)\n                -> Filter: (t.customer_id = c.customer_id)  (cost=11.3 rows=100) (actual time=0.114..0.201 rows=7.96 loops=108)\n                    -> Table scan on t  (cost=11.3 rows=1000) (actual time=0.0345..0.157 rows=1000 loops=108)\n        -> Select #6 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=93.2 rows=1) (actual time=0.245..0.245 rows=1 loops=62)\n                -> Filter: ((t.transaction_type = 'refund') and (t.customer_id = c.customer_id))  (cost=92.2 rows=10) (actual time=0.199..0.244 rows=0.742 loops=62)\n                    -> Table scan on t  (cost=92.2 rows=1000) (actual time=0.0107..0.172 rows=1000 loops=62)\n        -> Select #7 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=21.3 rows=1) (actual time=0.193..0.193 rows=1 loops=62)\n                -> Filter: (t.customer_id = c.customer_id)  (cost=11.3 rows=100) (actual time=0.109..0.192 rows=7.55 loops=62)\n                    -> Table scan on t  (cost=11.3 rows=1000) (actual time=0.0403..0.146 rows=1000 loops=62)\n"
+        },
+        {
+          "solution": "02_one_aggregate_per_criterion",
+          "status": "ok",
+          "median_s": 0.00246144599998388,
+          "times_s": [
+            0.00246144599998388,
+            0.0024144470000919682,
+            0.0025798110000323504
+          ],
+          "result_rows": 49,
+          "result_digest": "501fd4c9651da527bbd30b662a82e9e1c543ff43",
+          "explain_analyze": "-> Nested loop inner join  (cost=2753 rows=0) (actual time=1.64..1.75 rows=49 loops=1)\n    -> Nested loop inner join  (cost=253 rows=0) (actual time=1.02..1.09 rows=62 loops=1)\n        -> Sort: p.customer_id  (cost=2.6..2.6 rows=0) (actual time=0.57..0.575 rows=108 loops=1)\n            -> Table scan on p  (cost=2.5..2.5 rows=0) (actual time=0.54..0.552 rows=108 loops=1)\n                -> Materialize CTE purchases  (cost=0..0 rows=0) (actual time=0.54..0.54 rows=108 loops=1)\n                    -> Filter: (n_purchases >= 3)  (actual time=0.463..0.526 rows=108 loops=1)\n                        -> Table scan on <temporary>  (actual time=0.462..0.481 rows=185 loops=1)\n                            -> Aggregate using temporary table  (actual time=0.461..0.461 rows=185 loops=1)\n                                -> Filter: (customer_transactions.transaction_type = 'purchase')  (cost=101 rows=100) (actual time=0.0209..0.312 rows=859 loops=1)\n                                    -> Table scan on customer_transactions  (cost=101 rows=1000) (actual time=0.0197..0.195 rows=1000 loops=1)\n        -> Index lookup on s using <auto_key0> (customer_id=p.customer_id)  (cost=0.251..2.51 rows=10) (actual time=0.00452..0.0046 rows=0.574 loops=108)\n            -> Materialize CTE span  (cost=0..0 rows=0) (actual time=0.443..0.443 rows=87 loops=1)\n                -> Filter: ((to_days(`MAX(transaction_date)`) - to_days(`MIN(transaction_date)`)) >= 30)  (actual time=0.374..0.411 rows=87 loops=1)\n                    -> Table scan on <temporary>  (actual time=0.372..0.391 rows=186 loops=1)\n                        -> Aggregate using temporary table  (actual time=0.372..0.372 rows=186 loops=1)\n                            -> Table scan on customer_transactions  (cost=101 rows=1000) (actual time=0.0408..0.171 rows=1000 loops=1)\n    -> Index lookup on r using <auto_key0> (customer_id=p.customer_id)  (cost=0.25..2.5 rows=10) (actual time=0.0104..0.0105 rows=0.79 loops=62)\n        -> Materialize CTE refunds  (cost=0..0 rows=0) (actual time=0.615..0.615 rows=135 loops=1)\n            -> Filter: ((`sum((customer_transactions.transaction_type = 'refund'))` / `count(0)`) < 0.2)  (actual time=0.461..0.535 rows=135 loops=1)\n                -> Table scan on <temporary>  (actual time=0.457..0.495 rows=186 loops=1)\n                    -> Aggregate using temporary table  (actual time=0.457..0.457 rows=186 loops=1)\n                        -> Table scan on customer_transactions  (cost=101 rows=1000) (actual time=0.0128..0.185 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_group_by_having",
+          "status": "ok",
+          "median_s": 0.0015284580000525239,
+          "times_s": [
+            0.0015863630000012563,
+            0.0015218280000226514,
+            0.0015284580000525239
+          ],
+          "result_rows": 49,
+          "result_digest": "501fd4c9651da527bbd30b662a82e9e1c543ff43",
+          "explain_analyze": "-> Sort: customer_transactions.customer_id  (actual time=0.864..0.867 rows=49 loops=1)\n    -> Filter: ((`sum((customer_transactions.transaction_type = 'purchase'))` >= 3) and ((to_days(`MAX(transaction_date)`) - to_days(`MIN(transaction_date)`)) >= 30) and ((5 * `sum((customer_transactions.transaction_type = 'refund'))`) < `count(0)`))  (actual time=0.804..0.851 rows=49 loops=1)\n        -> Table scan on <temporary>  (actual time=0.799..0.817 rows=186 loops=1)\n            -> Aggregate using temporary table  (actual time=0.798..0.798 rows=186 loops=1)\n                -> Table scan on customer_transactions  (cost=101 rows=1000) (actual time=0.0242..0.269 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "customer_transactions": 1000
+      },
+      "load_seconds": 0.021,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.0032375619999811533,
+          "times_s": [
+            0.0032375619999811533,
+            0.0036930859999984023,
+            0.003234378000001925
+          ],
+          "result_rows": 49,
+          "result_digest": "501fd4c9651da527bbd30b662a82e9e1c543ff43",
+          "explain_analyze": "-> Sort: c.customer_id  (cost=266..266 rows=187) (actual time=2.53..2.53 rows=49 loops=1)\n    -> Filter: (((select #3) >= 3) and ((to_days((select #4)) - to_days((select #5))) >= 30) and (((select #6) / (select #7)) < 0.2))  (cost=82.4..106 rows=187) (actual time=0.348..2.51 rows=49 loops=1)\n        -> Table scan on c  (cost=82.3..87.1 rows=187) (actual time=0.265..0.292 rows=186 loops=1)\n            -> Materialize  (cost=82.3..82.3 rows=187) (actual time=0.263..0.263 rows=186 loops=1)\n                -> Covering index skip scan for deduplication on customer_transactions using idx_tx_customer_type_date  (cost=63.6 rows=187) (actual time=0.0142..0.242 rows=186 loops=1)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.43 rows=1) (actual time=0.00405..0.00408 rows=1 loops=186)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id, transaction_type='purchase')  (cost=1.04 rows=3.91) (actual time=0.00248..0.0036 rows=4.62 loops=186)\n        -> Select #4 (subquery in condition; dependent)\n            -> Aggregate: max(t.transaction_date)  (cost=1.73 rows=1) (actual time=0.00399..0.00402 rows=1 loops=108)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id)  (cost=1.19 rows=5.38) (actual time=0.00195..0.00313 rows=7.96 loops=108)\n        -> Select #5 (subquery in condition; dependent)\n            -> Aggregate: min(t.transaction_date)  (cost=1.73 rows=1) (actual time=0.00381..0.00384 rows=1 loops=108)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id)  (cost=1.19 rows=5.38) (actual time=0.00188..0.00304 rows=7.96 loops=108)\n        -> Select #6 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.43 rows=1) (actual time=0.00216..0.0022 rows=1 loops=62)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id, transaction_type='refund')  (cost=1.04 rows=3.91) (actual time=0.00174..0.00192 rows=0.742 loops=62)\n        -> Select #7 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.73 rows=1) (actual time=0.00332..0.00335 rows=1 loops=62)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id)  (cost=1.19 rows=5.38) (actual time=0.00175..0.00281 rows=7.55 loops=62)\n"
+        },
+        {
+          "solution": "02_one_aggregate_per_criterion",
+          "status": "ok",
+          "median_s": 0.0020245609999847147,
+          "times_s": [
+            0.0020771179999883316,
+            0.0020245609999847147,
+            0.0018780440000227827
+          ],
+          "result_rows": 49,
+          "result_digest": "501fd4c9651da527bbd30b662a82e9e1c543ff43",
+          "explain_analyze": "-> Nested loop inner join  (cost=350771 rows=3.46e+6) (actual time=1.4..1.54 rows=49 loops=1)\n    -> Nested loop inner join  (cost=2311 rows=18600) (actual time=0.961..1.05 rows=62 loops=1)\n        -> Sort: p.customer_id  (cost=201..201 rows=100) (actual time=0.581..0.587 rows=108 loops=1)\n            -> Table scan on p  (cost=121..125 rows=100) (actual time=0.553..0.564 rows=108 loops=1)\n                -> Materialize CTE purchases  (cost=121..121 rows=100) (actual time=0.552..0.552 rows=108 loops=1)\n                    -> Filter: (count(0) >= 3)  (cost=111 rows=100) (actual time=0.0401..0.533 rows=108 loops=1)\n                        -> Group aggregate: count(0)  (cost=111 rows=100) (actual time=0.0393..0.518 rows=185 loops=1)\n                            -> Filter: (customer_transactions.transaction_type = 'purchase')  (cost=101 rows=100) (actual time=0.0346..0.458 rows=859 loops=1)\n                                -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=101 rows=1000) (actual time=0.0332..0.318 rows=1000 loops=1)\n        -> Index lookup on s using <auto_key0> (customer_id=p.customer_id)  (cost=220..222 rows=10) (actual time=0.00405..0.00415 rows=0.574 loops=108)\n            -> Materialize CTE span  (cost=220..220 rows=186) (actual time=0.377..0.377 rows=87 loops=1)\n                -> Filter: ((to_days(max(customer_transactions.transaction_date)) - to_days(min(customer_transactions.transaction_date))) >= 30)  (cost=201 rows=186) (actual time=0.0437..0.338 rows=87 loops=1)\n                    -> Group aggregate: min(customer_transactions.transaction_date), max(customer_transactions.transaction_date)  (cost=201 rows=186) (actual time=0.0413..0.311 rows=186 loops=1)\n                        -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=101 rows=1000) (actual time=0.0382..0.162 rows=1000 loops=1)\n    -> Index lookup on r using <auto_key0> (customer_id=p.customer_id)  (cost=220..222 rows=10) (actual time=0.00761..0.00774 rows=0.79 loops=62)\n        -> Materialize CTE refunds  (cost=220..220 rows=186) (actual time=0.435..0.435 rows=135 loops=1)\n            -> Filter: ((sum((customer_transactions.transaction_type = 'refund')) / count(0)) < 0.2)  (cost=201 rows=186) (actual time=0.0199..0.322 rows=135 loops=1)\n                -> Group aggregate: count(0), sum((customer_transactions.transaction_type = 'refund'))  (cost=201 rows=186) (actual time=0.0144..0.293 rows=186 loops=1)\n                    -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=101 rows=1000) (actual time=0.0119..0.178 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_group_by_having",
+          "status": "ok",
+          "median_s": 0.001285969999912595,
+          "times_s": [
+            0.0013792979999607269,
+            0.001285969999912595,
+            0.0012849280000182262
+          ],
+          "result_rows": 49,
+          "result_digest": "501fd4c9651da527bbd30b662a82e9e1c543ff43",
+          "explain_analyze": "-> Filter: ((sum((customer_transactions.transaction_type = 'purchase')) >= 3) and ((to_days(max(customer_transactions.transaction_date)) - to_days(min(customer_transactions.transaction_date))) >= 30) and ((5 * sum((customer_transactions.transaction_type = 'refund'))) < count(0)))  (cost=201 rows=186) (actual time=0.0361..0.549 rows=49 loops=1)\n    -> Group aggregate: count(0), sum((customer_transactions.transaction_type = 'refund')), min(customer_transactions.transaction_date), max(customer_transactions.transaction_date), sum((customer_transactions.transaction_type = 'purchase'))  (cost=201 rows=186) (actual time=0.0263..0.516 rows=186 loops=1)\n        -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=101 rows=1000) (actual time=0.0192..0.209 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "customer_transactions": 100000
+      },
+      "load_seconds": 1.007,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_one_aggregate_per_criterion",
+          "status": "ok",
+          "median_s": 0.16500208200000088,
+          "times_s": [
+            0.16500208200000088,
+            0.16493557100011458,
+            0.16563422900003388
+          ],
+          "result_rows": 5129,
+          "result_digest": "a0d7e69459e99fbd3c6b52aad002aaeaf52d2ffa",
+          "explain_analyze": "-> Nested loop inner join  (cost=274788 rows=0) (actual time=164..179 rows=5129 loops=1)\n    -> Nested loop inner join  (cost=24983 rows=0) (actual time=102..111 rows=6725 loops=1)\n        -> Sort: p.customer_id  (cost=2.6..2.6 rows=0) (actual time=53.6..54.1 rows=11239 loops=1)\n            -> Table scan on p  (cost=2.5..2.5 rows=0) (actual time=50.7..51.9 rows=11239 loops=1)\n                -> Materialize CTE purchases  (cost=0..0 rows=0) (actual time=50.7..50.7 rows=11239 loops=1)\n                    -> Filter: (n_purchases >= 3)  (actual time=47..49.9 rows=11239 loops=1)\n                        -> Table scan on <temporary>  (actual time=46.9..48.7 rows=17731 loops=1)\n                            -> Aggregate using temporary table  (actual time=46.9..46.9 rows=17731 loops=1)\n                                -> Filter: (customer_transactions.transaction_type = 'purchase')  (cost=10064 rows=9992) (actual time=0.173..30.2 rows=87907 loops=1)\n                                    -> Table scan on customer_transactions  (cost=10064 rows=99921) (actual time=0.17..18.3 rows=100000 loops=1)\n        -> Index lookup on s using <auto_key0> (customer_id=p.customer_id)  (cost=0.25..2.5 rows=10) (actual time=0.00482..0.00492 rows=0.598 loops=11239)\n            -> Materialize CTE span  (cost=0..0 rows=0) (actual time=48.1..48.1 rows=8909 loops=1)\n                -> Filter: ((to_days(`MAX(transaction_date)`) - to_days(`MIN(transaction_date)`)) >= 30)  (actual time=38.6..42.4 rows=8909 loops=1)\n                    -> Table scan on <temporary>  (actual time=38.6..40.5 rows=18210 loops=1)\n                        -> Aggregate using temporary table  (actual time=38.6..38.6 rows=18210 loops=1)\n                            -> Table scan on customer_transactions  (cost=10064 rows=99921) (actual time=1.08..17.3 rows=100000 loops=1)\n    -> Index lookup on r using <auto_key0> (customer_id=p.customer_id)  (cost=0.25..2.5 rows=10) (actual time=0.00981..0.00992 rows=0.763 loops=6725)\n        -> Materialize CTE refunds  (cost=0..0 rows=0) (actual time=61.9..61.9 rows=13600 loops=1)\n            -> Filter: ((`sum((customer_transactions.transaction_type = 'refund'))` / `count(0)`) < 0.2)  (actual time=48..52.8 rows=13600 loops=1)\n                -> Table scan on <temporary>  (actual time=48..49.9 rows=18210 loops=1)\n                    -> Aggregate using temporary table  (actual time=48..48 rows=18210 loops=1)\n                        -> Table scan on customer_transactions  (cost=10064 rows=99921) (actual time=0.167..19 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_group_by_having",
+          "status": "ok",
+          "median_s": 0.08868822800013731,
+          "times_s": [
+            0.13086810100003277,
+            0.08823975700011033,
+            0.08868822800013731
+          ],
+          "result_rows": 5129,
+          "result_digest": "a0d7e69459e99fbd3c6b52aad002aaeaf52d2ffa",
+          "explain_analyze": "-> Sort: customer_transactions.customer_id  (actual time=73.5..73.8 rows=5129 loops=1)\n    -> Filter: ((`sum((customer_transactions.transaction_type = 'purchase'))` >= 3) and ((to_days(`MAX(transaction_date)`) - to_days(`MIN(transaction_date)`)) >= 30) and ((5 * `sum((customer_transactions.transaction_type = 'refund'))`) < `count(0)`))  (actual time=67.3..72.1 rows=5129 loops=1)\n        -> Table scan on <temporary>  (actual time=67.3..69.1 rows=18210 loops=1)\n            -> Aggregate using temporary table  (actual time=67.3..67.3 rows=18210 loops=1)\n                -> Table scan on customer_transactions  (cost=10064 rows=99921) (actual time=0.186..20.9 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "customer_transactions": 100000
+      },
+      "load_seconds": 1.007,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.251962322999816,
+          "times_s": [
+            0.251962322999816,
+            0.25069248800014066,
+            0.2542666480001117
+          ],
+          "result_rows": 5129,
+          "result_digest": "a0d7e69459e99fbd3c6b52aad002aaeaf52d2ffa",
+          "explain_analyze": "-> Sort: c.customer_id  (cost=39641..39641 rows=18518) (actual time=259..259 rows=5129 loops=1)\n    -> Filter: (((select #3) >= 3) and ((to_days((select #4)) - to_days((select #5))) >= 30) and (((select #6) / (select #7)) < 0.2))  (cost=9451..11536 rows=18518) (actual time=31.5..258 rows=5129 loops=1)\n        -> Table scan on c  (cost=9451..9685 rows=18518) (actual time=31.3..33.7 rows=18210 loops=1)\n            -> Materialize  (cost=9451..9451 rows=18518) (actual time=31.3..31.3 rows=18210 loops=1)\n                -> Covering index skip scan for deduplication on customer_transactions using idx_tx_customer_type_date  (cost=7599 rows=18518) (actual time=0.0416..29.8 rows=18210 loops=1)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.84 rows=1) (actual time=0.00381..0.00384 rows=1 loops=18210)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id, transaction_type='purchase')  (cost=1.43 rows=4.05) (actual time=0.00244..0.00336 rows=4.83 loops=18210)\n        -> Select #4 (subquery in condition; dependent)\n            -> Aggregate: max(t.transaction_date)  (cost=2.12 rows=1) (actual time=0.00399..0.00402 rows=1 loops=11239)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id)  (cost=1.58 rows=5.4) (actual time=0.00205..0.00314 rows=7.83 loops=11239)\n        -> Select #5 (subquery in condition; dependent)\n            -> Aggregate: min(t.transaction_date)  (cost=2.12 rows=1) (actual time=0.00388..0.00391 rows=1 loops=11239)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id)  (cost=1.58 rows=5.4) (actual time=0.00201..0.00311 rows=7.83 loops=11239)\n        -> Select #6 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.84 rows=1) (actual time=0.00236..0.00239 rows=1 loops=6725)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id, transaction_type='refund')  (cost=1.43 rows=4.05) (actual time=0.00195..0.00211 rows=0.849 loops=6725)\n        -> Select #7 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=2.12 rows=1) (actual time=0.00348..0.00352 rows=1 loops=6725)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id)  (cost=1.58 rows=5.4) (actual time=0.00189..0.00296 rows=7.88 loops=6725)\n"
+        },
+        {
+          "solution": "02_one_aggregate_per_criterion",
+          "status": "ok",
+          "median_s": 0.11786925400019754,
+          "times_s": [
+            0.11786925400019754,
+            0.117925588999924,
+            0.11779836699997759
+          ],
+          "result_rows": 5129,
+          "result_digest": "a0d7e69459e99fbd3c6b52aad002aaeaf52d2ffa",
+          "explain_analyze": "-> Nested loop inner join  (cost=343e+9 rows=3.43e+12) (actual time=116..132 rows=5129 loops=1)\n    -> Nested loop inner join  (cost=18.6e+6 rows=185e+6) (actual time=76.2..85.4 rows=6725 loops=1)\n        -> Sort: p.customer_id  (cost=26469..26469 rows=9994) (actual time=39.8..40.3 rows=11239 loops=1)\n            -> Table scan on p  (cost=12064..12192 rows=9994) (actual time=36.8..38 rows=11239 loops=1)\n                -> Materialize CTE purchases  (cost=12064..12064 rows=9994) (actual time=36.8..36.8 rows=11239 loops=1)\n                    -> Filter: (count(0) >= 3)  (cost=11065 rows=9994) (actual time=0.203..35.7 rows=11239 loops=1)\n                        -> Group aggregate: count(0)  (cost=11065 rows=9994) (actual time=0.201..34.5 rows=17731 loops=1)\n                            -> Filter: (customer_transactions.transaction_type = 'purchase')  (cost=10066 rows=9994) (actual time=0.195..29.4 rows=87907 loops=1)\n                                -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=10066 rows=99935) (actual time=0.191..17.4 rows=100000 loops=1)\n        -> Index lookup on s using <auto_key0> (customer_id=p.customer_id)  (cost=21911..21913 rows=10) (actual time=0.00378..0.00387 rows=0.598 loops=11239)\n            -> Materialize CTE span  (cost=21911..21911 rows=18517) (actual time=36.4..36.4 rows=8909 loops=1)\n                -> Filter: ((to_days(max(customer_transactions.transaction_date)) - to_days(min(customer_transactions.transaction_date))) >= 30)  (cost=20059 rows=18517) (actual time=1..30.5 rows=8909 loops=1)\n                    -> Group aggregate: min(customer_transactions.transaction_date), max(customer_transactions.transaction_date)  (cost=20059 rows=18517) (actual time=0.993..28.3 rows=18210 loops=1)\n                        -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=10066 rows=99935) (actual time=0.984..16.1 rows=100000 loops=1)\n    -> Index lookup on r using <auto_key0> (customer_id=p.customer_id)  (cost=21911..21913 rows=10) (actual time=0.00659..0.0067 rows=0.763 loops=6725)\n        -> Materialize CTE refunds  (cost=21911..21911 rows=18517) (actual time=40.2..40.2 rows=13600 loops=1)\n            -> Filter: ((sum((customer_transactions.transaction_type = 'refund')) / count(0)) < 0.2)  (cost=20059 rows=18517) (actual time=0.164..30.9 rows=13600 loops=1)\n                -> Group aggregate: count(0), sum((customer_transactions.transaction_type = 'refund'))  (cost=20059 rows=18517) (actual time=0.155..28.5 rows=18210 loops=1)\n                    -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=10066 rows=99935) (actual time=0.143..17.4 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_group_by_having",
+          "status": "ok",
+          "median_s": 0.0635407380000288,
+          "times_s": [
+            0.06349407800007612,
+            0.0635407380000288,
+            0.0635799980000229
+          ],
+          "result_rows": 5129,
+          "result_digest": "a0d7e69459e99fbd3c6b52aad002aaeaf52d2ffa",
+          "explain_analyze": "-> Filter: ((sum((customer_transactions.transaction_type = 'purchase')) >= 3) and ((to_days(max(customer_transactions.transaction_date)) - to_days(min(customer_transactions.transaction_date))) >= 30) and ((5 * sum((customer_transactions.transaction_type = 'refund'))) < count(0)))  (cost=20059 rows=18517) (actual time=0.2..49.7 rows=5129 loops=1)\n    -> Group aggregate: count(0), sum((customer_transactions.transaction_type = 'refund')), min(customer_transactions.transaction_date), max(customer_transactions.transaction_date), sum((customer_transactions.transaction_type = 'purchase'))  (cost=20059 rows=18517) (actual time=0.187..47 rows=18210 loops=1)\n        -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=10066 rows=99935) (actual time=0.174..19 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "customer_transactions": 1000000
+      },
+      "load_seconds": 9.58,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_one_aggregate_per_criterion",
+          "status": "ok",
+          "median_s": 2.707164251999984,
+          "times_s": [
+            2.707164251999984,
+            2.7434114160000718,
+            2.6933656999999585
+          ],
+          "result_rows": 51051,
+          "result_digest": "67fd39996cc90e13c066adabf6715dbd13a609af",
+          "explain_analyze": "-> Nested loop inner join  (cost=2.74e+6 rows=0) (actual time=2715..2878 rows=51051 loops=1)\n    -> Nested loop inner join  (cost=249277 rows=0) (actual time=1665..1763 rows=67179 loops=1)\n        -> Sort: p.customer_id  (cost=2.6..2.6 rows=0) (actual time=807..812 rows=112008 loops=1)\n            -> Table scan on p  (cost=2.5..2.5 rows=0) (actual time=778..790 rows=112008 loops=1)\n                -> Materialize CTE purchases  (cost=0..0 rows=0) (actual time=778..778 rows=112008 loops=1)\n                    -> Filter: (n_purchases >= 3)  (actual time=724..770 rows=112008 loops=1)\n                        -> Table scan on <temporary>  (actual time=724..757 rows=176531 loops=1)\n                            -> Aggregate using temporary table  (actual time=724..724 rows=176530 loops=1)\n                                -> Filter: (customer_transactions.transaction_type = 'purchase')  (cost=100423 rows=99710) (actual time=0.175..306 rows=878915 loops=1)\n                                    -> Table scan on customer_transactions  (cost=100423 rows=997096) (actual time=0.173..183 rows=1e+6 loops=1)\n        -> Index lookup on s using <auto_key0> (customer_id=p.customer_id)  (cost=0.25..2.5 rows=10) (actual time=0.00826..0.00835 rows=0.6 loops=112008)\n            -> Materialize CTE span  (cost=0..0 rows=0) (actual time=858..858 rows=89161 loops=1)\n                -> Filter: ((to_days(`MAX(transaction_date)`) - to_days(`MIN(transaction_date)`)) >= 30)  (actual time=729..787 rows=89161 loops=1)\n                    -> Table scan on <temporary>  (actual time=729..767 rows=181447 loops=1)\n                        -> Aggregate using temporary table  (actual time=729..729 rows=181446 loops=1)\n                            -> Table scan on customer_transactions  (cost=100423 rows=997096) (actual time=2.09..178 rows=1e+6 loops=1)\n    -> Index lookup on r using <auto_key0> (customer_id=p.customer_id)  (cost=0.25..2.5 rows=10) (actual time=0.0163..0.0164 rows=0.76 loops=67179)\n        -> Materialize CTE refunds  (cost=0..0 rows=0) (actual time=1051..1051 rows=135199 loops=1)\n            -> Filter: ((`sum((customer_transactions.transaction_type = 'refund'))` / `count(0)`) < 0.2)  (actual time=867..938 rows=135199 loops=1)\n                -> Table scan on <temporary>  (actual time=867..907 rows=181447 loops=1)\n                    -> Aggregate using temporary table  (actual time=867..867 rows=181446 loops=1)\n                        -> Table scan on customer_transactions  (cost=100423 rows=997096) (actual time=0.16..188 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_group_by_having",
+          "status": "ok",
+          "median_s": 1.4648083970000698,
+          "times_s": [
+            1.4620766420000564,
+            1.4901375550000466,
+            1.4648083970000698
+          ],
+          "result_rows": 51051,
+          "result_digest": "67fd39996cc90e13c066adabf6715dbd13a609af",
+          "explain_analyze": "-> Sort: customer_transactions.customer_id  (actual time=1309..1312 rows=51051 loops=1)\n    -> Filter: ((`sum((customer_transactions.transaction_type = 'purchase'))` >= 3) and ((to_days(`MAX(transaction_date)`) - to_days(`MIN(transaction_date)`)) >= 30) and ((5 * `sum((customer_transactions.transaction_type = 'refund'))`) < `count(0)`))  (actual time=1222..1298 rows=51051 loops=1)\n        -> Table scan on <temporary>  (actual time=1222..1268 rows=181447 loops=1)\n            -> Aggregate using temporary table  (actual time=1222..1222 rows=181446 loops=1)\n                -> Table scan on customer_transactions  (cost=100408 rows=996953) (actual time=0.186..208 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "customer_transactions": 1000000
+      },
+      "load_seconds": 9.58,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 2.715629214999808,
+          "times_s": [
+            2.731416584000044,
+            2.6942926839999473,
+            2.715629214999808
+          ],
+          "result_rows": 51051,
+          "result_digest": "67fd39996cc90e13c066adabf6715dbd13a609af",
+          "explain_analyze": "-> Sort: c.customer_id  (cost=458835..458835 rows=181975) (actual time=2807..2809 rows=51051 loops=1)\n    -> Filter: (((select #3) >= 3) and ((to_days((select #4)) - to_days((select #5))) >= 30) and (((select #6) / (select #7)) < 0.2))  (cost=102191..122666 rows=181975) (actual time=393..2796 rows=51051 loops=1)\n        -> Table scan on c  (cost=102191..104468 rows=181975) (actual time=393..417 rows=181447 loops=1)\n            -> Materialize  (cost=102191..102191 rows=181975) (actual time=393..393 rows=181447 loops=1)\n                -> Covering index skip scan for deduplication on customer_transactions using idx_tx_customer_type_date  (cost=83994 rows=181975) (actual time=0.0332..378 rows=181447 loops=1)\n        -> Select #3 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.87 rows=1) (actual time=0.00408..0.00411 rows=1 loops=181447)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id, transaction_type='purchase')  (cost=1.45 rows=4.18) (actual time=0.00269..0.00363 rows=4.84 loops=181447)\n        -> Select #4 (subquery in condition; dependent)\n            -> Aggregate: max(t.transaction_date)  (cost=2.15 rows=1) (actual time=0.00425..0.00428 rows=1 loops=112008)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id)  (cost=1.6 rows=5.48) (actual time=0.00226..0.00339 rows=7.86 loops=112008)\n        -> Select #5 (subquery in condition; dependent)\n            -> Aggregate: min(t.transaction_date)  (cost=2.15 rows=1) (actual time=0.00412..0.00415 rows=1 loops=112008)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id)  (cost=1.6 rows=5.48) (actual time=0.00223..0.00335 rows=7.86 loops=112008)\n        -> Select #6 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=1.87 rows=1) (actual time=0.00262..0.00265 rows=1 loops=67179)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id, transaction_type='refund')  (cost=1.45 rows=4.18) (actual time=0.00221..0.00237 rows=0.845 loops=67179)\n        -> Select #7 (subquery in condition; dependent)\n            -> Aggregate: count(0)  (cost=2.15 rows=1) (actual time=0.00375..0.00379 rows=1 loops=67179)\n                -> Covering index lookup on t using idx_tx_customer_type_date (customer_id=c.customer_id)  (cost=1.6 rows=5.48) (actual time=0.00213..0.00323 rows=7.86 loops=67179)\n"
+        },
+        {
+          "solution": "02_one_aggregate_per_criterion",
+          "status": "ok",
+          "median_s": 1.193562982000003,
+          "times_s": [
+            1.2383101569998871,
+            1.1888782280000214,
+            1.193562982000003
+          ],
+          "result_rows": 51051,
+          "result_digest": "67fd39996cc90e13c066adabf6715dbd13a609af",
+          "explain_analyze": "-> Nested loop inner join  (cost=330e+12 rows=3.3e+15) (actual time=1185..1383 rows=51051 loops=1)\n    -> Nested loop inner join  (cost=1.82e+9 rows=18.2e+9) (actual time=765..885 rows=67179 loops=1)\n        -> Sort: p.customer_id  (cost=297290..297290 rows=99752) (actual time=388..395 rows=112008 loops=1)\n            -> Table scan on p  (cost=120416..121665 rows=99752) (actual time=362..374 rows=112008 loops=1)\n                -> Materialize CTE purchases  (cost=120416..120416 rows=99752) (actual time=362..362 rows=112008 loops=1)\n                    -> Filter: (count(0) >= 3)  (cost=110441 rows=99752) (actual time=0.172..353 rows=112008 loops=1)\n                        -> Group aggregate: count(0)  (cost=110441 rows=99752) (actual time=0.171..341 rows=176531 loops=1)\n                            -> Filter: (customer_transactions.transaction_type = 'purchase')  (cost=100465 rows=99752) (actual time=0.164..290 rows=878915 loops=1)\n                                -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=100465 rows=997523) (actual time=0.162..171 rows=1e+6 loops=1)\n        -> Index lookup on s using <auto_key0> (customer_id=p.customer_id)  (cost=218415..218418 rows=10) (actual time=0.00412..0.00423 rows=0.6 loops=112008)\n            -> Materialize CTE span  (cost=218415..218415 rows=181974) (actual time=377..377 rows=89161 loops=1)\n                -> Filter: ((to_days(max(customer_transactions.transaction_date)) - to_days(min(customer_transactions.transaction_date))) >= 30)  (cost=200218 rows=181974) (actual time=1.19..304 rows=89161 loops=1)\n                    -> Group aggregate: min(customer_transactions.transaction_date), max(customer_transactions.transaction_date)  (cost=200218 rows=181974) (actual time=1.18..282 rows=181447 loops=1)\n                        -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=100465 rows=997523) (actual time=1.17..160 rows=1e+6 loops=1)\n    -> Index lookup on r using <auto_key0> (customer_id=p.customer_id)  (cost=218415..218418 rows=10) (actual time=0.00709..0.00723 rows=0.76 loops=67179)\n        -> Materialize CTE refunds  (cost=218415..218415 rows=181974) (actual time=420..420 rows=135199 loops=1)\n            -> Filter: ((sum((customer_transactions.transaction_type = 'refund')) / count(0)) < 0.2)  (cost=200218 rows=181974) (actual time=0.166..308 rows=135199 loops=1)\n                -> Group aggregate: count(0), sum((customer_transactions.transaction_type = 'refund'))  (cost=200218 rows=181974) (actual time=0.156..283 rows=181447 loops=1)\n                    -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=100465 rows=997523) (actual time=0.144..172 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_group_by_having",
+          "status": "ok",
+          "median_s": 0.6097108960000241,
+          "times_s": [
+            0.6075635160000274,
+            0.6103725020000184,
+            0.6097108960000241
+          ],
+          "result_rows": 51051,
+          "result_digest": "67fd39996cc90e13c066adabf6715dbd13a609af",
+          "explain_analyze": "-> Filter: ((sum((customer_transactions.transaction_type = 'purchase')) >= 3) and ((to_days(max(customer_transactions.transaction_date)) - to_days(min(customer_transactions.transaction_date))) >= 30) and ((5 * sum((customer_transactions.transaction_type = 'refund'))) < count(0)))  (cost=200218 rows=181974) (actual time=0.201..496 rows=51051 loops=1)\n    -> Group aggregate: count(0), sum((customer_transactions.transaction_type = 'refund')), min(customer_transactions.transaction_date), max(customer_transactions.transaction_date), sum((customer_transactions.transaction_type = 'purchase'))  (cost=200218 rows=181974) (actual time=0.188..468 rows=181447 loops=1)\n        -> Covering index scan on customer_transactions using idx_tx_customer_type_date  (cost=100465 rows=997523) (actual time=0.175..190 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}

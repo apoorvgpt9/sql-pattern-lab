@@ -1,0 +1,342 @@
+{
+  "problem": "10-find-drivers-with-improved-fuel-efficiency",
+  "generated_at": "2026-11-04T15:13:44+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_subqueries",
+    "02_two_half_aggregates_joined",
+    "03_conditional_aggregation"
+  ],
+  "optimal": "03_conditional_aggregation",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "mem_total": "8121092 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41854770551",
+      "GITHUB_SHA": "ccf6e23611ae65d358debe759ef9466008ca695c"
+    },
+    "git_sha": "ccf6e23611ae65d358debe759ef9466008ca695c"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "drivers": 50,
+        "trips": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.018790697000014234,
+          "times_s": [
+            0.018790697000014234,
+            0.01884612699998911,
+            0.018551629000000958
+          ],
+          "result_rows": 25,
+          "result_digest": "fababf80962b3733828d0df04a02201779c10e7e",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, x.driver_name  (cost=51.6..51.6 rows=50) (actual time=22.1..22.1 rows=25 loops=1)\n    -> Filter: (x.s > x.f)  (cost=10.4..18.4 rows=50) (actual time=22.1..22.1 rows=25 loops=1)\n        -> Table scan on x  (cost=10.3..13.4 rows=50) (actual time=22..22.1 rows=50 loops=1)\n            -> Materialize  (cost=10.2..10.2 rows=50) (actual time=22..22 rows=50 loops=1)\n                -> Table scan on d  (cost=5.25 rows=50) (actual time=0.0103..0.0264 rows=50 loops=1)\n                -> Select #3 (subquery in projection; dependent)\n                    -> Aggregate: avg((t.distance_km / nullif(t.fuel_consumed,0)))  (cost=21.3 rows=1) (actual time=0.22..0.22 rows=1 loops=50)\n                        -> Filter: ((t.driver_id = d.driver_id) and (month(t.trip_date) between 1 and 6))  (cost=11.3 rows=100) (actual time=0.0573..0.216 rows=10.1 loops=50)\n                            -> Table scan on t  (cost=11.3 rows=1000) (actual time=0.0218..0.167 rows=1000 loops=50)\n                -> Select #4 (subquery in projection; dependent)\n                    -> Aggregate: avg((t.distance_km / nullif(t.fuel_consumed,0)))  (cost=21.3 rows=1) (actual time=0.219..0.219 rows=1 loops=50)\n                        -> Filter: ((t.driver_id = d.driver_id) and (month(t.trip_date) between 7 and 12))  (cost=11.3 rows=100) (actual time=0.0459..0.216 rows=9.34 loops=50)\n                            -> Table scan on t  (cost=11.3 rows=1000) (actual time=0.0207..0.163 rows=1000 loops=50)\n"
+        },
+        {
+          "solution": "02_two_half_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.0018576809999899524,
+          "times_s": [
+            0.001969961000014564,
+            0.0018576809999899524,
+            0.0017928380000000743
+          ],
+          "result_rows": 25,
+          "result_digest": "fababf80962b3733828d0df04a02201779c10e7e",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=1.26..1.26 rows=25 loops=1)\n    -> Stream results  (cost=1655 rows=0) (actual time=1.15..1.24 rows=25 loops=1)\n        -> Nested loop inner join  (cost=1655 rows=0) (actual time=1.14..1.22 rows=25 loops=1)\n            -> Nested loop inner join  (cost=143 rows=0) (actual time=0.592..0.635 rows=47 loops=1)\n                -> Table scan on d  (cost=5.25 rows=50) (actual time=0.00911..0.0208 rows=50 loops=1)\n                -> Covering index lookup on f using <auto_key0> (driver_id=d.driver_id)  (cost=0.252..2.77 rows=11) (actual time=0.0121..0.0122 rows=0.94 loops=50)\n                    -> Materialize CTE first_half  (cost=0..0 rows=0) (actual time=0.581..0.581 rows=57 loops=1)\n                        -> Table scan on <temporary>  (actual time=0.549..0.553 rows=57 loops=1)\n                            -> Aggregate using temporary table  (actual time=0.549..0.549 rows=57 loops=1)\n                                -> Filter: (month(trips.trip_date) between 1 and 6)  (cost=101 rows=1000) (actual time=0.0264..0.277 rows=519 loops=1)\n                                    -> Table scan on trips  (cost=101 rows=1000) (actual time=0.0257..0.212 rows=1000 loops=1)\n            -> Filter: (s.avg_eff > f.avg_eff)  (cost=0.75..2.75 rows=3.67) (actual time=0.0123..0.0124 rows=0.532 loops=47)\n                -> Covering index lookup on s using <auto_key0> (driver_id=d.driver_id)  (cost=0.25..2.75 rows=11) (actual time=0.012..0.0122 rows=1 loops=47)\n                    -> Materialize CTE second_half  (cost=0..0 rows=0) (actual time=0.55..0.55 rows=56 loops=1)\n                        -> Table scan on <temporary>  (actual time=0.521..0.525 rows=56 loops=1)\n                            -> Aggregate using temporary table  (actual time=0.521..0.521 rows=56 loops=1)\n                                -> Filter: (month(trips.trip_date) between 7 and 12)  (cost=101 rows=1000) (actual time=0.0457..0.275 rows=476 loops=1)\n                                    -> Table scan on trips  (cost=101 rows=1000) (actual time=0.0246..0.191 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.0017404349999878832,
+          "times_s": [
+            0.0017404349999878832,
+            0.0017846150000195848,
+            0.0016843410000149106
+          ],
+          "result_rows": 25,
+          "result_digest": "fababf80962b3733828d0df04a02201779c10e7e",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=1.08..1.09 rows=25 loops=1)\n    -> Stream results  (cost=130 rows=0) (actual time=1.02..1.07 rows=25 loops=1)\n        -> Nested loop inner join  (cost=130 rows=0) (actual time=1.01..1.05 rows=25 loops=1)\n            -> Table scan on d  (cost=5.25 rows=50) (actual time=0.0112..0.0229 rows=50 loops=1)\n            -> Index lookup on h using <auto_key0> (driver_id=d.driver_id)  (cost=0.252..2.52 rows=10) (actual time=0.0204..0.0204 rows=0.5 loops=50)\n                -> Materialize CTE halves  (cost=0..0 rows=0) (actual time=0.999..0.999 rows=27 loops=1)\n                    -> Filter: (s > f)  (actual time=0.936..0.971 rows=27 loops=1)\n                        -> Table scan on <temporary>  (actual time=0.935..0.94 rows=63 loops=1)\n                            -> Aggregate using temporary table  (actual time=0.934..0.934 rows=63 loops=1)\n                                -> Table scan on trips  (cost=101 rows=1000) (actual time=0.0255..0.203 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "drivers": 50,
+        "trips": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.0017735549999997602,
+          "times_s": [
+            0.0018327960000021903,
+            0.0017735549999997602,
+            0.001719194000003199
+          ],
+          "result_rows": 25,
+          "result_digest": "fababf80962b3733828d0df04a02201779c10e7e",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, x.driver_name  (cost=51.6..51.6 rows=50) (actual time=1.48..1.48 rows=25 loops=1)\n    -> Filter: (x.s > x.f)  (cost=10.4..18.4 rows=50) (actual time=1.45..1.46 rows=25 loops=1)\n        -> Table scan on x  (cost=10.3..13.4 rows=50) (actual time=1.45..1.46 rows=50 loops=1)\n            -> Materialize  (cost=10.2..10.2 rows=50) (actual time=1.45..1.45 rows=50 loops=1)\n                -> Table scan on d  (cost=5.25 rows=50) (actual time=0.00814..0.0226 rows=50 loops=1)\n                -> Select #3 (subquery in projection; dependent)\n                    -> Aggregate: avg((t.distance_km / nullif(t.fuel_consumed,0)))  (cost=3.83 rows=1) (actual time=0.0137..0.0137 rows=1 loops=50)\n                        -> Filter: (month(t.trip_date) between 1 and 6)  (cost=2.24 rows=15.9) (actual time=0.00491..0.0101 rows=10.1 loops=50)\n                            -> Covering index lookup on t using idx_trips_driver_cover (driver_id=d.driver_id)  (cost=2.24 rows=15.9) (actual time=0.00471..0.00852 rows=19.6 loops=50)\n                -> Select #4 (subquery in projection; dependent)\n                    -> Aggregate: avg((t.distance_km / nullif(t.fuel_consumed,0)))  (cost=3.83 rows=1) (actual time=0.0128..0.0128 rows=1 loops=50)\n                        -> Filter: (month(t.trip_date) between 7 and 12)  (cost=2.24 rows=15.9) (actual time=0.00486..0.00913 rows=9.34 loops=50)\n                            -> Covering index lookup on t using idx_trips_driver_cover (driver_id=d.driver_id)  (cost=2.24 rows=15.9) (actual time=0.00423..0.00767 rows=19.6 loops=50)\n"
+        },
+        {
+          "solution": "02_two_half_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.0015858420000256501,
+          "times_s": [
+            0.0016110309999817218,
+            0.0015795879999984663,
+            0.0015858420000256501
+          ],
+          "result_rows": 25,
+          "result_digest": "fababf80962b3733828d0df04a02201779c10e7e",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=0.964..0.965 rows=25 loops=1)\n    -> Stream results  (cost=5435 rows=11549) (actual time=0.859..0.95 rows=25 loops=1)\n        -> Nested loop inner join  (cost=5435 rows=11549) (actual time=0.854..0.931 rows=25 loops=1)\n            -> Nested loop inner join  (cost=458 rows=3150) (actual time=0.441..0.482 rows=47 loops=1)\n                -> Table scan on d  (cost=5.25 rows=50) (actual time=0.0106..0.0221 rows=50 loops=1)\n                -> Covering index lookup on f using <auto_key0> (driver_id=d.driver_id)  (cost=208..210 rows=11) (actual time=0.00898..0.00908 rows=0.94 loops=50)\n                    -> Materialize CTE first_half  (cost=208..208 rows=63) (actual time=0.427..0.427 rows=57 loops=1)\n                        -> Group aggregate: avg((trips.distance_km / nullif(trips.fuel_consumed,0)))  (cost=201 rows=63) (actual time=0.0533..0.39 rows=57 loops=1)\n                            -> Filter: (month(trips.trip_date) between 1 and 6)  (cost=101 rows=1000) (actual time=0.0256..0.241 rows=519 loops=1)\n                                -> Covering index scan on trips using idx_trips_driver_cover  (cost=101 rows=1000) (actual time=0.0248..0.182 rows=1000 loops=1)\n            -> Filter: (s.avg_eff > f.avg_eff)  (cost=152..2.75 rows=3.67) (actual time=0.0093..0.00939 rows=0.532 loops=47)\n                -> Covering index lookup on s using <auto_key0> (driver_id=d.driver_id)  (cost=208..210 rows=11) (actual time=0.00907..0.00919 rows=1 loops=47)\n                    -> Materialize CTE second_half  (cost=208..208 rows=63) (actual time=0.411..0.411 rows=56 loops=1)\n                        -> Group aggregate: avg((trips.distance_km / nullif(trips.fuel_consumed,0)))  (cost=201 rows=63) (actual time=0.0461..0.38 rows=56 loops=1)\n                            -> Filter: (month(trips.trip_date) between 7 and 12)  (cost=101 rows=1000) (actual time=0.0258..0.233 rows=476 loops=1)\n                                -> Covering index scan on trips using idx_trips_driver_cover  (cost=101 rows=1000) (actual time=0.0243..0.177 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.0013954569999725663,
+          "times_s": [
+            0.001394156000003477,
+            0.001456504999993058,
+            0.0013954569999725663
+          ],
+          "result_rows": 25,
+          "result_digest": "fababf80962b3733828d0df04a02201779c10e7e",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=0.699..0.7 rows=25 loops=1)\n    -> Stream results  (cost=288 rows=1581) (actual time=0.634..0.686 rows=25 loops=1)\n        -> Nested loop inner join  (cost=288 rows=1581) (actual time=0.632..0.669 rows=25 loops=1)\n            -> Table scan on d  (cost=5.25 rows=50) (actual time=0.00796..0.019 rows=50 loops=1)\n            -> Index lookup on h using <auto_key0> (driver_id=d.driver_id)  (cost=205..207 rows=10) (actual time=0.0128..0.0129 rows=0.5 loops=50)\n                -> Materialize CTE halves  (cost=204..204 rows=31.6) (actual time=0.62..0.62 rows=27 loops=1)\n                    -> Filter: (avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 2) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end)) > avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 1) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end)))  (cost=201 rows=31.6) (actual time=0.0728..0.596 rows=27 loops=1)\n                        -> Group aggregate: avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 1) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end)), avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 2) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end))  (cost=201 rows=31.6) (actual time=0.0719..0.579 rows=63 loops=1)\n                            -> Covering index scan on trips using idx_trips_driver_cover  (cost=101 rows=1000) (actual time=0.0245..0.18 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "drivers": 5000,
+        "trips": 100000
+      },
+      "load_seconds": 1.076,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_two_half_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.11386670900000695,
+          "times_s": [
+            0.11386670900000695,
+            0.11450220699998681,
+            0.11205172500001481
+          ],
+          "result_rows": 2376,
+          "result_digest": "bcb968b54ff227ebe5cb40f956b6a9d2ab9ba946",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=120..120 rows=2376 loops=1)\n    -> Stream results  (cost=1.23e+6 rows=1.12e+6) (actual time=107..119 rows=2376 loops=1)\n        -> Nested loop inner join  (cost=1.23e+6 rows=1.12e+6) (actual time=107..117 rows=2376 loops=1)\n            -> Nested loop inner join  (cost=46216 rows=99922) (actual time=52.6..57.4 rows=4749 loops=1)\n                -> Filter: (f.driver_id is not null)  (cost=0.113..11244 rows=99922) (actual time=52.6..53.2 rows=4799 loops=1)\n                    -> Table scan on f  (cost=2.5..2.5 rows=0) (actual time=52.6..53 rows=4799 loops=1)\n                        -> Materialize CTE first_half  (cost=0..0 rows=0) (actual time=52.6..52.6 rows=4799 loops=1)\n                            -> Table scan on <temporary>  (actual time=51.1..51.5 rows=4799 loops=1)\n                                -> Aggregate using temporary table  (actual time=51.1..51.1 rows=4799 loops=1)\n                                    -> Filter: (month(trips.trip_date) between 1 and 6)  (cost=10064 rows=99922) (actual time=0.77..25.3 rows=49459 loops=1)\n                                        -> Table scan on trips  (cost=10064 rows=99922) (actual time=0.768..18.8 rows=100000 loops=1)\n                -> Single-row index lookup on d using PRIMARY (driver_id=f.driver_id)  (cost=0.25 rows=1) (actual time=764e-6..782e-6 rows=0.99 loops=4799)\n            -> Filter: (s.avg_eff > f.avg_eff)  (cost=0.75..8.43 rows=11.2) (actual time=0.0124..0.0125 rows=0.5 loops=4749)\n                -> Index lookup on s using <auto_key1> (driver_id=f.driver_id)  (cost=0.25..8.43 rows=33.7) (actual time=0.0122..0.0123 rows=0.999 loops=4749)\n                    -> Materialize CTE second_half  (cost=0..0 rows=0) (actual time=54.8..54.8 rows=4797 loops=1)\n                        -> Table scan on <temporary>  (actual time=51.9..52.3 rows=4797 loops=1)\n                            -> Aggregate using temporary table  (actual time=51.9..51.9 rows=4797 loops=1)\n                                -> Filter: (month(trips.trip_date) between 7 and 12)  (cost=10064 rows=99922) (actual time=0.814..25.9 rows=49585 loops=1)\n                                    -> Table scan on trips  (cost=10064 rows=99922) (actual time=0.812..19.1 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.10651856999999154,
+          "times_s": [
+            0.10756953200001362,
+            0.10651856999999154,
+            0.1058989340000096
+          ],
+          "result_rows": 2376,
+          "result_digest": "bcb968b54ff227ebe5cb40f956b6a9d2ab9ba946",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=105..105 rows=2376 loops=1)\n    -> Stream results  (cost=25484 rows=0) (actual time=98.3..104 rows=2376 loops=1)\n        -> Nested loop inner join  (cost=25484 rows=0) (actual time=98.3..102 rows=2376 loops=1)\n            -> Table scan on d  (cost=504 rows=5000) (actual time=0.0628..1.01 rows=5000 loops=1)\n            -> Index lookup on h using <auto_key0> (driver_id=d.driver_id)  (cost=0.25..5 rows=20) (actual time=0.0201..0.0202 rows=0.475 loops=5000)\n                -> Materialize CTE halves  (cost=0..0 rows=0) (actual time=98.2..98.2 rows=2424 loops=1)\n                    -> Filter: (s > f)  (actual time=94.9..96.6 rows=2424 loops=1)\n                        -> Table scan on <temporary>  (actual time=94.9..95.3 rows=4800 loops=1)\n                            -> Aggregate using temporary table  (actual time=94.9..94.9 rows=4800 loops=1)\n                                -> Table scan on trips  (cost=10064 rows=99922) (actual time=0.76..19.9 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "drivers": 5000,
+        "trips": 100000
+      },
+      "load_seconds": 1.076,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.10159140900000807,
+          "times_s": [
+            0.10109169800000473,
+            0.10159140900000807,
+            0.10259565000001203
+          ],
+          "result_rows": 2376,
+          "result_digest": "bcb968b54ff227ebe5cb40f956b6a9d2ab9ba946",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, x.driver_name  (cost=8213..8213 rows=5000) (actual time=102..102 rows=2376 loops=1)\n    -> Filter: (x.s > x.f)  (cost=1004..1569 rows=5000) (actual time=99.9..101 rows=2376 loops=1)\n        -> Table scan on x  (cost=1004..1069 rows=5000) (actual time=99.9..100 rows=5000 loops=1)\n            -> Materialize  (cost=1004..1004 rows=5000) (actual time=99.9..99.9 rows=5000 loops=1)\n                -> Table scan on d  (cost=504 rows=5000) (actual time=0.0541..0.997 rows=5000 loops=1)\n                -> Select #3 (subquery in projection; dependent)\n                    -> Aggregate: avg((t.distance_km / nullif(t.fuel_consumed,0)))  (cost=5.06 rows=1) (actual time=0.00921..0.00923 rows=1 loops=5000)\n                        -> Filter: (month(t.trip_date) between 1 and 6)  (cost=3.06 rows=20) (actual time=0.00343..0.00651 rows=9.69 loops=5000)\n                            -> Covering index lookup on t using idx_trips_driver_cover (driver_id=d.driver_id)  (cost=3.06 rows=20) (actual time=0.00326..0.00528 rows=19.6 loops=5000)\n                -> Select #4 (subquery in projection; dependent)\n                    -> Aggregate: avg((t.distance_km / nullif(t.fuel_consumed,0)))  (cost=5.06 rows=1) (actual time=0.00904..0.00906 rows=1 loops=5000)\n                        -> Filter: (month(t.trip_date) between 7 and 12)  (cost=3.06 rows=20) (actual time=0.00367..0.00639 rows=9.72 loops=5000)\n                            -> Covering index lookup on t using idx_trips_driver_cover (driver_id=d.driver_id)  (cost=3.06 rows=20) (actual time=0.00313..0.00518 rows=19.6 loops=5000)\n"
+        },
+        {
+          "solution": "02_two_half_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.08534512299999619,
+          "times_s": [
+            0.08534512299999619,
+            0.08466133400000331,
+            0.08547258299998362
+          ],
+          "result_rows": 2376,
+          "result_digest": "bcb968b54ff227ebe5cb40f956b6a9d2ab9ba946",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=87.2..87.3 rows=2376 loops=1)\n    -> Stream results  (cost=1.17e+6 rows=1.07e+6) (actual time=75.8..86.2 rows=2376 loops=1)\n        -> Nested loop inner join  (cost=1.17e+6 rows=1.07e+6) (actual time=75.8..84.8 rows=2376 loops=1)\n            -> Nested loop inner join  (cost=45079 rows=97462) (actual time=37.2..41.4 rows=4749 loops=1)\n                -> Filter: (f.driver_id is not null)  (cost=20051..10967 rows=97462) (actual time=37.1..37.7 rows=4799 loops=1)\n                    -> Table scan on f  (cost=20051..20115 rows=4867) (actual time=37.1..37.5 rows=4799 loops=1)\n                        -> Materialize CTE first_half  (cost=20051..20051 rows=4867) (actual time=37.1..37.1 rows=4799 loops=1)\n                            -> Group aggregate: avg((trips.distance_km / nullif(trips.fuel_consumed,0)))  (cost=19565 rows=4867) (actual time=0.829..35.7 rows=4799 loops=1)\n                                -> Filter: (month(trips.trip_date) between 1 and 6)  (cost=9818 rows=97462) (actual time=0.718..23.2 rows=49459 loops=1)\n                                    -> Covering index scan on trips using idx_trips_driver_cover  (cost=9818 rows=97462) (actual time=0.716..17.6 rows=100000 loops=1)\n                -> Single-row index lookup on d using PRIMARY (driver_id=f.driver_id)  (cost=0.25 rows=1) (actual time=656e-6..673e-6 rows=0.99 loops=4799)\n            -> Filter: (s.avg_eff > f.avg_eff)  (cost=18223..8.22 rows=11) (actual time=0.00892..0.00901 rows=0.5 loops=4749)\n                -> Index lookup on s using <auto_key1> (driver_id=f.driver_id)  (cost=20052..20060 rows=32.9) (actual time=0.0087..0.00882 rows=0.999 loops=4749)\n                    -> Materialize CTE second_half  (cost=20051..20051 rows=4867) (actual time=38.6..38.6 rows=4797 loops=1)\n                        -> Group aggregate: avg((trips.distance_km / nullif(trips.fuel_consumed,0)))  (cost=19565 rows=4867) (actual time=0.821..34.9 rows=4797 loops=1)\n                            -> Filter: (month(trips.trip_date) between 7 and 12)  (cost=9818 rows=97462) (actual time=0.709..22.5 rows=49585 loops=1)\n                                -> Covering index scan on trips using idx_trips_driver_cover  (cost=9818 rows=97462) (actual time=0.702..17 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.0759178229999975,
+          "times_s": [
+            0.0759178229999975,
+            0.07524634499998228,
+            0.07780547999999499
+          ],
+          "result_rows": 2376,
+          "result_digest": "bcb968b54ff227ebe5cb40f956b6a9d2ab9ba946",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=67.6..67.7 rows=2376 loops=1)\n    -> Stream results  (cost=180964 rows=1.56e+6) (actual time=61..66.7 rows=2376 loops=1)\n        -> Nested loop inner join  (cost=180964 rows=1.56e+6) (actual time=61..65.2 rows=2376 loops=1)\n            -> Table scan on d  (cost=504 rows=5000) (actual time=0.0584..0.993 rows=5000 loops=1)\n            -> Index lookup on h using <auto_key0> (driver_id=d.driver_id)  (cost=19596..19601 rows=19.5) (actual time=0.0127..0.0127 rows=0.475 loops=5000)\n                -> Materialize CTE halves  (cost=19596..19596 rows=312) (actual time=60.9..60.9 rows=2424 loops=1)\n                    -> Filter: (avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 2) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end)) > avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 1) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end)))  (cost=19565 rows=312) (actual time=1.06..58.6 rows=2424 loops=1)\n                        -> Group aggregate: avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 1) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end)), avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 2) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end))  (cost=19565 rows=312) (actual time=0.946..57.1 rows=4800 loops=1)\n                            -> Covering index scan on trips using idx_trips_driver_cover  (cost=9818 rows=97462) (actual time=0.727..17.5 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "drivers": 50000,
+        "trips": 1000000
+      },
+      "load_seconds": 10.801,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_two_half_aggregates_joined",
+          "status": "ok",
+          "median_s": 1.396503564999989,
+          "times_s": [
+            1.396075011000022,
+            1.396503564999989,
+            1.4261367679999921
+          ],
+          "result_rows": 23636,
+          "result_digest": "55330fe3600b476296c4d4a892195a93b420089f",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=1528..1529 rows=23636 loops=1)\n    -> Stream results  (cost=12.7e+6 rows=11.6e+6) (actual time=1360..1513 rows=23636 loops=1)\n        -> Nested loop inner join  (cost=12.7e+6 rows=11.6e+6) (actual time=1360..1499 rows=23636 loops=1)\n            -> Nested loop inner join  (cost=461216 rows=997218) (actual time=657..712 rows=47478 loops=1)\n                -> Filter: (f.driver_id is not null)  (cost=0.113..112190 rows=997218) (actual time=657..665 rows=47528 loops=1)\n                    -> Table scan on f  (cost=2.5..2.5 rows=0) (actual time=657..663 rows=47528 loops=1)\n                        -> Materialize CTE first_half  (cost=0..0 rows=0) (actual time=657..657 rows=47528 loops=1)\n                            -> Table scan on <temporary>  (actual time=643..647 rows=47528 loops=1)\n                                -> Aggregate using temporary table  (actual time=643..643 rows=47528 loops=1)\n                                    -> Filter: (month(trips.trip_date) between 1 and 6)  (cost=100387 rows=997218) (actual time=0.736..256 rows=491698 loops=1)\n                                        -> Table scan on trips  (cost=100387 rows=997218) (actual time=0.734..191 rows=1e+6 loops=1)\n                -> Single-row index lookup on d using PRIMARY (driver_id=f.driver_id)  (cost=0.25 rows=1) (actual time=864e-6..881e-6 rows=0.999 loops=47528)\n            -> Filter: (s.avg_eff > f.avg_eff)  (cost=0.75..8.74 rows=11.7) (actual time=0.0163..0.0164 rows=0.498 loops=47478)\n                -> Index lookup on s using <auto_key1> (driver_id=f.driver_id)  (cost=0.25..8.74 rows=35) (actual time=0.016..0.0162 rows=0.999 loops=47478)\n                    -> Materialize CTE second_half  (cost=0..0 rows=0) (actual time=703..703 rows=47525 loops=1)\n                        -> Table scan on <temporary>  (actual time=660..665 rows=47525 loops=1)\n                            -> Aggregate using temporary table  (actual time=660..660 rows=47525 loops=1)\n                                -> Filter: (month(trips.trip_date) between 7 and 12)  (cost=100387 rows=997218) (actual time=0.734..265 rows=498378 loops=1)\n                                    -> Table scan on trips  (cost=100387 rows=997218) (actual time=0.732..197 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 1.331635222000017,
+          "times_s": [
+            1.4020387430000198,
+            1.331635222000017,
+            1.3293883599999958
+          ],
+          "result_rows": 23636,
+          "result_digest": "55330fe3600b476296c4d4a892195a93b420089f",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=1321..1322 rows=23636 loops=1)\n    -> Stream results  (cost=254156 rows=0) (actual time=1246..1309 rows=23636 loops=1)\n        -> Nested loop inner join  (cost=254156 rows=0) (actual time=1246..1295 rows=23636 loops=1)\n            -> Table scan on d  (cost=4852 rows=48115) (actual time=0.0583..9.69 rows=50000 loops=1)\n            -> Index lookup on h using <auto_key0> (driver_id=d.driver_id)  (cost=0.25..5.18 rows=20.7) (actual time=0.0255..0.0256 rows=0.473 loops=50000)\n                -> Materialize CTE halves  (cost=0..0 rows=0) (actual time=1246..1246 rows=23686 loops=1)\n                    -> Filter: (s > f)  (actual time=1210..1226 rows=23686 loops=1)\n                        -> Table scan on <temporary>  (actual time=1210..1213 rows=47550 loops=1)\n                            -> Aggregate using temporary table  (actual time=1210..1210 rows=47550 loops=1)\n                                -> Table scan on trips  (cost=100387 rows=997218) (actual time=0.743..202 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "drivers": 50000,
+        "trips": 1000000
+      },
+      "load_seconds": 10.801,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_subqueries",
+          "status": "ok",
+          "median_s": 1.0097489469999914,
+          "times_s": [
+            1.0097489469999914,
+            1.0022172160000196,
+            1.0364983509999774
+          ],
+          "result_rows": 23636,
+          "result_digest": "dfdb393e78095e46f4f27e9a9bf2070a9d0a451d",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, x.driver_name  (cost=99631..99631 rows=50432) (actual time=1018..1019 rows=23636 loops=1)\n    -> Filter: (x.s > x.f)  (cost=10127..15803 rows=50432) (actual time=995..1005 rows=23636 loops=1)\n        -> Table scan on x  (cost=10127..10760 rows=50432) (actual time=995..1000 rows=50000 loops=1)\n            -> Materialize  (cost=10127..10127 rows=50432) (actual time=995..995 rows=50000 loops=1)\n                -> Table scan on d  (cost=5083 rows=50432) (actual time=0.0636..9.23 rows=50000 loops=1)\n                -> Select #3 (subquery in projection; dependent)\n                    -> Aggregate: avg((t.distance_km / nullif(t.fuel_consumed,0)))  (cost=5.15 rows=1) (actual time=0.00922..0.00924 rows=1 loops=50000)\n                        -> Filter: (month(t.trip_date) between 1 and 6)  (cost=3.1 rows=20.4) (actual time=0.00347..0.00654 rows=9.64 loops=50000)\n                            -> Covering index lookup on t using idx_trips_driver_cover (driver_id=d.driver_id)  (cost=3.1 rows=20.4) (actual time=0.0033..0.0053 rows=19.6 loops=50000)\n                -> Select #4 (subquery in projection; dependent)\n                    -> Aggregate: avg((t.distance_km / nullif(t.fuel_consumed,0)))  (cost=5.15 rows=1) (actual time=0.00897..0.00899 rows=1 loops=50000)\n                        -> Filter: (month(t.trip_date) between 7 and 12)  (cost=3.1 rows=20.4) (actual time=0.00364..0.00629 rows=9.77 loops=50000)\n                            -> Covering index lookup on t using idx_trips_driver_cover (driver_id=d.driver_id)  (cost=3.1 rows=20.4) (actual time=0.00311..0.00511 rows=19.6 loops=50000)\n"
+        },
+        {
+          "solution": "02_two_half_aggregates_joined",
+          "status": "ok",
+          "median_s": 0.862445503999993,
+          "times_s": [
+            0.8617109379999874,
+            0.862445503999993,
+            0.9001173389999622
+          ],
+          "result_rows": 23636,
+          "result_digest": "dfdb393e78095e46f4f27e9a9bf2070a9d0a451d",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=889..891 rows=23636 loops=1)\n    -> Stream results  (cost=12.1e+6 rows=11.1e+6) (actual time=766..876 rows=23636 loops=1)\n        -> Nested loop inner join  (cost=12.1e+6 rows=11.1e+6) (actual time=766..862 rows=23636 loops=1)\n            -> Nested loop inner join  (cost=461584 rows=998014) (actual time=368..414 rows=47478 loops=1)\n                -> Filter: (f.driver_id is not null)  (cost=205149..112279 rows=998014) (actual time=368..374 rows=47528 loops=1)\n                    -> Table scan on f  (cost=205149..205761 rows=48809) (actual time=368..372 rows=47528 loops=1)\n                        -> Materialize CTE first_half  (cost=205149..205149 rows=48809) (actual time=368..368 rows=47528 loops=1)\n                            -> Group aggregate: avg((trips.distance_km / nullif(trips.fuel_consumed,0)))  (cost=200268 rows=48809) (actual time=0.99..354 rows=47528 loops=1)\n                                -> Filter: (month(trips.trip_date) between 1 and 6)  (cost=100466 rows=998014) (actual time=0.719..231 rows=491698 loops=1)\n                                    -> Covering index scan on trips using idx_trips_driver_cover  (cost=100466 rows=998014) (actual time=0.716..170 rows=1e+6 loops=1)\n                -> Single-row index lookup on d using PRIMARY (driver_id=f.driver_id)  (cost=0.25 rows=1) (actual time=713e-6..731e-6 rows=0.999 loops=47528)\n            -> Filter: (s.avg_eff > f.avg_eff)  (cost=186718..8.35 rows=11.1) (actual time=0.00922..0.00931 rows=0.498 loops=47478)\n                -> Index lookup on s using <auto_key1> (driver_id=f.driver_id)  (cost=205149..205157 rows=33.4) (actual time=0.009..0.00912 rows=0.999 loops=47478)\n                    -> Materialize CTE second_half  (cost=205149..205149 rows=48809) (actual time=398..398 rows=47525 loops=1)\n                        -> Group aggregate: avg((trips.distance_km / nullif(trips.fuel_consumed,0)))  (cost=200268 rows=48809) (actual time=0.948..355 rows=47525 loops=1)\n                            -> Filter: (month(trips.trip_date) between 7 and 12)  (cost=100466 rows=998014) (actual time=0.712..228 rows=498378 loops=1)\n                                -> Covering index scan on trips using idx_trips_driver_cover  (cost=100466 rows=998014) (actual time=0.695..174 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_conditional_aggregation",
+          "status": "ok",
+          "median_s": 0.7637598219999973,
+          "times_s": [
+            0.7637598219999973,
+            0.7603804389999596,
+            0.7684531189999575
+          ],
+          "result_rows": 23636,
+          "result_digest": "dfdb393e78095e46f4f27e9a9bf2070a9d0a451d",
+          "explain_analyze": "-> Sort: efficiency_improvement DESC, d.driver_name  (actual time=723..724 rows=23636 loops=1)\n    -> Stream results  (cost=5.29e+6 rows=50.4e+6) (actual time=651..711 rows=23636 loops=1)\n        -> Nested loop inner join  (cost=5.29e+6 rows=50.4e+6) (actual time=651..697 rows=23636 loops=1)\n            -> Table scan on d  (cost=5083 rows=50432) (actual time=0.0976..9.63 rows=50000 loops=1)\n            -> Index lookup on h using <auto_key0> (driver_id=d.driver_id)  (cost=200368..200373 rows=19.8) (actual time=0.0136..0.0136 rows=0.473 loops=50000)\n                -> Materialize CTE halves  (cost=200368..200368 rows=999) (actual time=651..651 rows=23686 loops=1)\n                    -> Filter: (avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 2) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end)) > avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 1) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end)))  (cost=200268 rows=999) (actual time=1.93..625 rows=23686 loops=1)\n                        -> Group aggregate: avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 1) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end)), avg((case when ((case when (month(trips.trip_date) between 1 and 6) then 1 when (month(trips.trip_date) between 7 and 12) then 2 end) = 2) then (trips.distance_km / nullif(trips.fuel_consumed,0)) end))  (cost=200268 rows=999) (actual time=1.2..610 rows=47550 loops=1)\n                            -> Covering index scan on trips using idx_trips_driver_cover  (cost=100466 rows=998014) (actual time=0.703..187 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}
