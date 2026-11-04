@@ -1,0 +1,65 @@
+id: 37
+source: leetcode
+source_id: 3673
+title: Find Zombie Sessions
+url: https://leetcode.com/problems/find-zombie-sessions/
+difficulty: hard
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: sessionization
+pattern_secondary:
+- conditional_aggregation
+- session_metrics
+batch: B5
+trigger_phrases:
+- phrase: session duration is more than 30 minutes
+  meaning: TIMESTAMPDIFF(MINUTE, MIN(ts), MAX(ts)) > 30 per session_id
+- phrase: at least 5 scroll events
+  meaning: SUM(event_type='scroll') >= 5
+- phrase: click-to-scroll ratio is less than 0.20
+  meaning: clicks / scrolls < 0.2, strict
+- phrase: No purchases
+  meaning: SUM(event_type='purchase') = 0
+schema:
+- table: app_events
+  columns:
+  - name: event_id
+    type: int
+    pk: true
+  - name: user_id
+    type: int
+  - name: event_timestamp
+    type: datetime
+  - name: event_type
+    type: varchar
+    note: app_open|click|scroll|purchase|app_close
+  - name: session_id
+    type: varchar
+  - name: event_value
+    type: int
+    note: purchase $ / scroll px / NULL
+  grain: one row per event
+requirement: Per session_id, compute duration in whole minutes between the first and last event, scroll count, click
+  count, purchase count. A session is a zombie if duration > 30 minutes, scrolls >= 5, clicks/scrolls < 0.20, and
+  no purchases. Report zombie sessions.
+output:
+  columns:
+  - session_id
+  - user_id
+  - session_duration_minutes
+  - scroll_count
+  ordering: scroll_count DESC, session_id ASC
+  grain: one row per zombie session
+rules:
+  ties: n/a
+  nulls: event_value irrelevant
+  empty: empty -> empty
+  other: ratio exactly 0.20 does not qualify; doocs reference uses duration >= 30 although the statement says 'more
+    than 30'
+confidence: medium
+confidence_note: Duration boundary (> vs >= 30) differs between statement and reference solution.

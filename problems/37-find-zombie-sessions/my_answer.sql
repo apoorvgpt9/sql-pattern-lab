@@ -1,0 +1,3 @@
+-- Your answer for Find Zombie Sessions. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 37-find-zombie-sessions --mine
+-- Output columns: session_id, user_id, session_duration_minutes, scroll_count
