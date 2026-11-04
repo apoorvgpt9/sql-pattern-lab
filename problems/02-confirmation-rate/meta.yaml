@@ -1,0 +1,58 @@
+id: 2
+source: leetcode
+source_id: 1934
+title: Confirmation Rate
+url: https://leetcode.com/problems/confirmation-rate/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: anti_join
+pattern_secondary:
+- left_join_preserve
+- conditional_aggregation
+batch: B1
+trigger_phrases:
+- phrase: each user
+  meaning: drive from Signups so users with no confirmation requests still appear
+- phrase: did not request any ... is 0
+  meaning: unmatched LEFT JOIN rows must yield 0, not NULL -> IFNULL/COALESCE
+- phrase: confirmed divided by total requests
+  meaning: AVG(action='confirmed') or SUM(CASE)/COUNT over the joined rows
+schema:
+- table: Signups
+  columns:
+  - name: user_id
+    type: int
+    pk: true
+  - name: time_stamp
+    type: datetime
+  grain: one row per user
+- table: Confirmations
+  columns:
+  - name: user_id
+    type: int
+    note: FK Signups; PK is (user_id, time_stamp)
+  - name: time_stamp
+    type: datetime
+  - name: action
+    type: enum('confirmed','timeout')
+  grain: one row per confirmation request
+requirement: For every signed-up user, compute confirmation rate = (number of their Confirmations rows with action
+  'confirmed') / (number of their Confirmations rows). Users with no Confirmations rows get rate 0. Round to 2 decimals.
+output:
+  columns:
+  - user_id
+  - confirmation_rate
+  ordering: any order
+  grain: one row per Signups user
+rules:
+  ties: n/a
+  nulls: no-request users -> 0.00
+  empty: no signups -> empty
+  other: ROUND(x, 2)
+confidence: high

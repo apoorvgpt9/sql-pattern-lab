@@ -1,0 +1,2 @@
+-- No orders.
+-- expect-empty: no customers exist

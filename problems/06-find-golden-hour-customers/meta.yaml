@@ -1,0 +1,66 @@
+id: 6
+source: leetcode
+source_id: 3705
+title: Find Golden Hour Customers
+url: https://leetcode.com/problems/find-golden-hour-customers/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: conditional_aggregation
+pattern_secondary:
+- having_filters
+- time_of_day
+batch: B1
+trigger_phrases:
+- phrase: at least 60% of their orders
+  meaning: SUM(is_peak)/COUNT(*) >= 0.6; avoid float issues with 5*peak >= 3*total
+- phrase: 11:00-14:00 or 18:00-21:00
+  meaning: TIME(order_timestamp) range test, two windows OR'd
+- phrase: average rating for rated orders
+  meaning: AVG ignores NULL ratings automatically
+- phrase: rated at least 50% of their orders
+  meaning: COUNT(order_rating)/COUNT(*) >= 0.5
+schema:
+- table: restaurant_orders
+  columns:
+  - name: order_id
+    type: int
+    pk: true
+  - name: customer_id
+    type: int
+  - name: order_timestamp
+    type: datetime
+  - name: order_amount
+    type: decimal
+  - name: payment_method
+    type: varchar
+    note: cash|card|app
+  - name: order_rating
+    type: int
+    note: 1-5 or NULL
+  grain: one row per order
+requirement: 'Find customers with: at least 3 orders; at least 60% of orders placed in peak hours (11:00-14:00 or
+  18:00-21:00); average rating over non-NULL ratings at least 4.0; and at least 50% of their orders rated. Report
+  total orders, peak-hour percentage (0-100) and average rating rounded to 2 decimals.'
+output:
+  columns:
+  - customer_id
+  - total_orders
+  - peak_hour_percentage
+  - average_rating
+  ordering: average_rating DESC, customer_id DESC
+  grain: one row per qualifying customer
+rules:
+  ties: ordering ties broken by customer_id desc
+  nulls: NULL ratings excluded from average but count toward total_orders
+  empty: empty -> empty
+  other: peak_hour_percentage appears to be rounded to an integer (doocs uses ROUND(x)); window ends inclusive per
+    doocs (BETWEEN '11:00:00' AND '14:00:00')
+confidence: medium
+confidence_note: Rounding of peak_hour_percentage and whether 14:00:00 / 21:00:00 exactly count as peak are inferred
+  from the reference solution, not stated explicitly.

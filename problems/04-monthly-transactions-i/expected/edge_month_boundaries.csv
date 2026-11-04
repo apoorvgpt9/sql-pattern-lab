@@ -1,0 +1,6 @@
+month,country,trans_count,approved_count,trans_total_amount,approved_total_amount
+2019-01,US,2,2,33,33
+2019-02,US,1,0,2,0
+2019-12,US,1,1,4,4
+2020-01,US,2,1,24,16
+2020-02,US,1,1,64,64

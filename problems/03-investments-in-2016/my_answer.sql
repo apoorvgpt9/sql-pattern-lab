@@ -1,0 +1,3 @@
+-- Your answer for Investments in 2016. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 03-investments-in-2016 --mine
+-- Output columns: tiv_2016

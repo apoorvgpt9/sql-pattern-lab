@@ -1,0 +1,3 @@
+-- Your answer for Find Golden Hour Customers. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 06-find-golden-hour-customers --mine
+-- Output columns: customer_id, total_orders, peak_hour_percentage, average_rating

@@ -1,0 +1,2 @@
+-- No transactions.
+-- expect-empty: no rows means no (month, country) groups; a GROUP BY query returns no rows (unlike a bare aggregate)

@@ -1,0 +1,3 @@
+-- Your answer for Find Loyal Customers. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 05-find-loyal-customers --mine
+-- Output columns: customer_id
