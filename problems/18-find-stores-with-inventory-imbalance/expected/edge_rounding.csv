@@ -1,0 +1,4 @@
+store_id,store_name,location,most_exp_product,cheapest_product,imbalance_ratio
+3,Exact,Z,e1,e3,2.50
+1,Half,X,h1,h3,1.63
+2,Tiny,Y,t1,t3,1.01

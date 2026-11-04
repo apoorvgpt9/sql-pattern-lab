@@ -1,0 +1,6 @@
+store_id,store_name,location,most_exp_product,cheapest_product,imbalance_ratio
+10,Zeta,A,z1,z3,3.00
+11,Alpha,B,a1,a3,2.00
+13,Mid,C,m1,m3,2.00
+14,Alpha2,D,p,r,1.67
+15,Beta2,E,p,r,1.67
