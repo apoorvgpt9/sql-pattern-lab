@@ -1,0 +1,60 @@
+id: 43
+source: leetcode
+source_id: 3482
+title: Analyze Organization Hierarchy
+url: https://leetcode.com/problems/analyze-organization-hierarchy/
+difficulty: hard
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: recursive_cte
+pattern_secondary:
+- closure_table
+- subtree_aggregation
+batch: B6
+trigger_phrases:
+- phrase: CEO is level 1
+  meaning: recursive depth from manager_id IS NULL
+- phrase: direct and indirect reports
+  meaning: need every (ancestor, descendant) pair - a closure table - not just direct children
+- phrase: plus their own salary
+  meaning: budget = own salary + sum of all descendants' salaries
+- phrase: ordered by level ... budget ... employee_name
+  meaning: level ASC, budget DESC, employee_name ASC
+schema:
+- table: Employees
+  columns:
+  - name: employee_id
+    type: int
+    pk: true
+  - name: employee_name
+    type: varchar
+  - name: manager_id
+    type: int
+    note: NULL for CEO
+  - name: salary
+    type: int
+  - name: department
+    type: varchar
+  grain: one row per employee
+requirement: 'For every employee compute: level (CEO = 1, each step down +1); team_size = number of direct plus
+  indirect reports (0 for non-managers); budget = own salary + total salary of all direct and indirect reports.'
+output:
+  columns:
+  - employee_id
+  - employee_name
+  - level
+  - team_size
+  - budget
+  ordering: level ASC, budget DESC, employee_name ASC
+  grain: one row per employee (including non-managers)
+rules:
+  ties: see ordering
+  nulls: team_size 0, budget = own salary for leaves
+  empty: n/a
+  other: single CEO assumed
+confidence: high
