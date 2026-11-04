@@ -1,0 +1,2 @@
+-- No friendships at all. There is no person to report, so the result is empty (not a row with NULL).
+-- expect-empty: RequestAccepted is empty, so nobody has any friends to count

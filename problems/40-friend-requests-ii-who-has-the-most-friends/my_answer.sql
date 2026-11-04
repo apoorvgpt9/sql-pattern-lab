@@ -1,0 +1,3 @@
+-- Your answer for Friend Requests II: Who Has the Most Friends. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 40-friend-requests-ii-who-has-the-most-friends --mine
+-- Output columns: id, num
