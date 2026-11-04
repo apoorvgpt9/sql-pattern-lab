@@ -1,4 +1,4 @@
--- Approach 2: split the products in two groups and UNION them. (a) products with a change on or before
+-- Approach 1: split the products in two groups and UNION them. (a) products with a change on or before
 -- the date: join to each one's latest such change date; (b) products with no such change: price 10.
 -- The classic textbook answer: correct, but reads the table three times.
 SELECT p.product_id, p.new_price AS price

@@ -1,4 +1,4 @@
--- Approach 3 (optimal): one ordered pass. For every player's rows ordered by date, ROW_NUMBER marks the
+-- Approach 2: one ordered pass. For every player's rows ordered by date, ROW_NUMBER marks the
 -- first row and LEAD looks at the next date. The first row's next date is the player's second active day;
 -- the player returned the day after iff that date is exactly one day later. WHERE rn = 1 leaves one row per
 -- player, so AVG is over all players. No join, no second read.

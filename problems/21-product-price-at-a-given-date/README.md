@@ -70,21 +70,7 @@ Self-check before you submit: the number of output rows equals `SELECT COUNT(DIS
 
 ## 5. Approaches: brute force → optimal
 
-### Approach 1: correlated lookup per product (`solutions/01_correlated_latest.sql`)
-
-```sql
-SELECT p.product_id,
-       COALESCE((SELECT x.new_price FROM Products x
-                  WHERE x.product_id = p.product_id AND x.change_date <= '2019-08-16'
-                  ORDER BY x.change_date DESC LIMIT 1), 10) AS price
-FROM (SELECT DISTINCT product_id FROM Products) p;
-```
-
-**Why it is correct:** the outer query is the unfiltered list of distinct products, so no product can be lost. The subquery returns the price of the latest qualifying change, or no row (NULL) when none qualifies, and `COALESCE` supplies 10. This is the natural first attempt: it reads like the spec, one product at a time.
-
-**Cost model (reasoned):** one subquery per distinct product. Without an index on `product_id`, each execution scans the table and sorts the qualifying rows, so the cost is products × rows. The primary key `(product_id, change_date)` already lets MySQL find a product's changes, so even without `indexes.sql` each probe reads one product's rows, not the whole table; whether the plan reads backward from the date boundary and stops at the first row (cheap) is something to read in `EXPLAIN`.
-
-### Approach 2: two groups, UNION ALL (`solutions/02_union_changed_and_unchanged.sql`)
+### Approach 1: two groups, UNION ALL (`solutions/01_union_changed_and_unchanged.sql`)
 
 ```sql
 SELECT p.product_id, p.new_price AS price
@@ -98,15 +84,29 @@ SELECT product_id, 10 FROM Products GROUP BY product_id HAVING MIN(change_date) 
 
 **Why it is correct:** every product falls in exactly one of two disjoint groups: it has a change on or before the date (first branch) or its earliest change is after the date (second branch; `HAVING MIN(change_date) > …` is true exactly when no change qualifies). `UNION ALL` is safe because the groups cannot overlap. The join back on `(product_id, change_date)` returns exactly one row per product.
 
-**Cost model (reasoned):** three reads of `Products`: the filtered `GROUP BY MAX`, the join back, and the `GROUP BY … HAVING` in the second branch. The two group-bys are each a single linear pass; the join back is on one row per product. It scales linearly in practice, but it does about three times the work of a single pass, and any change in the date logic has to be made in two branches.
+**Cost model (reasoned):** three reads of `Products`: the filtered `GROUP BY MAX`, the join back, and the `GROUP BY … HAVING` in the second branch. The two group-bys are each a single linear pass; the join back is on one row per product. It scales linearly in practice, but it does about three times the work of a single pass, and any change in the date logic has to be made in two branches. This multi-pass UNION is the classic textbook answer and a natural first attempt.
 
-### Approach 3 (optimal): one scan, window + conditional aggregate (`solutions/03_one_scan_window_pivot.sql`)
+### Approach 2: one scan, window + conditional aggregate (`solutions/02_one_scan_window_pivot.sql`)
 
 The SQL is the assembled query in section 4.
 
 **Why it is correct:** the window gives each row its product's latest qualifying date (NULL if none) without removing any row, so the `GROUP BY product_id` still sees every product. The conditional `MAX` picks the single row on that date. `COALESCE` handles the NULL. There is exactly one output row per distinct product by construction.
 
-**Cost model (reasoned):** one scan of `Products` into a window partitioned by `product_id`, then a group-by on the same key. When the rows arrive grouped by `product_id` (the primary key and `indexes.sql` both provide that order), neither step needs a sort or a hash table of the whole input. There is no join and no second read.
+**Cost model (reasoned):** one scan of `Products`, with every row going through the window evaluation, into a window partitioned by `product_id`, then a group-by on the same key. When the rows arrive grouped by `product_id` (the primary key and `indexes.sql` both provide that order), neither step needs a sort or a hash table of the whole input. There is no join and no second read.
+
+### Approach 3 (optimal): correlated lookup per product (`solutions/03_correlated_latest.sql`)
+
+```sql
+SELECT p.product_id,
+       COALESCE((SELECT x.new_price FROM Products x
+                  WHERE x.product_id = p.product_id AND x.change_date <= '2019-08-16'
+                  ORDER BY x.change_date DESC LIMIT 1), 10) AS price
+FROM (SELECT DISTINCT product_id FROM Products) p;
+```
+
+**Why it is correct:** the outer query is the unfiltered list of distinct products, so no product can be lost. The subquery returns the price of the latest qualifying change, or no row (NULL) when none qualifies, and `COALESCE` supplies 10. It reads like the spec, one product at a time, which is why many people write it first; it is listed last here because on this schema (primary key `(product_id, change_date)`) it is the one that exploits the physical order.
+
+**Cost model (reasoned):** one subquery per distinct product. Without an index on `product_id`, each execution scans the table and sorts the qualifying rows, so the cost is products × rows. The primary key `(product_id, change_date)` already lets MySQL find a product's changes, so even without `indexes.sql` each probe reads one product's rows, not the whole table; whether the plan reads backward from the date boundary and stops at the first row (cheap) is something to read in `EXPLAIN`.
 
 **Measured** (`gen.py` data, generated by the bench workflow; the table is filled in automatically, so never type numbers here):
 
@@ -115,20 +115,20 @@ The SQL is the assembled query in section 4.
 
 ### Why the optimal one wins
 
-Approach 3 reads the table once and makes the "default" case structural: a product with no qualifying row is not special-cased by a second query branch, it just produces a NULL that is replaced. That is one place to edit when the rule changes (say a different cut-off or default). The bench decides how much that is worth on one machine: with the primary key, approach 1 is a per-product index probe and may be competitive, and the three-way split of approach 2 is the most work. At scale (section 6c) the single pass wins by structure, not by constant factors.
+Approach 3 asks the question the way the data is stored: the primary key `(product_id, change_date)` keeps each product's changes in date order, so "latest change on or before the date" is one backward index probe that stops at the first qualifying entry, and the work per product does not depend on how long its history is. Approaches 1 and 2 read every row of `Products` (several passes in approach 1, a window over all rows in approach 2) to answer something that depends on one row per product. The default case is handled by the outer list of distinct products plus `COALESCE`, so no second branch is needed. This is a physical-design result: with a table that lacks the key, or on an engine without ordered storage, the correlated probe loses its advantage and the single-pass window (approach 2) becomes the more robust choice. Read the "with indexes" and "without" bench tables rather than assuming.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 is a per-product subquery with a sort of the qualifying rows, so it degrades as histories get long. Approach 2 does about three passes. Approach 3 degrades last, only as the whole-table partition/group no longer fits in memory.
+**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 does about three passes and degrades linearly with table size. Approach 2 pushes every row through a window, which is expected to cost more per row than the aggregate passes in MySQL. Approach 3 degrades last as long as the ordered key exists; without it each probe becomes a scan and it degrades first.
 
 **(b) One machine, ~1M–100M rows.**
 - The primary key `(product_id, change_date)` already orders each product's history by date, which is what every approach needs. `indexes.sql` adds `new_price` to make a covering index, so the query never touches the base table.
-- For a table where products have *long* histories, the backward probe in approach 1 reads only the newest qualifying row, so it can be the fastest on a single machine; for short histories the difference vanishes. This is a case where the index order, not the SQL shape, decides.
+- For a table where products have *long* histories, the backward probe in approach 3 reads only the newest qualifying row, so it is expected to be the fastest on a single machine; for short histories the difference shrinks. This is a case where the index order, not the SQL shape, decides.
 - If the date is always "today", filter on a recent window of changes first, since older rows can only matter for products without a recent change (a two-step query), or keep the current price in a separate table (section 6d).
 
 **(c) Distributed engines, billions of rows. *Reasoned, not measured.***
-- *Shuffle:* all approaches have to bring one product's rows together. The window plan shuffles the whole table once by `product_id`. The aggregate-then-join plan (approach 2) can pre-aggregate `MAX(change_date)` per product locally, shuffling one row per (worker, product), then needs the second pass to fetch the price at that date, which is a join back on both keys (a second shuffle, or a broadcast if the aggregate is small).
-- *Skew:* hot products with enormous histories (e.g. a price feed updated every second) would overload one worker in the window plan; the local pre-aggregation in approach 2 is the skew-resistant shape.
+- *Shuffle:* all approaches have to bring one product's rows together. The window plan shuffles the whole table once by `product_id`. The aggregate-then-join plan (approach 1) can pre-aggregate `MAX(change_date)` per product locally, shuffling one row per (worker, product), then needs the second pass to fetch the price at that date, which is a join back on both keys (a second shuffle, or a broadcast if the aggregate is small).
+- *Skew:* hot products with enormous histories (e.g. a price feed updated every second) would overload one worker in the window plan; the local pre-aggregation in approach 1 is the skew-resistant shape.
 - *Snowflake:* `QUALIFY ROW_NUMBER() … = 1` on the date-filtered rows, then a left join from the distinct product list. If the table is clustered by `change_date`, the date filter prunes micro-partitions, but the product list needs an unfiltered read of `product_id`, which is cheap on a columnar store (it reads one column).
 - *Things to avoid:* a global sort, and `MAX_BY(new_price, change_date)` without the date filter (it returns the overall latest price, not the price on the date).
 
@@ -180,7 +180,7 @@ No approach in `solutions/` is broken by any of these. NULLs are outside the spe
 
 ## 9. Snowflake notes (UNVERIFIED)
 
-`snowflake.sql` uses `QUALIFY` for the as-of lookup and a left join for the default, rather than the window-plus-pivot of approach 3. What changes, and why:
+`snowflake.sql` uses `QUALIFY` for the as-of lookup and a left join for the default, rather than the window-plus-pivot of approach 2. (On MySQL the primary-key probe of approach 3 is the one that exploits ordered storage; Snowflake has no such ordered key, so the window is the natural form there.) What changes, and why:
 
 - `QUALIFY ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY change_date DESC) = 1` is the idiomatic latest-per-key. It sits inside a subquery that already applies the date filter, then the product list is attached with a left join. Same result as the MySQL approaches, in more readable form.
 - `MAX_BY(new_price, change_date)` is tempting for "price at the latest date", but it needs the date filter applied first (`MAX_BY(IFF(change_date <= …, new_price, NULL), IFF(change_date <= …, change_date, NULL))`): it ignores NULLs in the ordering argument, which should be verified before relying on it.

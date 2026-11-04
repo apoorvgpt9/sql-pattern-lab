@@ -1,4 +1,4 @@
--- Approach 2: one GROUP BY finds the first and the last exam date of every (student, subject); then
+-- Approach 3 (optimal): one GROUP BY finds the first and the last exam date of every (student, subject); then
 -- Scores is joined twice, once on each date, to read the two scores.
 WITH ends AS (
   SELECT student_id, subject, MIN(exam_date) AS first_date, MAX(exam_date) AS last_date

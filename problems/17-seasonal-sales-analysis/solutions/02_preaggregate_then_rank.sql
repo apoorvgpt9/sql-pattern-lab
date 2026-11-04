@@ -1,4 +1,4 @@
--- Approach 3 (optimal): shrink the big table BEFORE the join. Step 1 aggregates sales to
+-- Approach 2: shrink the big table BEFORE the join. Step 1 aggregates sales to
 -- (product_id, season): at most 4 rows per product. Only then is products joined to map product ->
 -- category, and the small result is re-aggregated and ranked. SUM is decomposable, so summing
 -- partial sums gives the same totals as summing the raw rows.

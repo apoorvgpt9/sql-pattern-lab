@@ -1,4 +1,4 @@
--- Approach 1 (brute force): for each distinct product, look up its most recent change on or before the
+-- Approach 3 (optimal) (brute force): for each distinct product, look up its most recent change on or before the
 -- date with a correlated ORDER BY ... LIMIT 1 subquery. No matching row gives NULL, which COALESCE turns
 -- into the initial price 10.
 SELECT

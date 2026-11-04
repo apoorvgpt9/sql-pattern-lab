@@ -1,4 +1,4 @@
--- UNVERIFIED: Snowflake version of the optimal approach (03). CI cannot run Snowflake.
+-- UNVERIFIED: Snowflake version of the window form (approach 02). CI cannot run Snowflake.
 -- QUALIFY filters on the window result directly; no subquery is needed.
 SELECT
   product_id,

@@ -1,4 +1,4 @@
--- Approach 3 (optimal): one scan. A window MAX(CASE ...) puts "the product's latest change date on or
+-- Approach 2: one scan. A window MAX(CASE ...) puts "the product's latest change date on or
 -- before the target date" on every row of the product (NULL when there is none). A GROUP BY then keeps
 -- the price of the row on exactly that date; if there is none, the conditional MAX is NULL and COALESCE
 -- supplies 10. Every product has at least one row, so every product gets exactly one output row.

@@ -120,7 +120,7 @@ The SQL is the assembled query in section 4.
 
 ### Why the optimal one wins
 
-Approach 3 gets the department-level fact without leaving employee grain, so it reads each row once and has no join back to get wrong: the `salary`-only join in approach 2 is the classic bug, and it cannot be written here. It is also the form that maps best to distributed engines (section 6c), where a window is one shuffle by `departmentId`. The honest caveat is single-machine MySQL: with the `(departmentId, salary)` index, the correlated version can be as fast, so "optimal" here means "least ways to be wrong and the best-behaved at scale", confirmed or contradicted by the bench tables.
+Approach 3 gets the department-level fact without leaving employee grain, so it reads each row once and has no join back to get wrong: the `salary`-only join in approach 2 is the classic bug, and it cannot be written here. It is also the form that maps best to distributed engines (section 6c), where a window is one shuffle by `departmentId`. The honest caveat is single-machine MySQL: with the `(departmentId, salary)` index the aggregate-and-join-back form (approach 2) can overtake the window, because the per-department `MAX` becomes an index read while the window still processes every row. So "optimal" here means "least ways to be wrong and the best-behaved without a special index", confirmed or contradicted by the bench tables.
 
 ## 6. At scale
 

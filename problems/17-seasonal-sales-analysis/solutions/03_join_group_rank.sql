@@ -1,4 +1,4 @@
--- Approach 2: join sales to products first, aggregate to (season, category), then rank the
+-- Approach 3 (optimal): join sales to products first, aggregate to (season, category), then rank the
 -- categories inside each season. ROW_NUMBER is right here (not RANK) because the third sort key
 -- (category) makes the ordering total: the spec wants exactly one row per season.
 WITH cat_season AS (

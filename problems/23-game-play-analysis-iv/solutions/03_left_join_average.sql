@@ -1,4 +1,4 @@
--- Approach 2: one row per player (their first login), LEFT JOINed to the row exactly one day later.
+-- Approach 3 (optimal): one row per player (their first login), LEFT JOINed to the row exactly one day later.
 -- The flag (match found / not found) is 1 or 0 per player, and its AVG is the fraction. Because the
 -- LEFT JOIN keeps every player, the denominator is automatically "all players".
 SELECT ROUND(AVG(a.player_id IS NOT NULL), 2) AS fraction

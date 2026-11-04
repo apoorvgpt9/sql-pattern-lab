@@ -1,4 +1,4 @@
--- Approach 2: compute each product's earliest year once with GROUP BY, then join back on
+-- Approach 3 (optimal): compute each product's earliest year once with GROUP BY, then join back on
 -- (product_id, year). Both keys are needed; year alone would pull in other products' rows.
 SELECT
   s.product_id,

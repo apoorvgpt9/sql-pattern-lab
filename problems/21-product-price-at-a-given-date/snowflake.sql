@@ -1,4 +1,4 @@
--- UNVERIFIED: Snowflake version of the optimal approach (03's idea: one pass over Products).
+-- UNVERIFIED: Snowflake version of the as-of lookup (the idea of approaches 02/03: latest row per product on or before the date).
 -- QUALIFY picks each product's latest change on or before the target date; products with no such
 -- change come back through the LEFT JOIN and get the initial price 10.
 SELECT

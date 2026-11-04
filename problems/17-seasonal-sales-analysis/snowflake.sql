@@ -1,4 +1,4 @@
--- UNVERIFIED: Snowflake version of the optimal approach (03). CI cannot run Snowflake.
+-- UNVERIFIED: Snowflake version of the pre-aggregate form (approach 02). CI cannot run Snowflake.
 -- QUALIFY replaces the ranked CTE; CASE on MONTH() is unchanged.
 WITH prod_season AS (
   SELECT

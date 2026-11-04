@@ -1,4 +1,4 @@
--- Approach 3 (optimal): one scan. FIRST_VALUE and LAST_VALUE over the same window (partition = one
+-- Approach 2: one scan. FIRST_VALUE and LAST_VALUE over the same window (partition = one
 -- student-subject pair, ordered by exam_date, frame = the whole partition) put the first and the latest
 -- score on every row; the outer GROUP BY collapses each pair back to a single row.
 -- The named window w is shared, so MySQL sorts the data once for both functions.
