@@ -1,0 +1,2 @@
+-- Products is empty.
+-- expect-empty: no rows means no distinct product_id, so no output rows (the default 10 applies to products that exist)

@@ -1,10 +1,10 @@
--- Product Price at a Given Date: tables for MySQL 8.0. Names mirror the original.
--- DRAFT generated from problems.yaml: check every type and nullability, then uncomment.
--- The harness runs this in a fresh, empty database: no CREATE DATABASE / USE here.
+-- Product Price at a Given Date (LeetCode 1164): tables for MySQL 8.0. Names mirror the original.
+-- One table of price CHANGES (not a product master): a product with no change on or before the
+-- target date has no row that tells you its price, which is why the answer needs a default.
 
--- grain: PK (product_id, change_date); one row per price change
--- CREATE TABLE Products (
---   product_id INT,
---   new_price INT,
---   change_date DATE
--- );
+CREATE TABLE Products (
+  product_id  INT NOT NULL,
+  new_price   INT NOT NULL,
+  change_date DATE NOT NULL,
+  PRIMARY KEY (product_id, change_date)   -- grain: one row per price change
+);
