@@ -1,0 +1,2 @@
+-- No transactions.
+-- expect-empty: no customers exist, so none can be loyal
