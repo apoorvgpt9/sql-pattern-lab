@@ -1,0 +1,3 @@
+patient_id,patient_name,age,recovery_time
+2,Ned,61,2
+1,Lea,NULL,3

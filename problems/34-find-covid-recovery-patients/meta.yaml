@@ -1,0 +1,66 @@
+id: 34
+source: leetcode
+source_id: 3586
+title: Find COVID Recovery Patients
+url: https://leetcode.com/problems/find-covid-recovery-patients/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104/LeetCode-Solutions README SQL table (no lock icon)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: sessionization
+pattern_secondary:
+- first_event_after_event
+- existence
+batch: B5
+trigger_phrases:
+- phrase: Positive test followed by ... Negative test
+  meaning: 'ordered event pair: negative strictly after a positive'
+- phrase: first negative test after
+  meaning: anchor = MIN positive date; then MIN negative date > anchor
+- phrase: Inconclusive
+  meaning: ignored; does not reset anything
+schema:
+- table: patients
+  columns:
+  - name: patient_id
+    type: int
+    pk: true
+  - name: patient_name
+    type: varchar
+  - name: age
+    type: int
+  grain: one row per patient
+- table: covid_tests
+  columns:
+  - name: test_id
+    type: int
+    pk: true
+  - name: patient_id
+    type: int
+  - name: test_date
+    type: date
+  - name: result
+    type: varchar
+    note: '''Positive'' | ''Negative'' | ''Inconclusive'''
+  grain: one row per test
+requirement: For each patient, take the date of their first Positive test; then find the earliest Negative test
+  strictly after that date. Patients with such a pair are recovered; recovery_time = days between the first positive
+  and that negative.
+output:
+  columns:
+  - patient_id
+  - patient_name
+  - age
+  - recovery_time
+  ordering: recovery_time ASC, patient_name ASC
+  grain: one row per recovered patient
+rules:
+  ties: n/a
+  nulls: n/a
+  empty: empty -> empty
+  other: negatives before the first positive are irrelevant
+confidence: high
