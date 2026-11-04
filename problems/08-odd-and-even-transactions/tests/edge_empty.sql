@@ -1,0 +1,4 @@
+-- No transactions at all: no dates, so no rows (not one row of zeros).
+-- A query with no GROUP BY (a bare SUM over the table) would return one row here.
+-- (Intentionally no INSERT.)
+-- expect-empty: nothing to group, so the result has zero rows
