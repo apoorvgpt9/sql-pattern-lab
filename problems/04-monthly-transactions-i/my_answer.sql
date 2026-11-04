@@ -1,0 +1,3 @@
+-- Your answer for Monthly Transactions I. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 04-monthly-transactions-i --mine
+-- Output columns: month, country, trans_count, approved_count, trans_total_amount, approved_total_amount

@@ -1,0 +1,60 @@
+id: 4
+source: leetcode
+source_id: 1193
+title: Monthly Transactions I
+url: https://leetcode.com/problems/monthly-transactions-i/
+difficulty: medium
+free_verified: true
+free_evidence:
+- doocs/leetcode solution/DATABASE_README_EN.md (no lock icon)
+- Zanger67/leetcode-question-data data/leetcode.json paidOnly=false (LeetCode API snapshot dated 2026-11-04)
+- kamyu104 README still shows a lock (stale; problem was unlocked later, both current sources agree it is free)
+license: leetcode-proprietary-link-only
+postgres_on_leetcode: unknown
+pattern_primary: conditional_aggregation
+pattern_secondary:
+- date_bucketing
+batch: B1
+trigger_phrases:
+- phrase: for each month and country
+  meaning: GROUP BY DATE_FORMAT(trans_date,'%Y-%m'), country
+- phrase: number of approved transactions
+  meaning: SUM(state='approved') in the same pass as COUNT(*)
+- phrase: their total amount
+  meaning: SUM(CASE WHEN approved THEN amount ELSE 0 END)
+schema:
+- table: Transactions
+  columns:
+  - name: id
+    type: int
+    pk: true
+  - name: country
+    type: varchar
+  - name: state
+    type: enum('approved','declined')
+  - name: amount
+    type: int
+  - name: trans_date
+    type: date
+  grain: one row per transaction
+requirement: For each (month, country) group, report total transaction count, approved transaction count, total
+  amount over all transactions, and total amount over approved transactions. month is formatted 'YYYY-MM'.
+output:
+  columns:
+  - month
+  - country
+  - trans_count
+  - approved_count
+  - trans_total_amount
+  - approved_total_amount
+  ordering: any order
+  grain: one row per (month, country) present in data
+rules:
+  ties: n/a
+  nulls: approved_count / approved_total_amount are 0 (not NULL) when a group has no approved rows; hidden tests
+    are believed to include NULL country, which forms its own group
+  empty: empty table -> empty result
+  other: month string 'YYYY-MM'
+confidence: medium
+confidence_note: NULL-country behaviour recalled from community discussion, not visible in the statement text available
+  offline.

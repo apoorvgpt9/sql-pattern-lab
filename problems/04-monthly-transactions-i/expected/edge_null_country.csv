@@ -1,0 +1,4 @@
+month,country,trans_count,approved_count,trans_total_amount,approved_total_amount
+2021-05,NULL,2,1,30,10
+2021-06,NULL,1,1,5,5
+2021-05,US,1,1,7,7

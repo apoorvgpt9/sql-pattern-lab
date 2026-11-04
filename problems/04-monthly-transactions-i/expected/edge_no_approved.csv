@@ -1,0 +1,4 @@
+month,country,trans_count,approved_count,trans_total_amount,approved_total_amount
+2020-03,FR,2,0,80,0
+2020-04,FR,1,1,25,25
+2020-03,IT,1,0,15,0
