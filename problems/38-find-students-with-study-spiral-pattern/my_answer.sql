@@ -1,0 +1,3 @@
+-- Your answer for Find Students with Study Spiral Pattern. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 38-find-students-with-study-spiral-pattern --mine
+-- Output columns: student_id, student_name, major, cycle_length, total_study_hours
