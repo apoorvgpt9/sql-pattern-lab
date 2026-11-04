@@ -1,0 +1,105 @@
+id: 30
+source: pgexercises
+source_id: aggregates/rollingavg
+title: Calculate a rolling average of total revenue
+url: https://pgexercises.com/questions/aggregates/rollingavg.html
+difficulty: hard
+free_verified: true
+free_evidence:
+- pgexercises.com is free with no account; content CC BY-SA 3.0
+license: CC BY-SA 3.0 (pgexercises.com site footer; questions/LICENSE in github.com/AlisdairO/pgexercises)
+license_evidence:
+- 'https://pgexercises.com/ (footer: ''Site content licensed under CC BY-SA 3.0'')'
+- https://github.com/AlisdairO/pgexercises/blob/master/questions/LICENSE
+postgres_on_leetcode: n/a
+pattern_primary: date_spine
+pattern_secondary:
+- moving_window
+- zero_fill
+batch: B4
+trigger_phrases:
+- phrase: for each day in August 2012
+  meaning: generate a calendar of all 31 dates; do not rely on dates present in bookings
+- phrase: previous 15 days
+  meaning: window = the day and the 14 days before it
+- phrase: a day having zero revenue
+  meaning: missing days count as 0 in the window -> divide by 15 always
+schema:
+- table: cd.bookings
+  columns:
+  - name: bookid
+    type: integer
+    pk: true
+  - name: facid
+    type: integer
+    note: FK facilities
+  - name: memid
+    type: integer
+    note: FK members; 0 = guest
+  - name: starttime
+    type: timestamp
+  - name: slots
+    type: integer
+    note: number of 30-minute slots booked
+  grain: one row per booking
+- table: cd.facilities
+  columns:
+  - name: facid
+    type: integer
+    pk: true
+  - name: name
+    type: varchar(100)
+  - name: membercost
+    type: numeric
+    note: cost per half-hour slot for members
+  - name: guestcost
+    type: numeric
+    note: cost per half-hour slot for guests
+  - name: initialoutlay
+    type: numeric
+  - name: monthlymaintenance
+    type: numeric
+  grain: one row per facility
+- table: cd.members
+  columns:
+  - name: memid
+    type: integer
+    pk: true
+  - name: surname
+    type: varchar(200)
+  - name: firstname
+    type: varchar(200)
+  - name: address
+    type: varchar(300)
+  - name: zipcode
+    type: integer
+  - name: telephone
+    type: varchar(20)
+  - name: recommendedby
+    type: integer
+    note: nullable; FK to members.memid
+  - name: joindate
+    type: timestamp
+  grain: one row per member; memid 0 is the shared GUEST account
+requirement: Revenue of a booking = slots * guestcost when memid = 0 (guest), else slots * membercost. For each
+  calendar date in August 2012, output the average daily revenue over the 15-day window ending on that date (that
+  date and the 14 days before it, including days in July), where days without bookings contribute 0 - i.e. window
+  total revenue / 15.
+output:
+  columns:
+  - date
+  - revenue
+  ordering: date ascending
+  grain: exactly 31 rows, one per August 2012 date
+rules:
+  ties: n/a
+  nulls: days with no bookings contribute 0
+  empty: still 31 rows
+  other: 'site does not round; MySQL port: build calendar via recursive CTE since there is no generate_series'
+confidence: high
+difficulty_source: curator judgement (pgexercises has no difficulty labels)
+attribution: Adapted from PostgreSQL Exercises by Alisdair Owens (pgexercises.com), CC BY-SA 3.0. Spec reworded.
+dataset: pgexercises 'clubdata' (cd schema). Data dump is at github.com/AlisdairO/pgexercises/database/clubdata.sql
+  (CC BY-SA). Build sessions without internet must synthesise fixtures matching this schema.
+dialect_note: Original is PostgreSQL; MySQL 8.0 equivalent is fine (drop the cd. schema prefix or create schema
+  cd).
