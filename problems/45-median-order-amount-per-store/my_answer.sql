@@ -1,0 +1,3 @@
+-- Your answer for Median Order Amount per Store. Write a MySQL 8.0 query below, then run:
+--   pytest -q harness -k 45-median-order-amount-per-store --mine
+-- Output columns: store_id, median_amount
