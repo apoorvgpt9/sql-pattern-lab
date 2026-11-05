@@ -41,7 +41,7 @@ Confidence is `medium`. Each interpretation is tested by a dataset.
 
 <details><summary>Hint 1</summary>
 
-Pattern: **conditional aggregation** over one grouping key (session), with all rules in `HAVING`.
+Pattern: **conditional aggregation**: several different metrics, all over one grouping key.
 
 </details>
 
@@ -135,7 +135,7 @@ ORDER BY scroll_count DESC, d.session_id;
 
 **Why it is correct:** each CTE is one rule's input. The durations CTE sees every event, so app_open and app_close count. Scrolls use an inner join because a session with no scrolls cannot qualify. Clicks need a LEFT JOIN plus `COALESCE`, because zero clicks is the most common zombie and has no row in `clicks`. Purchases are an anti-join.
 
-**Cost model (reasoned from EXPLAIN):** four scans of `app_events` (three aggregations and the anti-join's materialised `<subquery5>`), each with its own temporary table, then nested-loop joins through auto-keys. The cost is linear, but about 4× the reading of approach 3. It is the shape people write when they translate each sentence separately, and the LEFT JOIN plus `COALESCE` for clicks is an easy place to slip.
+**Cost model (reasoned from EXPLAIN):** four scans of `app_events` (three aggregations and the anti-join's materialised `<subquery5>`), each with its own temporary table, then nested-loop joins through auto-keys. The cost is linear, with about 4× the reading of approach 3, but the reading is not what dominates: the bench's `EXPLAIN ANALYZE` puts a full scan of 1M rows at ~0.2 s, while each temporary-table aggregation takes seconds. It is the shape people write when they translate each sentence separately, and the LEFT JOIN plus `COALESCE` for clicks is an easy place to slip.
 
 ### Approach 3 (optimal): one GROUP BY with conditional aggregation (`solutions/03_conditional_aggregation.sql`)
 
@@ -173,11 +173,13 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, INTEL(R) XEON(R) PLATI
 
 ### Why the optimal one wins
 
-Every rule is a property of the same group, so one pass computes all of them. Approach 3 reads each event once, keeps one small accumulator per session, and needs no joins. Approach 2 reads the table four times to build the same accumulators separately and then pays to join them back together. Approach 1 does the same work per session with lookups. The general rule: when several conditions share a grouping key, merge them into one `GROUP BY` with conditional aggregates instead of one query per condition.
+Every rule is a property of the same group, so one pass computes all of them: approach 3 reads each event once, keeps one accumulator row per session, and needs no joins. But "fewer passes" is not what the bench rewards without an index. There, approaches 2 and 3 are close: approach 2 was 2× *faster* at 100K rows (150 ms vs 300 ms) and approach 3 was 17% faster at 1M (5.27 s vs 6.33 s). In MySQL the cost is the `Aggregate using temporary table` step, not the scans: approach 3 updates five aggregates per event in one temporary table of every session, and that costs about as much as approach 2's separate, narrower aggregates (one of them over scroll events only).
+
+The decisive win comes with `indexes.sql`: its prefix matches approach 3's `GROUP BY`, so the plan becomes a streaming `Group aggregate` with no temporary table, 7× faster than without the index (0.75 s at 1M) and 1.5× faster than approach 2 with the same index (1.16 s), which still builds temporary tables. Approach 1 times out at 100K rows without the index. The general rule still holds: when several conditions share a grouping key, merge them into one `GROUP BY` with conditional aggregates. It pays off most once the group key is indexed, and it is the shape that distributes (one shuffle by `session_id`, section 6c).
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 without the index (quadratic). Then approach 2's four temporary tables. Approach 3 last; once its temporary table outgrows `tmp_table_size` it spills to disk, and `indexes.sql` removes the temporary table entirely.
+**(a) What breaks first.** *Measured:* approach 1 without the index (quadratic): it times out at 100K rows. Without the index, approaches 2 and 3 then degrade at a similar rate, because both are bound by temporary-table aggregation (approach 3 is 17% faster at 1M). *Reasoned:* once those temporary tables outgrow `tmp_table_size` they spill to disk. `indexes.sql` removes approach 3's temporary table entirely (measured: 5.27 s → 0.75 s at 1M).
 
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql`: `(session_id, user_id, event_type, event_timestamp)`. It is covering, and its prefix matches the `GROUP BY`, so approach 3 streams. Putting `event_type` second would serve approaches 1–2 slightly better and cost approach 3 its streaming plan. Optimise for the query you will keep.
