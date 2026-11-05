@@ -187,11 +187,11 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, Intel(R) Xeon(R) Plati
 
 ### Why the optimal one wins
 
-Approach 3 reads `trips` once and puts both means on the same row as they are computed, so the comparison `s > f` needs no join between the halves. Approach 2 reads it twice and has to re-join what was split; approach 1 repeats the work per driver. The single pass is also the form that carries over to distributed engines: `AVG` splits into a sum and a count that each task can compute locally (section 6c).
+Approach 3 reads `trips` once and puts both means on the same row as they are computed, so the comparison `s > f` needs no join between the halves. Approach 2 reads it twice and has to re-join what was split; approach 1 repeats the work per driver. The single pass is also the form that carries over to distributed engines: `AVG` splits into a sum and a count that each task can compute locally (section 6c). On one machine the margin is small. At 1M rows approach 2 is only about 5% slower without the index and about 13% slower with it, because each of its scans filters to half the table and its joins are at driver grain. Approach 1 times out at 100K rows without the index.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 without an index, since it is drivers × trips. Approach 2 next, because it scans `trips` twice and cannot use a date index for a `MONTH()` predicate. Approach 3 degrades most slowly, and its memory is bounded by the number of drivers.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* approach 1 without an index, since it is drivers × trips: it times out at 100K rows. Approach 2 next, because it scans `trips` twice and cannot use a date index for a `MONTH()` predicate, though up to 1M rows it stays within about 15% of approach 3. Approach 3 degrades most slowly, and its memory is bounded by the number of drivers.
 
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql` adds `trips (driver_id, trip_date, distance_km, fuel_consumed)`. It is *covering*: all three approaches read only those columns, so no row lookup into the clustered table is needed. It turns approach 1 into a short index range read per driver, and lets approach 3 aggregate in `driver_id` order without a temporary table.
