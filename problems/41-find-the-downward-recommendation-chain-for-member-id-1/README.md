@@ -129,11 +129,11 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Approach 3 asks the question in the direction the answer lies. It starts at member 1 and touches only members below it. Approach 1 builds every member's full ancestry and then throws away everything not under member 1. Approach 3's remaining weakness is the per-level full scan without an index on `recommendedby`. With the index, its cost depends on the size of the answer, not of the table. Approach 1 still wins in one case: when you need the chains of *many* starting members at once. There the closure is built once and shared, which is problem 42.
+Approach 3 asks the question in the direction the answer lies. It starts at member 1 and touches only members below it. Approach 1 builds every member's full ancestry and then throws away everything not under member 1. Approach 3's remaining weakness is the per-level full scan without an index on `recommendedby`, and the bench shows it matters: without the index, approach 1 was actually *faster* at 100K rows (265 ms vs 414 ms), because its upward steps are primary-key lookups while approach 3 scans the whole table once per level. At 1M rows the closure that approach 1 builds has grown enough that approach 3 wins anyway (5.02 s vs 7.52 s, 1.5×). With the index, approach 3's cost depends on the size of the answer, not of the table: 0.94 s vs 6.16 s at 1M (6.6×). Approach 1 still wins in one case: when you need the chains of *many* starting members at once. There the closure is built once and shared, which is problem 42.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1's closure grows as members × depth and lives in one temporary table. It outgrows memory first and spills. Approach 3 without the index pays one full scan per level. That grows with depth × members, but needs little memory. With the index, approach 3 is bounded by the subtree size.
+**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1's closure grows as members × depth and lives in one temporary table. It outgrows memory first and spills. Approach 3 without the index pays one full scan per level. That grows with depth × members, but needs little memory; at 100K rows that still made it slower than approach 1, and only at 1M did approach 1's closure cost overtake it. With the index, approach 3 is bounded by the subtree size.
 
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql` adds `members (recommendedby)`. Any table with a parent pointer that you traverse downward needs this index. The bench runs every approach with and without it.
@@ -177,15 +177,17 @@ Each "breaks" claim below is checked by execution: `mistakes/*.sql` are the temp
 
 | Case | Dataset | Wrong queries it catches (`mistakes/`) |
 |---|---|---|
-| Two branches under member 1, an unrelated second tree, GUEST, NULL `recommendedby` at every chain top | `tests/edge_typical.sql` | `walks_upward` (member 1 has no recommender, so it returns nothing), `anchor_includes_member_1`, `no_order_by` |
+| Two branches under member 1, an unrelated second tree, GUEST, NULL `recommendedby` at every chain top | `tests/edge_typical.sql` | `walks_upward` (member 1 has no recommender, so it returns nothing), `anchor_includes_member_1` |
 | Member 1 recommended nobody | `tests/edge_no_recommendees.sql` | `anchor_includes_member_1` (returns member 1 instead of an empty result) |
 | Chain nine levels below member 1 | `tests/edge_deep_chain.sql` | `fixed_depth_self_joins` (stops after three levels). It passes `edge_typical` and `edge_order` because both are at most three deep, which is why depth needs its own dataset. |
 | Member 1 in the middle of a chain, with a sibling | `tests/edge_direction.sql` | `walks_upward` (returns 5 and 3, the members *above* 1) |
-| Discovery order ≠ memid order; rows inserted shuffled | `tests/edge_order.sql` | `no_order_by` (comes out 9, 12, 3, 2, 11) |
+| Discovery order ≠ memid order; rows inserted shuffled | `tests/edge_order.sql` | none in `mistakes/` (see below) |
 
 NULLs: `recommendedby` NULL marks the top of a chain. The downward walk never compares against it, because it only follows `recommendedby = <found id>`, and NULL never equals anything. So NULL tops cannot leak into the result. The upward walk in approach 1 has to stop on them explicitly (`WHERE m.recommendedby IS NOT NULL`), or it would emit a `(member, NULL)` pair. That is harmless here because of the `ancestor = 1` filter, but wrong for problem 42's output.
 
 No approach in `solutions/` is broken by any of these.
+
+One trap that is not in `mistakes/`: forgetting the final `ORDER BY memid`. A recursive CTE tends to return rows level by level, in the order it discovered them (on `edge_order.sql` that looks like 9, 12, 3, 2, 11), but that order is not guaranteed, so no dataset can reliably catch the omission. It is still a wrong answer: without `ORDER BY`, SQL promises no order.
 
 ## 8. Interviewer follow-ups
 
