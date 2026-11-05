@@ -9,53 +9,68 @@
 <style>
 /* Source: app/template.html. Do not edit app/index.html by hand; run scripts/build_app.py. */
 :root {
-  --bg: #f6f5f1;
-  --surface: #ffffff;
-  --surface-2: #efede6;
-  --text: #1d1c19;
-  --muted: #5c5a53;
-  --border: #d6d3c9;
-  --accent: #1c5bb8;
+  --bg: #f4f1ea;
+  --surface: #fffdf8;
+  --surface-2: #ebe6db;
+  --text: #16171b;
+  --muted: #58564e;
+  --border: #d8d2c4;
+  --strong: #16171b;
+  --accent: #b03f0a;
   --accent-text: #ffffff;
-  --focus: #1c5bb8;
-  --code-bg: #f1efe8;
-  --ok: #17692f;
+  --accent-soft: #f6e4d7;
+  --focus: #b03f0a;
+  --code-bg: #f0ece3;
+  --ok: #0b6656;
+  --ok-soft: #dcefe9;
   --warn: #8a4b00;
-  --warn-bg: #fdf0d8;
-  --bad: #9c2323;
-  --bad-bg: #fbe4e4;
+  --warn-bg: #fbefd9;
+  --bad: #a12424;
+  --bad-bg: #f9e2e0;
   --rev: #6a3aa8;
+  --bar: #c2703f;
+  --bar-track: #e6e0d3;
+  --grid: rgba(22, 23, 27, .05);
   --sx-k: #7b2d9e;
-  --sx-f: #1c5bb8;
+  --sx-f: #1c55a8;
   --sx-s: #0c6a4a;
-  --sx-n: #a14a00;
-  --sx-c: #6b685f;
+  --sx-n: #9a4600;
+  --sx-c: #66635a;
   --sx-i: #8a2c52;
-  --shadow: 0 1px 2px rgba(0,0,0,.06);
+  --shadow: 0 1px 0 rgba(22,23,27,.04), 0 10px 28px -18px rgba(22,23,27,.28);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #131419;
-    --surface: #1b1d24;
-    --surface-2: #262935;
-    --text: #e9e7e1;
-    --muted: #a9a69d;
-    --border: #353948;
-    --accent: #7fa9f2;
-    --accent-text: #0d1424;
-    --focus: #9dbdf7;
-    --code-bg: #101117;
-    --ok: #62c17f;
+    --bg: #0d0f12;
+    --surface: #14171c;
+    --surface-2: #1c2027;
+    --text: #ebe8e2;
+    --muted: #a6a49c;
+    --border: #2c313a;
+    --strong: #ebe8e2;
+    --accent: #ff9b5e;
+    --accent-text: #1a0c03;
+    --accent-soft: #3a2214;
+    --focus: #ffb68a;
+    --code-bg: #0a0c0f;
+    --ok: #5fcfb6;
+    --ok-soft: #10302a;
     --warn: #e5b05a;
     --warn-bg: #3a2c12;
     --bad: #f08a8a;
     --bad-bg: #3d1d1d;
     --rev: #bb97ee;
+    --bar: #d9824e;
+    --bar-track: #262b33;
+    --grid: rgba(235, 232, 226, .035);
     --sx-k: #c99aee;
     --sx-f: #8db5f5;
     --sx-s: #78cba4;
     --sx-n: #efac6a;
-    --sx-c: #9d9a91;
+    --sx-c: #9a978e;
     --sx-i: #ee9ebd;
     --shadow: none;
   }
@@ -63,51 +78,61 @@
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: auto; }
 body {
-  margin: 0; background: var(--bg); color: var(--text);
-  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0; color: var(--text); background-color: var(--bg);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  font: 16px/1.6 var(--sans);
   overflow-wrap: anywhere;
 }
 [hidden] { display: none !important; }
-a { color: var(--accent); }
+a { color: var(--accent); text-underline-offset: .18em; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-code, pre, textarea, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-code { font-size: .9em; background: var(--code-bg); padding: .08em .35em; border-radius: 4px; }
+code, pre, textarea, .mono { font-family: var(--mono); }
+code { font-size: .88em; background: var(--code-bg); padding: .08em .35em; border-radius: 4px; border: 1px solid var(--border); }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .muted { color: var(--muted); }
 .skip { position: absolute; left: 8px; top: -60px; background: var(--accent); color: var(--accent-text); padding: 8px 12px; border-radius: 6px; z-index: 100; }
 .skip:focus { top: 8px; }
+.eyebrow { margin: 0; font: 600 .72rem/1.3 var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+h1, h2, .serif { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; }
 
 /* ---- layout ---- */
-.app { display: grid; grid-template-columns: minmax(270px, 330px) minmax(0, 1fr); min-height: 100vh; }
+.app { display: grid; grid-template-columns: minmax(270px, 320px) minmax(0, 1fr); min-height: 100vh; }
 .topbar { display: none; }
 .sidebar {
   position: sticky; top: 0; height: 100vh; overflow-y: auto; overscroll-behavior: contain;
   background: var(--surface); border-right: 1px solid var(--border);
 }
-.side-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
-.brand { font-weight: 700; font-size: 1.05rem; color: var(--text); text-decoration: none; }
-.progress { font-size: .85rem; color: var(--muted); margin: 4px 0 0; }
+.side-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); }
+.brand { display: inline-flex; align-items: center; gap: 10px; font: 700 1.02rem/1 var(--sans); letter-spacing: -.01em; color: var(--text); text-decoration: none; }
+.brand svg { width: 28px; height: 20px; flex: none; }
+.brand .logo-a { fill: none; stroke: var(--strong); stroke-width: 1.8; }
+.brand .logo-b { fill: var(--accent); }
+.progress { font: .7rem/1.4 var(--mono); color: var(--muted); margin: 10px 0 0; }
+.meter { height: 4px; background: var(--bar-track); border-radius: 2px; overflow: hidden; margin-top: 6px; display: flex; }
+.meter i { display: block; height: 100%; }
+.meter .m-solved { background: var(--ok); } .meter .m-attempted { background: var(--warn); } .meter .m-revisit { background: var(--rev); }
 .filters { padding: 12px 16px; display: grid; gap: 8px; border-bottom: 1px solid var(--border); }
-.filters label { display: grid; gap: 2px; font-size: .78rem; color: var(--muted); font-weight: 600; }
-.filters select { width: 100%; font: inherit; font-size: .92rem; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-.filters .opt { display: flex; align-items: center; gap: 8px; font-weight: 400; font-size: .86rem; }
-.filters .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .82rem; color: var(--muted); }
-#list h3 { margin: 0; padding: 14px 16px 4px; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.filters label { display: grid; gap: 3px; font: 600 .68rem/1.2 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.filters select { width: 100%; font: 400 .9rem var(--sans); letter-spacing: 0; text-transform: none; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.filters .opt { display: flex; align-items: center; gap: 8px; font: 400 .86rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--text); }
+.filters .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .8rem; color: var(--muted); margin: 0; }
+#list h3 { margin: 0; padding: 16px 16px 4px; font: 600 .68rem/1.3 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .plist { list-style: none; margin: 0; padding: 0 8px 4px; }
 .item {
-  display: grid; grid-template-columns: 1.4em 2.4ch 1fr auto; gap: 8px; align-items: baseline;
-  padding: 7px 8px; border-radius: 8px; color: var(--text); text-decoration: none; font-size: .94rem; line-height: 1.3;
+  display: grid; grid-template-columns: 1.3em 2.4ch 1fr auto; gap: 8px; align-items: baseline;
+  padding: 6px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-size: .92rem; line-height: 1.3;
 }
 .item:hover { background: var(--surface-2); }
-.item[aria-current="page"] { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
-.item .num { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; }
+.item[aria-current="page"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.item .num { color: var(--muted); font: .82rem var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; }
 .st { text-align: center; font-size: .95rem; }
 .st-not_started { color: var(--muted); }
 .st-attempted { color: var(--warn); }
 .st-solved { color: var(--ok); }
 .st-revisit { color: var(--rev); }
 .pad { padding: 8px 16px; }
-main { padding: 24px 32px 96px; max-width: 980px; min-width: 0; outline: none; }
+main { padding: 32px 40px 96px; max-width: 1040px; min-width: 0; outline: none; }
 .scrim { display: none; }
 
 @media (max-width: 860px) {
@@ -124,134 +149,257 @@ main { padding: 24px 32px 96px; max-width: 980px; min-width: 0; outline: none; }
   }
   .sidebar.open { transform: none; visibility: visible; transition: transform .16s ease; }
   .scrim.on { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 30; }
-  main { padding: 16px 16px 80px; }
+  main { padding: 20px 16px 80px; }
 }
 @media (prefers-reduced-motion: reduce) { .sidebar { transition: none !important; } }
 
 /* ---- buttons, badges ---- */
 .btn {
-  font: inherit; font-size: .92rem; font-weight: 600; cursor: pointer; padding: 7px 14px; border-radius: 8px;
-  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); line-height: 1.25; min-height: 36px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+  font: 600 .9rem/1.25 var(--sans); cursor: pointer; padding: 7px 14px; border-radius: 6px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); min-height: 36px;
 }
-.btn.ghost { background: transparent; color: var(--accent); border-color: var(--border); }
-.btn.ghost:hover { border-color: var(--accent); }
-.btn.sm { padding: 4px 10px; font-size: .84rem; min-height: 30px; }
+.btn:hover { filter: brightness(1.06); }
+.btn.ghost { background: transparent; color: var(--text); border-color: var(--border); }
+.btn.ghost:hover { border-color: var(--strong); filter: none; }
+.btn.sm { padding: 3px 10px; font-size: .8rem; min-height: 28px; }
+.btn.lg { padding: 11px 18px; font-size: .98rem; min-height: 44px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn.danger { color: var(--bad); }
-.badge { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.badge { display: inline-block; font: 700 .66rem/1.5 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 1px 7px; border-radius: 4px; border: 1px solid transparent; white-space: nowrap; }
+.badge.easy { color: var(--ok); background: var(--ok-soft); }
 .badge.medium { color: var(--warn); background: var(--warn-bg); }
 .badge.hard { color: var(--bad); background: var(--bad-bg); }
 .badge.plain { color: var(--muted); border-color: var(--border); background: transparent; }
-.item .badge { font-size: .64rem; padding: 0 6px; }
+.badge.opt { color: var(--ok); border-color: var(--ok); background: transparent; }
+.item .badge { font-size: .6rem; padding: 0 5px; }
 
-/* ---- problem header and cards ---- */
-.phead { margin-bottom: 8px; }
-.phead .crumb { margin: 0; color: var(--muted); font-size: .9rem; }
+/* ---- problem header ---- */
+.phead { margin: 0 0 28px; padding-bottom: 20px; border-bottom: 2px solid var(--strong); }
 .blind .pattern-only { display: none; }   /* blind mode: no pattern names outside the revealed hints */
-.phead h1 { margin: 2px 0 8px; font-size: 1.7rem; line-height: 1.2; outline: none; }
+.phead h1 { margin: 6px 0 12px; font-size: clamp(1.7rem, 1.1rem + 2vw, 2.5rem); line-height: 1.12; outline: none; }
 .badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.orig { margin: 12px 0 0; }
-.attrib { margin: 10px 0 0; padding: 8px 12px; border-left: 3px solid var(--border); color: var(--muted); font-size: .88rem; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin: 16px 0; box-shadow: var(--shadow); min-width: 0; }
-.card > h2, .card > summary > h2 { margin: 0 0 8px; font-size: 1.2rem; }
-.card h3 { margin: 18px 0 6px; font-size: 1rem; }
-@media (max-width: 860px) { .card { padding: 14px; } .phead h1 { font-size: 1.45rem; } }
+.orig { margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .92rem; }
+.attrib { margin: 12px 0 0; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--surface); color: var(--muted); font-size: .86rem; }
+
+/* ---- the flow: spec -> schema -> attempt -> reveal ladder, one numbered rail ---- */
+.flow { position: relative; padding-left: 52px; }
+.flow::before { content: ""; position: absolute; left: 17px; top: 18px; bottom: 24px; width: 2px; background: var(--border); }
+.stage { position: relative; margin: 0 0 32px; }
+.stage-head { display: flex; align-items: center; gap: 10px; min-height: 36px; margin-bottom: 8px; }
+.stage-no {
+  position: absolute; left: -52px; top: 0; width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--bg); border: 2px solid var(--strong);
+  font: 700 .78rem/1 var(--mono); color: var(--text);
+}
+.stage.attempt-stage .stage-no { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.stage-head h2 { margin: 0; font-size: 1.45rem; line-height: 1.2; }
+.stage-head .eyebrow { margin-left: auto; }
+@media (max-width: 640px) {
+  .flow { padding-left: 0; }
+  .flow::before { display: none; }
+  .stage-no { position: static; width: 30px; height: 30px; flex: none; }
+  .stage-head h2 { font-size: 1.25rem; }
+  .stage-head .eyebrow { display: none; }
+}
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; margin: 12px 0; box-shadow: var(--shadow); min-width: 0; }
+.card > h2, .card > summary > h2 { margin: 0 0 8px; font-size: 1.3rem; }
+.card h3 { margin: 20px 0 8px; font: 600 .7rem/1.3 var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.card .prose h3 { font: 600 1.02rem/1.35 var(--sans); letter-spacing: 0; text-transform: none; color: var(--text); }
+@media (max-width: 860px) { .card { padding: 14px; } }
 
 /* ---- prose (rendered markdown) ---- */
-.prose > p, .prose > ul, .prose > ol, .prose > blockquote { max-width: 80ch; }
+.prose > p, .prose > ul, .prose > ol, .prose > blockquote { max-width: 78ch; }
 .prose p { margin: .6em 0; }
 .prose ul, .prose ol { padding-left: 1.4em; margin: .6em 0; }
 .prose li { margin: .25em 0; }
-.prose blockquote { margin: .8em 0; padding: 2px 14px; border-left: 3px solid var(--border); color: var(--muted); }
+.prose li::marker { color: var(--muted); }
+.prose blockquote { margin: .8em 0; padding: 4px 14px; border-left: 3px solid var(--border); color: var(--muted); }
 .prose h3 { margin: 1.4em 0 .4em; }
 .prose > :first-child { margin-top: 0; }
 .prose > :last-child { margin-bottom: 0; }
+.prose strong { font-weight: 650; }
 a.plink { text-decoration: none; }
-a.plink code { color: var(--accent); }
+a.plink code { color: var(--accent); border-color: var(--accent-soft); }
 a.plink:hover code { text-decoration: underline; }
 
 /* ---- code ---- */
-.codewrap { margin: .8em 0; border: 1px solid var(--border); border-radius: 8px; background: var(--code-bg); min-width: 0; }
-.codebar { display: flex; justify-content: space-between; align-items: center; padding: 3px 6px 3px 12px; border-bottom: 1px solid var(--border); font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-pre.code { margin: 0; padding: 10px 12px; overflow-x: auto; font-size: .86rem; line-height: 1.5; tab-size: 2; overflow-wrap: normal; white-space: pre; }
-pre.code code { background: none; padding: 0; font-size: inherit; }
+.codewrap { margin: .9em 0; border: 1px solid var(--border); border-radius: 8px; background: var(--code-bg); min-width: 0; overflow: hidden; }
+.codebar { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px 4px 12px; border-bottom: 1px solid var(--border); font: 600 .68rem/1 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; background: var(--surface-2); }
+.codebar .btn { font-family: var(--sans); letter-spacing: 0; text-transform: none; }
+pre.code { margin: 0; padding: 12px 14px; overflow-x: auto; font-size: .85rem; line-height: 1.55; tab-size: 2; overflow-wrap: normal; white-space: pre; }
+pre.code code { background: none; padding: 0; font-size: inherit; border: 0; }
 .sx-k { color: var(--sx-k); font-weight: 600; } .sx-f { color: var(--sx-f); } .sx-s { color: var(--sx-s); }
 .sx-n { color: var(--sx-n); } .sx-c { color: var(--sx-c); font-style: italic; } .sx-i { color: var(--sx-i); }
 
 /* ---- tables: scroll on desktop only if needed, stack on phones (no sideways page scroll) ---- */
 .tbl { overflow-x: auto; margin: .8em 0; }
-.tbl table { border-collapse: collapse; width: 100%; font-size: .92rem; }
-.tbl th, .tbl td { border: 1px solid var(--border); padding: 6px 10px; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
-.tbl th { background: var(--surface-2); font-weight: 600; }
+.tbl table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.tbl th, .tbl td { border-bottom: 1px solid var(--border); padding: 7px 10px; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
+.tbl th { font: 600 .7rem/1.35 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--strong); vertical-align: bottom; }
 @media (max-width: 640px) {
   .tbl { overflow: visible; }
   .tbl table, .tbl tbody, .tbl tr, .tbl td { display: block; width: 100%; }
   .tbl thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
-  .tbl tr { border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); margin: 0 0 10px; padding: 4px 10px; }
-  .tbl td { border: 0; padding: 4px 0; text-align: left !important; }
-  .tbl td::before { content: attr(data-label); display: block; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .tbl tr { border: 1px solid var(--border); border-radius: 8px; background: var(--bg); margin: 0 0 10px; padding: 6px 12px; }
+  .tbl td { border: 0; padding: 5px 0; text-align: left !important; }
+  .tbl td::before { content: attr(data-label); display: block; font: 600 .66rem/1.4 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
   .tbl td:first-child { font-weight: 600; }
   .tbl td:first-child::before { content: none; }
 }
-.bench { border-left: 3px solid var(--accent); padding-left: 14px; margin: 1em 0; }
+
+/* ---- bench tables: inline bars computed from the numbers already in each table ---- */
+.bench { margin: 1.2em 0; padding: 14px 16px; border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 8px; background: var(--bg); }
+.bench > p:first-child { margin-top: 0; font-size: .8rem; line-height: 1.5; color: var(--muted); }
+.bench > p:first-child em { font-style: normal; }
+.bench > p:first-child code { font-size: .92em; }
+.bench > p > strong { font-family: var(--serif); font-size: 1.02rem; }
+.bench blockquote { margin: .8em 0 0; padding: 2px 12px; border-left: 3px solid var(--border); color: var(--muted); font-size: .82rem; }
+.bench blockquote p { margin: 0; }
+.bench td { font-variant-numeric: tabular-nums; }
+.bench td[style*="right"] { font-family: var(--mono); font-size: .84rem; white-space: nowrap; overflow-wrap: normal; }
+.bench td.bar { position: relative; padding-bottom: 15px; }
+.bench td.bar::after {
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: 6px; height: 5px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--bar) 0 max(3px, var(--w)), var(--bar-track) 0);
+}
+.bench td.bar.best::after { background: linear-gradient(90deg, var(--ok) 0 max(3px, var(--w)), var(--bar-track) 0); }
+.bench td.bar.timeout::after { background: repeating-linear-gradient(135deg, var(--bad) 0 3px, transparent 3px 6px); opacity: .85; }
+.bench td.bar.lower::after { background: linear-gradient(90deg, var(--bar) 0 calc(100% - 14px), transparent 0), repeating-linear-gradient(135deg, var(--bar) 0 2px, transparent 2px 5px); }
+.bench tr.optimal td { background: color-mix(in srgb, var(--ok) 7%, transparent); }
+.bench tr.optimal td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
+.bench-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; font-size: .78rem; color: var(--muted); }
+.bench-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.bench-legend i { display: inline-block; width: 22px; height: 5px; border-radius: 3px; background: var(--bar); }
+.bench-legend i.k-best { background: var(--ok); }
+.bench-legend i.k-timeout { background: repeating-linear-gradient(135deg, var(--bad) 0 3px, transparent 3px 6px); }
+@media (max-width: 640px) {
+  .bench { padding: 12px; }
+  .bench td.bar::after { left: 0; right: auto; width: min(100%, 220px); }
+  .bench td[style*="right"] { white-space: normal; }
+}
 
 /* ---- trigger phrases ---- */
-.phrases { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.phrases li { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg); }
+.phrases { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: ph; }
+.phrases li { border: 1px solid var(--border); border-left: 3px solid var(--strong); border-radius: 6px; padding: 10px 12px; background: var(--bg); }
 .phrase-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-.phrase { font-weight: 600; }
+.phrase { font-weight: 600; font-family: var(--serif); font-size: 1.05rem; }
 .meaning { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
 .after { margin-top: 12px; }
-dl.spec { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 6px 0 0; }
-dl.spec dt { color: var(--muted); font-size: .88rem; }
+dl.spec { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 6px 0 0; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+dl.spec dt { color: var(--muted); font: 600 .7rem/1.9 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 dl.spec dd { margin: 0; }
 dl.spec code { margin-right: 4px; }
-@media (max-width: 520px) { dl.spec { grid-template-columns: 1fr; } dl.spec dd { margin-bottom: 6px; } }
-details.disclosure { margin-top: 14px; border: 1px solid var(--border); border-radius: 8px; padding: 0 12px; }
-details.disclosure > summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+@media (max-width: 520px) { dl.spec { grid-template-columns: 1fr; gap: 2px; } dl.spec dd { margin-bottom: 8px; } }
+details.disclosure { margin-top: 14px; border: 1px solid var(--border); border-radius: 6px; padding: 0 12px; background: var(--surface); }
+details.disclosure > summary { cursor: pointer; padding: 9px 0; font-weight: 600; font-size: .92rem; }
 details.disclosure[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 8px; }
 details.disclosure > :last-child { margin-bottom: 12px; }
 .conf { color: var(--warn); font-weight: 600; }
 
 /* ---- attempt ---- */
-.attempt-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.attempt-head h2 { margin: 0; }
+.attempt { border: 2px solid var(--strong); }
+.attempt-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.attempt-head p { margin: 0; font-size: .88rem; color: var(--muted); }
 .sw { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.sw output { font-size: 1.15rem; min-width: 5ch; font-variant-numeric: tabular-nums; }
-.sw .label { font-size: .8rem; color: var(--muted); }
+.sw output { font: 600 1.15rem var(--mono); min-width: 5ch; font-variant-numeric: tabular-nums; }
+.sw .label { font: 600 .68rem var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 textarea#attempt {
-  width: 100%; min-height: 220px; resize: vertical; padding: 10px 12px; font-size: .92rem; line-height: 1.5; tab-size: 2;
-  background: var(--code-bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+  width: 100%; min-height: 240px; resize: vertical; padding: 12px 14px; font-size: .9rem; line-height: 1.55; tab-size: 2;
+  background: var(--code-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
 }
+textarea#attempt:focus { border-color: var(--accent); }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
-.row .grow { flex: 1 1 220px; font-size: .84rem; color: var(--muted); }
-.row label { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9rem; }
+.row .grow { flex: 1 1 220px; font-size: .82rem; color: var(--muted); }
+.row label { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: .88rem; }
 .row select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
 
 /* ---- reveal ladder ---- */
-.stepper { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.stepper button { font: inherit; font-size: .8rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: default; min-height: 28px; }
-.stepper .done button { color: var(--text); cursor: pointer; border-color: var(--accent); }
+.ladder-top { display: grid; gap: 10px; }
+.ladder-meter { height: 6px; border-radius: 3px; background: var(--bar-track); overflow: hidden; }
+.ladder-meter i { display: block; height: 100%; background: var(--accent); }
+.stepper { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; counter-reset: stp; }
+.stepper li { counter-increment: stp; }
+.stepper button { font: 500 .78rem/1.2 var(--sans); padding: 4px 10px 4px 6px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: default; min-height: 28px; display: inline-flex; align-items: center; gap: 6px; }
+.stepper button::before { content: counter(stp); font: 700 .66rem/1 var(--mono); width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; border: 1px solid currentColor; }
+.stepper .done button { color: var(--text); cursor: pointer; border-color: var(--strong); }
+.stepper .done button::before { content: "\2713"; background: var(--strong); color: var(--bg); border-color: var(--strong); }
 .stepper .next button { color: var(--accent-text); background: var(--accent); border-color: var(--accent); cursor: pointer; font-weight: 700; }
-.stepper .locked button { opacity: .65; }
+.stepper .locked button { opacity: .7; border-style: dashed; }
 details.step { padding: 0; }
-details.step > summary { cursor: pointer; padding: 12px 20px; list-style-position: inside; }
-details.step > summary h2 { display: inline; margin: 0; font-size: 1.2rem; }
-details.step > .body { padding: 0 20px 16px; }
+details.step > summary { cursor: pointer; padding: 14px 22px; list-style: none; display: flex; align-items: baseline; gap: 12px; }
+details.step > summary::-webkit-details-marker { display: none; }
+details.step > summary::after { content: "\2212"; margin-left: auto; font: 600 1rem var(--mono); color: var(--muted); }
+details.step:not([open]) > summary::after { content: "+"; }
+details.step > summary .eyebrow { flex: none; }
+details.step > summary h2 { display: inline; margin: 0; font-size: 1.3rem; }
+details.step[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+details.step > .body { padding: 0 22px 18px; }
 details.step { scroll-margin-top: 64px; }
-@media (max-width: 860px) { details.step > summary { padding: 12px 14px; } details.step > .body { padding: 0 14px 14px; } }
-.next-card { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.next-card p { margin: 0; color: var(--muted); font-size: .9rem; flex: 1 1 240px; }
+@media (max-width: 860px) { details.step > summary { padding: 12px 14px; flex-wrap: wrap; gap: 4px 10px; } details.step > .body { padding: 0 14px 14px; } }
+.next-card { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; border: 2px dashed var(--border); background: transparent; box-shadow: none; }
+.next-card p { margin: 0; color: var(--muted); font-size: .88rem; flex: 1 1 240px; }
 .files .file { margin-top: 10px; }
-.files .fname { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .86rem; margin: 10px 0 0; }
+.files .fname { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .86rem; margin: 12px 0 0; }
 
-/* ---- banners, home ---- */
-.banner { margin: 0 0 14px; padding: 10px 14px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: .9rem; border: 1px solid var(--warn); }
-.home h1 { margin-top: 0; }
-.stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; padding: 0; list-style: none; }
-.stats li { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; }
-.stats b { font-size: 1.3rem; display: block; }
-footer.foot { margin-top: 40px; font-size: .82rem; color: var(--muted); }
+/* ---- banners ---- */
+.banner { margin: 0 0 14px; padding: 10px 14px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); font-size: .9rem; border: 1px solid var(--warn); }
+
+/* ---- home ---- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 36px; align-items: center; padding: 8px 0 28px; }
+.hero h1 { margin: 12px 0 16px; font-size: clamp(2.1rem, 1.2rem + 3.4vw, 3.5rem); line-height: 1.04; letter-spacing: -.02em; outline: none; }
+.hero h1 em { font-style: italic; color: var(--accent); }
+.lede { margin: 0 0 22px; font-size: 1.08rem; max-width: 56ch; }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.figure { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+.figure .codebar { padding: 8px 12px; }
+.decomp { list-style: none; margin: 0; padding: 6px 0; }
+.decomp li { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; padding: 9px 14px; border-bottom: 1px dashed var(--border); }
+.decomp li:last-child { border-bottom: 0; }
+.decomp .w { font-family: var(--serif); font-size: .98rem; }
+.decomp .w::before { content: "\201C"; color: var(--accent); } .decomp .w::after { content: "\201D"; color: var(--accent); }
+.decomp .arr { color: var(--muted); font-family: var(--mono); }
+.decomp .c { font: 600 .78rem/1.35 var(--mono); color: var(--sx-k); }
+.figure figcaption { padding: 10px 14px; font-size: .8rem; color: var(--muted); border-top: 1px solid var(--border); background: var(--bg); }
+.kpis { list-style: none; margin: 0 0 40px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--strong); border-bottom: 1px solid var(--border); }
+.kpis li { padding: 14px 16px 14px 0; }
+.kpis li + li { padding-left: 16px; border-left: 1px solid var(--border); }
+.kpis b { display: block; font: 600 2.1rem/1.1 var(--serif); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpis span { display: block; margin-top: 4px; font-size: .84rem; color: var(--muted); line-height: 1.4; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin: 0 0 14px; }
+.sec-head h2 { margin: 0; font-size: 1.6rem; }
+.how { list-style: none; margin: 0 0 44px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; counter-reset: how; }
+.how li { counter-increment: how; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: .9rem; }
+.how li::before { content: "0" counter(how); display: block; font: 700 .74rem var(--mono); color: var(--accent); margin-bottom: 6px; letter-spacing: .06em; }
+.how b { display: block; font-size: 1rem; margin-bottom: 4px; }
+.how p { margin: 0; color: var(--muted); }
+.pmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 0 0 44px; padding: 0; list-style: none; }
+.pmap li { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; align-content: start; }
+.pmap .pt { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; font-weight: 650; font-size: .95rem; line-height: 1.3; }
+.pmap .pt span { font: 600 .72rem var(--mono); color: var(--muted); white-space: nowrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chips a { font: 600 .74rem/1 var(--mono); padding: 5px 7px; border-radius: 4px; border: 1px solid var(--border); color: var(--text); text-decoration: none; background: var(--bg); }
+.chips a:hover { border-color: var(--accent); color: var(--accent); }
+.chips a.c-solved { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.chips a.c-attempted { border-color: var(--warn); color: var(--warn); }
+.chips a.c-revisit { border-color: var(--rev); color: var(--rev); }
+.mine { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); margin: 0 0 32px; font-size: .9rem; }
+.mine b { font: 600 1.2rem var(--serif); margin-right: 4px; }
+.mine .meter { flex: 1 1 200px; margin: 0; height: 6px; }
+footer.foot { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border); font-size: .82rem; color: var(--muted); }
+footer.foot p { margin: 0 0 6px; max-width: 90ch; }
+@media (max-width: 980px) { .hero { grid-template-columns: 1fr; gap: 24px; } .how { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis li:nth-child(3) { border-left: 0; padding-left: 0; }
+  .kpis li:nth-child(n+3) { border-top: 1px solid var(--border); }
+  .kpis b { font-size: 1.7rem; }
+  .how { grid-template-columns: 1fr; }
+  .decomp li { grid-template-columns: 1fr; gap: 2px; }
+  .decomp .arr { display: none; }
+  .cta .btn { flex: 1 1 100%; }
+}
 </style>
 </head>
 <body>
@@ -259,12 +407,13 @@ footer.foot { margin-top: 40px; font-size: .82rem; color: var(--muted); }
 <div class="app">
   <header class="topbar">
     <button type="button" class="btn ghost" id="navToggle" aria-expanded="false" aria-controls="sidebar">☰ Problems</button>
-    <a class="brand" href="#/">SQL Pattern Lab</a>
+    <a class="brand" href="#/"><svg viewBox="0 0 28 20" aria-hidden="true"><clipPath id="lg1"><circle cx="10" cy="10" r="8"/></clipPath><circle class="logo-b" cx="18" cy="10" r="8" clip-path="url(#lg1)"/><circle class="logo-a" cx="10" cy="10" r="8"/><circle class="logo-a" cx="18" cy="10" r="8"/></svg>SQL Pattern Lab</a>
   </header>
   <aside class="sidebar" id="sidebar" aria-label="Problems">
     <div class="side-head">
-      <a class="brand" href="#/">SQL Pattern Lab</a>
+      <a class="brand" href="#/"><svg viewBox="0 0 28 20" aria-hidden="true"><clipPath id="lg2"><circle cx="10" cy="10" r="8"/></clipPath><circle class="logo-b" cx="18" cy="10" r="8" clip-path="url(#lg2)"/><circle class="logo-a" cx="10" cy="10" r="8"/><circle class="logo-a" cx="18" cy="10" r="8"/></svg>SQL Pattern Lab</a>
       <p class="progress" id="progress"></p>
+      <div class="meter" id="progressMeter" aria-hidden="true"></div>
     </div>
     <form class="filters" id="filters" onsubmit="return false" aria-label="Filter problems">
       <label id="fPatternWrap">Pattern <select id="fPattern"></select></label>
@@ -306,6 +455,7 @@ const STATUS = [['not_started', 'Not started', '○'], ['attempted', 'Attempted'
 const STATUS_KEYS = STATUS.map(s => s[0]);
 const STATUS_LABEL = Object.fromEntries(STATUS.map(s => [s[0], s[1]]));
 const DIFFICULTIES = [...new Set(PROBLEMS.map(p => p.difficulty))];
+const REPO_URL = 'https://github.com/apoorvgpt9/sql-pattern-lab';
 
 /* ================================================================ storage
    Every access is inside try/catch (reading the localStorage property itself can throw).
@@ -434,6 +584,11 @@ function renderList() {
 function updateProgress() {
   const n = s => PROBLEMS.filter(p => recs[p.dir].status === s).length;
   $('#progress').textContent = `${n('solved')} of ${PROBLEMS.length} solved · ${n('attempted')} attempted · ${n('revisit')} to revisit`;
+  $('#progressMeter').innerHTML = meterHTML();
+}
+function meterHTML() {
+  const n = s => PROBLEMS.filter(p => recs[p.dir].status === s).length;
+  return ['solved', 'attempted', 'revisit'].map(s => `<i class="m-${s}" style="width:${(100 * n(s) / PROBLEMS.length).toFixed(2)}%"></i>`).join('');
 }
 function initFilters() {
   const opts = (sel, all, items) => { sel.innerHTML = `<option value="">${all}</option>` + items.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); };
@@ -449,6 +604,7 @@ function initFilters() {
     ui.blind = e.target.checked;
     if (ui.blind) ui.filters.pattern = '';   // an active pattern filter would leak the pattern
     saveUI(); syncFilterControls(); renderList();
+    if (!current) renderHome(false);   // the home pattern map is not rendered in blind mode
   });
 }
 function syncFilterControls() {
@@ -533,6 +689,54 @@ const decorateCode = root => {
   });
 };
 
+/* Bench bars: read the times already printed in each bench table and draw a bar under each one.
+   Size columns: bar = time / slowest time in that column (a timeout counts as the cap it hit).
+   Ratio column: bar = ratio / largest ratio in the table. Numbers in the cells are unchanged. */
+const UNIT_S = { 'µs': 1e-6, 'us': 1e-6, 'ms': 1e-3, 's': 1, 'min': 60 };
+function parseCell(text, isRatio) {
+  const s = text.trim();
+  if (isRatio) { const m = /([\d.,]+)\s*×/.exec(s); return m ? { v: parseFloat(m[1].replace(/,/g, '')), lower: /^[>≥]/.test(s) } : null; }
+  const to = /timeout\D*([\d.]+)\s*(µs|us|ms|s|min)?/i.exec(s);
+  if (to) return { v: parseFloat(to[1]) * (UNIT_S[to[2] || 's'] || 1), timeout: true };
+  const m = /^([\d.,]+)\s*(µs|us|ms|s|min)(?![a-z])/.exec(s);
+  return m ? { v: parseFloat(m[1].replace(/,/g, '')) * UNIT_S[m[2]] } : null;
+}
+function decorateBench(root) {
+  $$('.bench', root).forEach(box => {
+    if (box.dataset.bars) return;
+    box.dataset.bars = '1';
+    let drew = false, sawTimeout = false;
+    $$('table', box).forEach(tbl => {
+      const heads = $$('thead th', tbl).map(th => th.textContent);
+      const rows = $$('tbody tr', tbl);
+      rows.forEach(tr => { if (/\(optimal\)/.test((tr.cells[0] || {}).textContent || '')) tr.classList.add('optimal'); });
+      heads.forEach((h, ci) => {
+        const isRatio = /×/.test(h);
+        if (!isRatio && !/\brows\b/i.test(h)) return;
+        const cells = rows.map(tr => tr.cells[ci]).filter(Boolean);
+        const vals = cells.map(td => parseCell(td.textContent, isRatio));
+        const nums = vals.filter(Boolean).map(x => x.v);
+        if (!nums.length) return;
+        const max = Math.max(...nums), min = Math.min(...vals.filter(x => x && !x.timeout).map(x => x.v));
+        cells.forEach((td, i) => {
+          const x = vals[i];
+          if (!x || !(max > 0)) return;
+          td.classList.add('bar');
+          if (x.timeout) { td.classList.add('timeout'); sawTimeout = true; }
+          else if (x.lower) td.classList.add('lower');
+          else if (x.v === min && nums.length > 1) td.classList.add('best');
+          td.style.setProperty('--w', (100 * x.v / max).toFixed(1) + '%');
+          drew = true;
+        });
+      });
+    });
+    if (drew) box.insertAdjacentHTML('beforeend', `<p class="bench-legend" aria-hidden="true">` +
+      `<span><i></i>time ÷ slowest in its column</span><span><i class="k-best"></i>fastest</span>` +
+      (sawTimeout ? `<span><i class="k-timeout"></i>timed out (drawn at the cap)</span>` : '') +
+      `<span>ratio bars ÷ largest ratio in the table</span></p>`);
+  });
+}
+
 function linkHTML(p) {
   if (p.source === 'leetcode' && p.url) return `<a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">Open the original on LeetCode ↗</a> <span class="muted">(LeetCode ${esc(p.source_id)}; read the statement there)</span>`;
   if (p.url) return `<a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">Open the original exercise ↗</a>`;
@@ -550,59 +754,72 @@ function renderProblemShell(p) {
   const rec = recs[p.dir];
   const secondary = p.pattern_secondary.map(s => PATTERN_LABEL[s] || s.replace(/_/g, ' '));
   const lowConf = p.confidence !== 'high';
+  const repo = `${REPO_URL}/tree/main/problems/${encodeURIComponent(p.dir)}`;
   $('#main').innerHTML = `
   <article data-dir="${esc(p.dir)}">
     <div id="storageBanner" class="banner" hidden>Browser storage is unavailable, so your attempt, status and progress will be lost when this tab closes. Copy your work out before leaving.</div>
     <header class="phead">
-      <p class="crumb"><span class="mono">#${pad2(p.id)}</span> <span class="pattern-only">· ${esc(PATTERN_LABEL[p.pattern] || p.pattern)}</span></p>
+      <p class="eyebrow crumb"><span>Problem ${pad2(p.id)} / ${PROBLEMS.length}</span> <span class="pattern-only">· ${esc(PATTERN_LABEL[p.pattern] || p.pattern)}</span></p>
       <h1 id="ptitle" tabindex="-1">${esc(p.title)}</h1>
-      <div class="badges"><span class="badge ${esc(p.difficulty)}">${esc(p.difficulty)}</span><span class="badge plain">${esc(p.batch)}</span><span class="badge plain">${esc(p.source)}</span></div>
-      <p class="orig">${linkHTML(p)}</p>
+      <div class="badges"><span class="badge ${esc(p.difficulty)}">${esc(p.difficulty)}</span><span class="badge plain">${esc(p.batch)}</span><span class="badge plain">${esc(p.source)}</span>${p.has_bench ? '<span class="badge opt">benchmarked</span>' : ''}</div>
+      <p class="orig"><span>${linkHTML(p)}</span><a href="${esc(repo)}" target="_blank" rel="noopener noreferrer">Folder on GitHub ↗</a></p>
       ${p.attribution ? `<p class="attrib">${esc(p.attribution)} Licensed <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 3.0</a>.</p>` : ''}
     </header>
 
-    <section class="card" aria-labelledby="h-problem">
-      <h2 id="h-problem">Problem &amp; trigger phrases</h2>
-      <div class="prose">${p.problem.prose}</div>
-      <h3>Expected output</h3>
-      ${outputHTML(p)}
-      <h3>Trigger phrases</h3>
-      <p class="muted" style="margin-top:0">Read each phrase and decide what it forces in SQL before revealing the answer.</p>
-      <div id="phrases"></div>
-      ${p.assumptions ? `<details class="disclosure"${lowConf ? ' open' : ''}><summary>Assumptions: how this repo reads the spec${lowConf ? ` <span class="conf">(confidence: ${esc(p.confidence)})</span>` : ''}</summary><div class="prose">${p.assumptions}</div></details>` : ''}
+    <div class="flow">
+    <section class="stage" aria-labelledby="h-problem">
+      <div class="stage-head"><span class="stage-no" aria-hidden="true">01</span><h2 id="h-problem">Problem &amp; trigger phrases</h2><span class="eyebrow">Read the spec</span></div>
+      <div class="card">
+        <div class="prose">${p.problem.prose}</div>
+        <h3>Expected output</h3>
+        ${outputHTML(p)}
+        <h3>Trigger phrases</h3>
+        <p class="muted" style="margin-top:0">Decide what each phrase forces in SQL before you reveal it.</p>
+        <div id="phrases"></div>
+        ${p.assumptions ? `<details class="disclosure"${lowConf ? ' open' : ''}><summary>Assumptions: how this repo reads the spec${lowConf ? ` <span class="conf">(confidence: ${esc(p.confidence)})</span>` : ''}</summary><div class="prose">${p.assumptions}</div></details>` : ''}
+      </div>
     </section>
 
-    <section class="card" aria-labelledby="h-schema">
-      <h2 id="h-schema">Schema &amp; grain</h2>
-      <div class="prose">${p.schema}</div>
-      <details class="disclosure"><summary><code>schema.sql</code> (MySQL 8.0)</summary>
-        <div class="codewrap"><div class="codebar"><span>sql</span><button type="button" class="btn ghost sm" data-act="copy-code">Copy</button></div><pre class="code" tabindex="0"><code class="language-sql">${p.schema_sql}</code></pre></div>
-      </details>
+    <section class="stage" aria-labelledby="h-schema">
+      <div class="stage-head"><span class="stage-no" aria-hidden="true">02</span><h2 id="h-schema">Schema &amp; grain</h2><span class="eyebrow">Find the grain change</span></div>
+      <div class="card">
+        <div class="prose">${p.schema}</div>
+        <details class="disclosure"><summary><code>schema.sql</code> (MySQL 8.0)</summary>
+          <div class="codewrap"><div class="codebar"><span>sql</span><button type="button" class="btn ghost sm" data-act="copy-code">Copy</button></div><pre class="code" tabindex="0"><code class="language-sql">${p.schema_sql}</code></pre></div>
+        </details>
+      </div>
     </section>
 
-    <section class="card attempt" aria-labelledby="h-attempt">
-      <div class="attempt-head">
-        <h2 id="h-attempt">My attempt</h2>
-        <div class="sw" role="group" aria-label="Stopwatch: time to first attempt">
-          <span class="label" id="swLabel"></span><output id="swTime" class="mono">00:00</output>
-          <button type="button" class="btn ghost sm" id="swToggle" data-act="sw-toggle">Start</button>
-          <button type="button" class="btn sm" id="swDone" data-act="sw-done">First attempt made</button>
-          <button type="button" class="btn ghost sm" id="swReset" data-act="sw-reset">Reset</button>
+    <section class="stage attempt-stage" aria-labelledby="h-attempt">
+      <div class="stage-head"><span class="stage-no" aria-hidden="true">03</span><h2 id="h-attempt">My attempt</h2><span class="eyebrow">Before any hint</span></div>
+      <div class="card attempt">
+        <div class="attempt-head">
+          <p>Plan the steps, then write the query.</p>
+          <div class="sw" role="group" aria-label="Stopwatch: time to first attempt">
+            <span class="label" id="swLabel"></span><output id="swTime">00:00</output>
+            <button type="button" class="btn ghost sm" id="swToggle" data-act="sw-toggle">Start</button>
+            <button type="button" class="btn sm" id="swDone" data-act="sw-done">First attempt made</button>
+            <button type="button" class="btn ghost sm" id="swReset" data-act="sw-reset">Reset</button>
+          </div>
+        </div>
+        <label for="attempt" class="sr-only">Your SQL attempt for ${esc(p.title)}</label>
+        <textarea id="attempt" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" rows="12"
+          placeholder="-- Write your query here. It is saved in this browser only.&#10;-- This page does not run SQL: copy it into problems/${esc(p.dir)}/my_answer.sql or LeetCode."></textarea>
+        <div class="row">
+          <button type="button" class="btn" data-act="copy-attempt">Copy</button>
+          <label>Status
+            <select id="status">${STATUS.map(s => `<option value="${s[0]}">${s[1]}</option>`).join('')}</select>
+          </label>
+          <span class="grow">Runs nowhere in this page. Paste into <code>my_answer.sql</code> or LeetCode to execute.</span>
         </div>
       </div>
-      <label for="attempt" class="sr-only">Your SQL attempt for ${esc(p.title)}</label>
-      <textarea id="attempt" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" rows="12"
-        placeholder="-- Write your query here. It is saved in this browser only.&#10;-- This page does not run SQL: copy it into problems/${esc(p.dir)}/my_answer.sql or LeetCode."></textarea>
-      <div class="row">
-        <button type="button" class="btn" data-act="copy-attempt">Copy</button>
-        <label>Status
-          <select id="status">${STATUS.map(s => `<option value="${s[0]}">${s[1]}</option>`).join('')}</select>
-        </label>
-        <span class="grow">Runs nowhere in this page. Paste into <code>my_answer.sql</code> or LeetCode to execute.</span>
-      </div>
     </section>
 
-    <div id="ladder"></div>
+    <section class="stage" aria-labelledby="h-ladder">
+      <div class="stage-head"><span class="stage-no" aria-hidden="true">04</span><h2 id="h-ladder">Reveal, one step at a time</h2><span class="eyebrow">Hints → solution → scale</span></div>
+      <div id="ladder"></div>
+    </section>
+    </div>
   </article>`;
   const ta = $('#attempt'); ta.value = rec.attempt; $('#status').value = rec.status;
   decorateCode($('#main'));
@@ -638,10 +855,10 @@ function renderLadder(focusKey) {
     let extra = '';
     if (s.key === 'approaches') {
       extra = `<details class="disclosure files"><summary>Runnable files: <code>solutions/*.sql</code></summary>${p.solutions.map(f =>
-        `<p class="fname"><code>${esc(f.file)}</code>${f.optimal ? ' <span class="badge plain">optimal (bench)</span>' : ''}</p>` +
+        `<p class="fname"><code>${esc(f.file)}</code>${f.optimal ? ' <span class="badge opt">optimal (bench)</span>' : ''}</p>` +
         `<div class="codewrap"><div class="codebar"><span>sql</span><button type="button" class="btn ghost sm" data-act="copy-code">Copy</button></div><pre class="code" tabindex="0"><code class="language-sql">${f.html}</code></pre></div>`).join('')}</details>`;
     }
-    return `<details class="card step" id="step-${esc(s.key)}" open data-i="${i}"><summary><h2>${esc(s.title)}</h2></summary><div class="body"><div class="prose">${s.html}</div>${extra}</div></details>`;
+    return `<details class="card step" id="step-${esc(s.key)}" open data-i="${i}"><summary><span class="eyebrow">Step ${pad2(i + 1)}/${pad2(steps.length)}</span><h2>${esc(s.title)}</h2></summary><div class="body"><div class="prose">${s.html}</div>${extra}</div></details>`;
   }).join('');
   const more = rec.revealed < steps.length;
   const next = more ? `<div class="card next-card"><button type="button" class="btn" data-act="reveal" id="revealBtn">Reveal: ${esc(steps[rec.revealed].title)}</button>
@@ -650,8 +867,10 @@ function renderLadder(focusKey) {
       + `</div>`;
   const reset = rec.revealed > 0
     ? `<div class="row"><button type="button" class="btn ghost sm danger" data-act="reset-reveals">Hide everything again</button></div>` : '';
-  $('#ladder').innerHTML = `<h2 class="sr-only">Study path</h2><ol class="stepper" aria-label="Reveal order">${chips}</ol>${cards}${next}${reset}`;
+  $('#ladder').innerHTML = `<div class="ladder-top"><div class="ladder-meter" aria-hidden="true"><i style="width:${(100 * rec.revealed / steps.length).toFixed(1)}%"></i></div>`
+    + `<ol class="stepper" aria-label="Reveal order">${chips}</ol></div>${cards}${next}${reset}`;
   decorateCode($('#ladder'));
+  decorateBench($('#ladder'));
   if (focusKey) {
     const d = $('#step-' + focusKey);
     if (d) {
@@ -708,22 +927,84 @@ mainEl.addEventListener('change', e => {
 function renderHome(notFound) {
   const n = s => PROBLEMS.filter(p => recs[p.dir].status === s).length;
   const resume = ui.last ? BY_DIR[ui.last] : (PROBLEMS.find(p => recs[p.dir].status !== 'solved') || PROBLEMS[0]);
+  const nApproaches = PROBLEMS.reduce((a, p) => a + p.solutions.length, 0);
+  const nBench = PROBLEMS.filter(p => p.has_bench).length;
+  // Largest bench size, read from the bench table headers already in the page.
+  let maxRows = 0;
+  PROBLEMS.forEach(p => p.steps.forEach(s => {
+    if (s.key !== 'approaches') return;
+    for (const m of s.html.matchAll(/<th[^>]*>([\d,]+) rows<\/th>/g)) maxRows = Math.max(maxRows, +m[1].replace(/,/g, ''));
+  }));
+  const rowsLabel = maxRows >= 1e6 ? (maxRows / 1e6) + 'M' : maxRows >= 1e3 ? (maxRows / 1e3) + 'k' : String(maxRows);
+  const started = n('solved') + n('attempted') + n('revisit');
+  const chip = p => `<a class="c-${recs[p.dir].status}" href="#/p/${esc(p.dir)}" title="${esc(p.title)} (${esc(STATUS_LABEL[recs[p.dir].status])})">${pad2(p.id)}</a>`;
+  const pmap = ui.blind ? '' : `
+    <section aria-labelledby="h-patterns" id="patternMap">
+      <div class="sec-head"><h2 id="h-patterns">${DATA.patterns.length} patterns</h2><p class="eyebrow">Pick a pattern, or go in order</p></div>
+      <ul class="pmap">${DATA.patterns.map(pt => {
+        const ps = PROBLEMS.filter(p => p.pattern === pt.slug);
+        return `<li><div class="pt">${esc(pt.label)}<span>${ps.length}</span></div><div class="chips">${ps.map(chip).join('')}</div></li>`;
+      }).join('')}</ul>
+    </section>`;
   mainEl.innerHTML = `<div class="home">
     <div id="storageBanner" class="banner" hidden>Browser storage is unavailable, so progress will be lost when this tab closes.</div>
     ${notFound ? '<p class="banner">That problem link does not exist. Pick one from the list.</p>' : ''}
-    <h1 id="ptitle" tabindex="-1">SQL Pattern Lab</h1>
-    <p>${PROBLEMS.length} problems that train decomposition: reading the wording and knowing which steps need a JOIN, GROUP BY, window function or CTE.</p>
-    <ul class="stats"><li><b>${n('solved')}</b>solved</li><li><b>${n('attempted')}</b>attempted</li><li><b>${n('revisit')}</b>to revisit</li><li><b>${n('not_started')}</b>not started</li></ul>
-    <p><a class="btn" href="#/p/${esc(resume.dir)}" style="text-decoration:none;display:inline-block">${ui.last ? 'Resume' : 'Start'}: ${pad2(resume.id)} ${esc(resume.title)}</a></p>
-    <h2>How a problem works</h2>
-    <ol>
-      <li>Read the spec, the trigger phrases and the schema. Say aloud what each phrase forces before revealing it.</li>
-      <li>Write your attempt in the box. Start the stopwatch, and press <b>First attempt made</b> when you have something.</li>
-      <li>Reveal one thing at a time, in order: three hints, the decomposition, the approaches with measured timings, then scale, edge cases, follow-ups, Snowflake notes and related problems.</li>
-      <li>Set the status. Run your query for real in <code>my_answer.sql</code> against MySQL 8.0 or on LeetCode; this page never executes SQL.</li>
-    </ol>
-    <p class="muted">Progress is stored in this browser only (localStorage). Benchmark figures come from <code>bench/results/*.json</code>; anything about billions of rows is reasoned and says so. LeetCode problems are linked, not reproduced. Problems adapted from pgexercises.com carry their CC BY-SA 3.0 attribution on the problem page.</p>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">SQL interview prep for data engineers · MySQL 8.0</p>
+        <h1 id="ptitle" tabindex="-1">Read the wording.<br>Find the steps.<br><em>Measure the query.</em></h1>
+        <p class="lede">${PROBLEMS.length} SQL problems taught decomposition-first: each phrase in the wording points to a JOIN, GROUP BY, window function or CTE. Every approach, brute force to optimal, is executed against hand-checked edge cases and benchmarked on MySQL&nbsp;8.0.</p>
+        <div class="cta">
+          <a class="btn lg" href="#/p/${esc(resume.dir)}">${ui.last ? 'Resume' : 'Start'}: ${pad2(resume.id)} ${esc(resume.title)} →</a>
+          <button type="button" class="btn ghost lg" id="homeBrowse">${ui.blind ? 'Browse problems' : `Browse ${DATA.patterns.length} patterns`}</button>
+          <a class="btn ghost lg" href="${REPO_URL}" target="_blank" rel="noopener noreferrer">Source on GitHub ↗</a>
+        </div>
+      </div>
+      <figure class="figure" aria-labelledby="fig-cap">
+        <div class="codebar"><span>wording → clause</span><span>illustration</span></div>
+        <ul class="decomp">
+          <li><span class="w">for each customer</span><span class="arr" aria-hidden="true">→</span><span class="c">GROUP BY customer</span></li>
+          <li><span class="w">including those with none</span><span class="arr" aria-hidden="true">→</span><span class="c">LEFT JOIN, filter in ON</span></li>
+          <li><span class="w">latest per user</span><span class="arr" aria-hidden="true">→</span><span class="c">ROW_NUMBER() … = 1</span></li>
+          <li><span class="w">on consecutive days</span><span class="arr" aria-hidden="true">→</span><span class="c">gaps &amp; islands</span></li>
+        </ul>
+        <figcaption id="fig-cap">Notice the phrase, name the clause, write one CTE per step. Then compare brute force with optimal on measured timings.</figcaption>
+      </figure>
+    </section>
+
+    <ul class="kpis">
+      <li><b>${PROBLEMS.length}</b><span>problems, linked to the original, never copied</span></li>
+      <li><b>${DATA.patterns.length}</b><span>patterns, from anti-joins to recursive CTEs</span></li>
+      <li><b>${nApproaches}</b><span>approaches, each passing every edge case in CI</span></li>
+      <li><b>${nBench}</b><span>problems benchmarked, up to ${rowsLabel} rows, with and without indexes</span></li>
+    </ul>
+
+    ${started ? `<div class="mine" aria-label="Your progress"><span><b>${n('solved')}</b>solved</span><span><b>${n('attempted')}</b>attempted</span><span><b>${n('revisit')}</b>to revisit</span><div class="meter" aria-hidden="true">${meterHTML()}</div></div>` : ''}
+
+    <section aria-labelledby="h-how">
+      <div class="sec-head"><h2 id="h-how">How a problem works</h2><p class="eyebrow">Attempt first, reveal in order</p></div>
+      <ol class="how">
+        <li><b>Read</b><p>Spec, trigger phrases, schema. Say what each phrase forces before revealing it.</p></li>
+        <li><b>Attempt</b><p>Write your query. The stopwatch records time to first attempt.</p></li>
+        <li><b>Reveal</b><p>Three hints, then the decomposition, then brute force → optimal with measured timings.</p></li>
+        <li><b>Scale</b><p>What breaks first as rows grow, the distributed-engine answer, edge cases, follow-ups.</p></li>
+      </ol>
+    </section>
+    ${pmap}
+    <footer class="foot">
+      <p>Progress is stored in this browser only. This page never runs SQL: run your answer in <code>my_answer.sql</code> against MySQL 8.0, or on LeetCode.</p>
+      <p>Benchmark figures come from <code>bench/results/*.json</code>, written by CI on shared GitHub runners; anything about billions of rows is reasoned and says so. LeetCode problems are linked, not reproduced. Problems adapted from pgexercises.com carry their CC BY-SA 3.0 attribution. <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer">github.com/apoorvgpt9/sql-pattern-lab</a></p>
+    </footer>
   </div>`;
+  $('#homeBrowse').addEventListener('click', () => {
+    const map = $('#patternMap');
+    if (window.matchMedia('(max-width: 860px)').matches) {
+      setNav(true); const f = $('#list .item'); if (f) f.focus();
+    } else if (map) {
+      map.scrollIntoView({ block: 'start' });
+      const first = $('.chips a', map); if (first) first.focus({ preventScroll: true });
+    } else { const f = $('#list .item'); if (f) f.focus(); }
+  });
   Store.onBroken(() => { const b = $('#storageBanner'); if (b) b.hidden = false; });
 }
 
