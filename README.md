@@ -1,5 +1,7 @@
 # sql-pattern-lab
 
+**Live study app: https://apoorvgpt9.github.io/sql-pattern-lab/**
+
 A study system for data-engineering SQL interview problems. It trains **decomposition**: reading a problem's wording and knowing which steps need a JOIN, GROUP BY, window function or CTE. It also trains moving from a brute-force query to the optimal one, using **measured** evidence rather than folklore.
 
 Every problem folder contains:
