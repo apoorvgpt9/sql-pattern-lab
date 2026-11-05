@@ -142,23 +142,19 @@ _Measured 2026-11-05 by the bench workflow: MySQL 8.0.46, AMD EPYC 9V45 96-Core 
 
 | Solution | 1,000 rows | 100,000 rows | 1,000,000 rows | × slower than optimal @ 1,000,000 |
 |---|---:|---:|---:|---:|
-| `01_self_join_positions` | 172 ms | timeout >60s | timeout >60s † | > 22× |
-| `02_row_number_asc_desc` | 1.92 ms | 94.8 ms | 1.51 s | 0.6× |
-| `03_row_number_and_count` (optimal) | 1.3 ms | 99.6 ms | 2.72 s | 1.0× |
+| `01_self_join_positions` | 184 ms | timeout >60s | timeout >60s † | > 39× |
+| `02_row_number_and_count` | 1.39 ms | 100 ms | 2.81 s | 1.8× |
+| `03_row_number_asc_desc` (optimal) | 1.2 ms | 94 ms | 1.52 s | 1.0× |
 
 † not run at this size: it already timed out at a smaller size.
-
-A ratio below 1.0× means that approach was faster than the one labelled optimal here.
 
 **With `indexes.sql`**
 
 | Solution | 1,000 rows | 100,000 rows | 1,000,000 rows | × slower than optimal @ 1,000,000 |
 |---|---:|---:|---:|---:|
-| `01_self_join_positions` | 33.1 ms | 5.25 s | timeout >60s | > 23× |
-| `02_row_number_asc_desc` | 1.16 ms | 83.8 ms | 1.32 s | 0.5× |
-| `03_row_number_and_count` (optimal) | 1.18 ms | 87 ms | 2.62 s | 1.0× |
-
-A ratio below 1.0× means that approach was faster than the one labelled optimal here.
+| `01_self_join_positions` | 33.9 ms | 5.36 s | timeout >60s | > 44× |
+| `02_row_number_and_count` | 1.31 ms | 86.3 ms | 2.64 s | 1.9× |
+| `03_row_number_asc_desc` (optimal) | 1.17 ms | 88 ms | 1.37 s | 1.0× |
 
 > GitHub-hosted runners are shared, noisy VMs: compare the ratios between rows, not the absolute times.
 <!-- /BENCH -->
