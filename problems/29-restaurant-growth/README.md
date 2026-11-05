@@ -156,7 +156,7 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Aggregating first shrinks the input of the expensive step from the number of visits to the number of days, and it makes the window frame mean what the spec means. Approach 2 does the same job with the same answer but pays for every raw row. Approach 1 pays for every pair of days. The bench table shows the size of both penalties. The cost of approach 3 is that it silently depends on the no-gaps guarantee (Assumptions), while approach 2 at least frames by calendar date.
+Aggregating first shrinks the input of the expensive step from the number of visits to the number of days, and it makes the window frame mean what the spec means. Approach 2 does the same job with the same answer but pays for every raw row. Approach 1 pays for every pair of days. Measured at 1M rows: approach 3 took 0.84 s, approach 2 7.05 s (8.4× slower), and approach 1 timed out (it already took 1.3 s at 100K). The cost of approach 3 is that it silently depends on the no-gaps guarantee (Assumptions), while approach 2 at least frames by calendar date.
 
 ## 6. At scale
 
