@@ -7,6 +7,10 @@ on:
         description: "Comma-separated gen.py n_rows values"
         default: "1000,100000,1000000"
         required: true
+      problems:
+        description: "Glob over problem folders, e.g. 4[45]-* (default * = every batch in parallel)"
+        default: "*"
+        required: true
 
 permissions:
   contents: read
@@ -28,11 +32,16 @@ jobs:
       - run: pip install PyYAML==6.0.2
       - id: list
         name: Read batches from problems.yaml
+        env:
+          PROBLEMS: ${{ inputs.problems }}
         run: |
           python - >> "$GITHUB_OUTPUT" <<'PY'
-          import json, yaml
-          entries = yaml.safe_load(open("problems.yaml", encoding="utf-8"))
-          batches = sorted({e["batch"] for e in entries})
+          import json, os, yaml
+          if os.environ["PROBLEMS"] != "*":
+              batches = ["custom"]  # one job running only the problems matched by the glob
+          else:
+              entries = yaml.safe_load(open("problems.yaml", encoding="utf-8"))
+              batches = sorted({e["batch"] for e in entries})
           print("batches=" + json.dumps(batches))
           PY
 
@@ -82,7 +91,11 @@ jobs:
         run: |
           mkdir -p bench/results
           echo "batch ${{ matrix.batch }} run ${{ github.run_id }}" > "bench/results/_batch_${{ matrix.batch }}.txt"
-          python -m harness.bench --batch "${{ matrix.batch }}" --sizes "${{ inputs.sizes }}"
+          if [ "${{ matrix.batch }}" = "custom" ]; then
+            python -m harness.bench --problems "${{ inputs.problems }}" --sizes "${{ inputs.sizes }}"
+          else
+            python -m harness.bench --batch "${{ matrix.batch }}" --sizes "${{ inputs.sizes }}"
+          fi
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
