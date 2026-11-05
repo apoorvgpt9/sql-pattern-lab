@@ -1,0 +1,357 @@
+{
+  "problem": "44-classify-facilities-by-value",
+  "generated_at": "2026-11-05T02:49:18+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_correlated_position",
+    "02_join_aggregate_ntile",
+    "03_aggregate_slots_then_price"
+  ],
+  "optimal": "03_aggregate_slots_then_price",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "mem_total": "8122100 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41957499691",
+      "GITHUB_SHA": "0da7fbc117c86a4ee6dd2b735cd8f7b9d8453c34"
+    },
+    "git_sha": "0da7fbc117c86a4ee6dd2b735cd8f7b9d8453c34"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "facilities": 20,
+        "bookings": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_position",
+          "status": "ok",
+          "median_s": 0.0015839150000047653,
+          "times_s": [
+            0.001638937999999257,
+            0.0015240999999974747,
+            0.0015839150000047653
+          ],
+          "result_rows": 17,
+          "result_digest": "c0140dfa7e1efaec05c785e92709dee111a7482a",
+          "explain_analyze": "-> Sort: (((pos.position - 1) * 3) DIV pos.n), pos.`name`  (cost=5.1..5.1 rows=0) (actual time=1.46..1.46 rows=17 loops=1)\n    -> Table scan on pos  (cost=5..5 rows=0) (actual time=1.45..1.45 rows=17 loops=1)\n        -> Materialize CTE pos  (cost=2.5..2.5 rows=0) (actual time=1.45..1.45 rows=17 loops=1)\n            -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=1.36..1.36 rows=17 loops=1)\n                -> Materialize CTE rev if needed  (cost=0..0 rows=0) (actual time=1.36..1.36 rows=17 loops=1)\n                    -> Table scan on <temporary>  (actual time=1.35..1.36 rows=17 loops=1)\n                        -> Aggregate using temporary table  (actual time=1.35..1.35 rows=17 loops=1)\n                            -> Nested loop inner join  (cost=451 rows=1000) (actual time=0.0205..0.767 rows=1000 loops=1)\n                                -> Table scan on b  (cost=101 rows=1000) (actual time=0.0167..0.156 rows=1000 loops=1)\n                                -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=458e-6..481e-6 rows=1 loops=1000)\n"
+        },
+        {
+          "solution": "02_join_aggregate_ntile",
+          "status": "ok",
+          "median_s": 0.0014091419999999744,
+          "times_s": [
+            0.00140461900000588,
+            0.0014091419999999744,
+            0.0014476349999981153
+          ],
+          "result_rows": 17,
+          "result_digest": "c0140dfa7e1efaec05c785e92709dee111a7482a",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=1.26..1.26 rows=17 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=1.26..1.26 rows=17 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=1.26..1.26 rows=17 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=1.24..1.25 rows=17 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (cost=2.6..2.6 rows=0) (actual time=1.23..1.24 rows=17 loops=1)\n                    -> Table scan on rev  (cost=2.5..2.5 rows=0) (actual time=1.23..1.23 rows=17 loops=1)\n                        -> Materialize CTE rev  (cost=0..0 rows=0) (actual time=1.23..1.23 rows=17 loops=1)\n                            -> Table scan on <temporary>  (actual time=1.22..1.22 rows=17 loops=1)\n                                -> Aggregate using temporary table  (actual time=1.22..1.22 rows=17 loops=1)\n                                    -> Nested loop inner join  (cost=451 rows=1000) (actual time=0.0232..0.728 rows=1000 loops=1)\n                                        -> Table scan on b  (cost=101 rows=1000) (actual time=0.0193..0.138 rows=1000 loops=1)\n                                        -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=443e-6..467e-6 rows=1 loops=1000)\n"
+        },
+        {
+          "solution": "03_aggregate_slots_then_price",
+          "status": "ok",
+          "median_s": 0.0008230789999998933,
+          "times_s": [
+            0.0008230789999998933,
+            0.0008492840000045021,
+            0.0008139810000002967
+          ],
+          "result_rows": 17,
+          "result_digest": "c0140dfa7e1efaec05c785e92709dee111a7482a",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=0.366..0.366 rows=17 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=0.36..0.361 rows=17 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=0.36..0.36 rows=17 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=0.346..0.356 rows=17 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (actual time=0.337..0.337 rows=17 loops=1)\n                    -> Stream results  (cost=52.2 rows=0) (actual time=0.313..0.33 rows=17 loops=1)\n                        -> Nested loop inner join  (cost=52.2 rows=0) (actual time=0.311..0.323 rows=17 loops=1)\n                            -> Table scan on f  (cost=2.25 rows=20) (actual time=0.006..0.00886 rows=20 loops=1)\n                            -> Index lookup on s using <auto_key0> (facid=f.facid)  (cost=0.255..2.55 rows=10) (actual time=0.0154..0.0155 rows=0.85 loops=20)\n                                -> Materialize CTE slot_totals  (cost=0..0 rows=0) (actual time=0.303..0.303 rows=17 loops=1)\n                                    -> Table scan on <temporary>  (actual time=0.297..0.299 rows=17 loops=1)\n                                        -> Aggregate using temporary table  (actual time=0.297..0.297 rows=17 loops=1)\n                                            -> Table scan on bookings  (cost=101 rows=1000) (actual time=0.0131..0.102 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "facilities": 20,
+        "bookings": 1000
+      },
+      "load_seconds": 0.025,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_position",
+          "status": "ok",
+          "median_s": 0.0011468819999933544,
+          "times_s": [
+            0.0012091709999992872,
+            0.0011468819999933544,
+            0.0010922490000027096
+          ],
+          "result_rows": 17,
+          "result_digest": "c0140dfa7e1efaec05c785e92709dee111a7482a",
+          "explain_analyze": "-> Sort: (((pos.position - 1) * 3) DIV pos.n), pos.`name`  (cost=5.1..5.1 rows=0) (actual time=0.691..0.691 rows=17 loops=1)\n    -> Table scan on pos  (cost=5..5 rows=0) (actual time=0.682..0.683 rows=17 loops=1)\n        -> Materialize CTE pos  (cost=2.5..2.5 rows=0) (actual time=0.682..0.682 rows=17 loops=1)\n            -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=0.592..0.593 rows=17 loops=1)\n                -> Materialize CTE rev if needed  (cost=0..0 rows=0) (actual time=0.592..0.592 rows=17 loops=1)\n                    -> Table scan on <temporary>  (actual time=0.585..0.587 rows=17 loops=1)\n                        -> Aggregate using temporary table  (actual time=0.585..0.585 rows=17 loops=1)\n                            -> Nested loop inner join  (cost=134 rows=1176) (actual time=0.0163..0.215 rows=1000 loops=1)\n                                -> Table scan on f  (cost=2.25 rows=20) (actual time=0.00608..0.00937 rows=20 loops=1)\n                                -> Covering index lookup on b using idx_bookings_fac_mem_slots (facid=f.facid)  (cost=0.99 rows=58.8) (actual time=0.00334..0.00775 rows=50 loops=20)\n"
+        },
+        {
+          "solution": "02_join_aggregate_ntile",
+          "status": "ok",
+          "median_s": 0.001046315000003517,
+          "times_s": [
+            0.0011464819999957854,
+            0.001046315000003517,
+            0.0009532449999980486
+          ],
+          "result_rows": 17,
+          "result_digest": "c0140dfa7e1efaec05c785e92709dee111a7482a",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=0.592..0.593 rows=17 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=0.587..0.588 rows=17 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=0.587..0.587 rows=17 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=0.573..0.583 rows=17 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (cost=2.6..2.6 rows=0) (actual time=0.564..0.565 rows=17 loops=1)\n                    -> Table scan on rev  (cost=2.5..2.5 rows=0) (actual time=0.557..0.559 rows=17 loops=1)\n                        -> Materialize CTE rev  (cost=0..0 rows=0) (actual time=0.557..0.557 rows=17 loops=1)\n                            -> Table scan on <temporary>  (actual time=0.553..0.554 rows=17 loops=1)\n                                -> Aggregate using temporary table  (actual time=0.552..0.552 rows=17 loops=1)\n                                    -> Nested loop inner join  (cost=134 rows=1176) (actual time=0.015..0.189 rows=1000 loops=1)\n                                        -> Table scan on f  (cost=2.25 rows=20) (actual time=0.00585..0.00897 rows=20 loops=1)\n                                        -> Covering index lookup on b using idx_bookings_fac_mem_slots (facid=f.facid)  (cost=0.99 rows=58.8) (actual time=0.00328..0.00654 rows=50 loops=20)\n"
+        },
+        {
+          "solution": "03_aggregate_slots_then_price",
+          "status": "ok",
+          "median_s": 0.0006715810000059719,
+          "times_s": [
+            0.0006715810000059719,
+            0.0006829180000025303,
+            0.0006520419999986871
+          ],
+          "result_rows": 17,
+          "result_digest": "c0140dfa7e1efaec05c785e92709dee111a7482a",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=0.262..0.263 rows=17 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=0.257..0.258 rows=17 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=0.256..0.256 rows=17 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=0.243..0.253 rows=17 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (actual time=0.234..0.234 rows=17 loops=1)\n                    -> Stream results  (cost=86.2 rows=340) (actual time=0.209..0.227 rows=17 loops=1)\n                        -> Nested loop inner join  (cost=86.2 rows=340) (actual time=0.207..0.219 rows=17 loops=1)\n                            -> Table scan on f  (cost=2.25 rows=20) (actual time=0.00612..0.00904 rows=20 loops=1)\n                            -> Index lookup on s using <auto_key0> (facid=f.facid)  (cost=203..206 rows=10) (actual time=0.0102..0.0103 rows=0.85 loops=20)\n                                -> Materialize CTE slot_totals  (cost=203..203 rows=17) (actual time=0.198..0.198 rows=17 loops=1)\n                                    -> Group aggregate: sum((case when (bookings.memid = 0) then bookings.slots else 0 end)), sum((case when (bookings.memid = 0) then 0 else bookings.slots end))  (cost=201 rows=17) (actual time=0.0538..0.191 rows=17 loops=1)\n                                        -> Covering index scan on bookings using idx_bookings_fac_mem_slots  (cost=101 rows=1000) (actual time=0.013..0.107 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "facilities": 100,
+        "bookings": 100000
+      },
+      "load_seconds": 0.706,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_position",
+          "status": "ok",
+          "median_s": 0.09455664800000108,
+          "times_s": [
+            0.09509959999999751,
+            0.09443450900000272,
+            0.09455664800000108
+          ],
+          "result_rows": 89,
+          "result_digest": "dc2ff8aabaa21b0966bfb945017451c8e1346e19",
+          "explain_analyze": "-> Sort: (((pos.position - 1) * 3) DIV pos.n), pos.`name`  (cost=5.1..5.1 rows=0) (actual time=115..115 rows=89 loops=1)\n    -> Table scan on pos  (cost=5..5 rows=0) (actual time=115..115 rows=89 loops=1)\n        -> Materialize CTE pos  (cost=2.5..2.5 rows=0) (actual time=115..115 rows=89 loops=1)\n            -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=113..113 rows=89 loops=1)\n                -> Materialize CTE rev if needed  (cost=0..0 rows=0) (actual time=113..113 rows=89 loops=1)\n                    -> Table scan on <temporary>  (actual time=113..113 rows=89 loops=1)\n                        -> Aggregate using temporary table  (actual time=113..113 rows=89 loops=1)\n                            -> Nested loop inner join  (cost=45173 rows=100224) (actual time=0.41..66.5 rows=100000 loops=1)\n                                -> Table scan on b  (cost=10095 rows=100224) (actual time=0.404..12.5 rows=100000 loops=1)\n                                -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=401e-6..423e-6 rows=1 loops=100000)\n"
+        },
+        {
+          "solution": "02_join_aggregate_ntile",
+          "status": "ok",
+          "median_s": 0.09422847399999768,
+          "times_s": [
+            0.09598662099999444,
+            0.09412917400000254,
+            0.09422847399999768
+          ],
+          "result_rows": 89,
+          "result_digest": "dc2ff8aabaa21b0966bfb945017451c8e1346e19",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=112..112 rows=89 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=112..112 rows=89 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=112..112 rows=89 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=112..112 rows=89 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (cost=2.6..2.6 rows=0) (actual time=112..112 rows=89 loops=1)\n                    -> Table scan on rev  (cost=2.5..2.5 rows=0) (actual time=112..112 rows=89 loops=1)\n                        -> Materialize CTE rev  (cost=0..0 rows=0) (actual time=112..112 rows=89 loops=1)\n                            -> Table scan on <temporary>  (actual time=112..112 rows=89 loops=1)\n                                -> Aggregate using temporary table  (actual time=112..112 rows=89 loops=1)\n                                    -> Nested loop inner join  (cost=45173 rows=100224) (actual time=0.451..66.5 rows=100000 loops=1)\n                                        -> Table scan on b  (cost=10095 rows=100224) (actual time=0.446..12.6 rows=100000 loops=1)\n                                        -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=400e-6..422e-6 rows=1 loops=100000)\n"
+        },
+        {
+          "solution": "03_aggregate_slots_then_price",
+          "status": "ok",
+          "median_s": 0.027926135000001295,
+          "times_s": [
+            0.02801278000000451,
+            0.027670694999997636,
+            0.027926135000001295
+          ],
+          "result_rows": 89,
+          "result_digest": "dc2ff8aabaa21b0966bfb945017451c8e1346e19",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=29.6..29.6 rows=89 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=29.6..29.6 rows=89 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=29.6..29.6 rows=89 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=29.5..29.6 rows=89 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (actual time=29.5..29.5 rows=89 loops=1)\n                    -> Stream results  (cost=25058 rows=0) (actual time=29.4..29.5 rows=89 loops=1)\n                        -> Nested loop inner join  (cost=25058 rows=0) (actual time=29.4..29.4 rows=89 loops=1)\n                            -> Table scan on s  (cost=2.5..2.5 rows=0) (actual time=29.3..29.3 rows=89 loops=1)\n                                -> Materialize CTE slot_totals  (cost=0..0 rows=0) (actual time=29.3..29.3 rows=89 loops=1)\n                                    -> Table scan on <temporary>  (actual time=29.3..29.3 rows=89 loops=1)\n                                        -> Aggregate using temporary table  (actual time=29.3..29.3 rows=89 loops=1)\n                                            -> Table scan on bookings  (cost=10095 rows=100224) (actual time=0.371..9.96 rows=100000 loops=1)\n                            -> Single-row index lookup on f using PRIMARY (facid=s.facid)  (cost=0.25 rows=1) (actual time=815e-6..839e-6 rows=1 loops=89)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "facilities": 100,
+        "bookings": 100000
+      },
+      "load_seconds": 0.706,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_position",
+          "status": "ok",
+          "median_s": 0.045909807999997554,
+          "times_s": [
+            0.04598884700000383,
+            0.04575256100000047,
+            0.045909807999997554
+          ],
+          "result_rows": 89,
+          "result_digest": "dc2ff8aabaa21b0966bfb945017451c8e1346e19",
+          "explain_analyze": "-> Sort: (((pos.position - 1) * 3) DIV pos.n), pos.`name`  (cost=5.1..5.1 rows=0) (actual time=53.8..53.8 rows=89 loops=1)\n    -> Table scan on pos  (cost=5..5 rows=0) (actual time=53.8..53.8 rows=89 loops=1)\n        -> Materialize CTE pos  (cost=2.5..2.5 rows=0) (actual time=53.8..53.8 rows=89 loops=1)\n            -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=52.1..52.1 rows=89 loops=1)\n                -> Materialize CTE rev if needed  (cost=0..0 rows=0) (actual time=52.1..52.1 rows=89 loops=1)\n                    -> Table scan on <temporary>  (actual time=52..52.1 rows=89 loops=1)\n                        -> Aggregate using temporary table  (actual time=52..52 rows=89 loops=1)\n                            -> Nested loop inner join  (cost=11215 rows=108939) (actual time=0.0363..16.1 rows=100000 loops=1)\n                                -> Table scan on f  (cost=10.2 rows=100) (actual time=0.0137..0.0383 rows=100 loops=1)\n                                -> Covering index lookup on b using idx_bookings_fac_mem_slots (facid=f.facid)  (cost=4.19 rows=1089) (actual time=0.0127..0.114 rows=1000 loops=100)\n"
+        },
+        {
+          "solution": "02_join_aggregate_ntile",
+          "status": "ok",
+          "median_s": 0.045135558999994885,
+          "times_s": [
+            0.04545764799999574,
+            0.044752284999994174,
+            0.045135558999994885
+          ],
+          "result_rows": 89,
+          "result_digest": "dc2ff8aabaa21b0966bfb945017451c8e1346e19",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=51..51 rows=89 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=50.9..50.9 rows=89 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=50.9..50.9 rows=89 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=50.9..50.9 rows=89 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (cost=2.6..2.6 rows=0) (actual time=50.8..50.8 rows=89 loops=1)\n                    -> Table scan on rev  (cost=2.5..2.5 rows=0) (actual time=50.8..50.8 rows=89 loops=1)\n                        -> Materialize CTE rev  (cost=0..0 rows=0) (actual time=50.8..50.8 rows=89 loops=1)\n                            -> Table scan on <temporary>  (actual time=50.8..50.8 rows=89 loops=1)\n                                -> Aggregate using temporary table  (actual time=50.7..50.7 rows=89 loops=1)\n                                    -> Nested loop inner join  (cost=11215 rows=108939) (actual time=0.0353..15.7 rows=100000 loops=1)\n                                        -> Table scan on f  (cost=10.2 rows=100) (actual time=0.0129..0.0333 rows=100 loops=1)\n                                        -> Covering index lookup on b using idx_bookings_fac_mem_slots (facid=f.facid)  (cost=4.19 rows=1089) (actual time=0.0121..0.111 rows=1000 loops=100)\n"
+        },
+        {
+          "solution": "03_aggregate_slots_then_price",
+          "status": "ok",
+          "median_s": 0.014682798999999136,
+          "times_s": [
+            0.014853299000002096,
+            0.014660849999998504,
+            0.014682798999999136
+          ],
+          "result_rows": 89,
+          "result_digest": "dc2ff8aabaa21b0966bfb945017451c8e1346e19",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=16.2..16.2 rows=89 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=16.2..16.2 rows=89 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=16.2..16.2 rows=89 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=16.2..16.2 rows=89 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (actual time=16.1..16.1 rows=89 loops=1)\n                    -> Stream results  (cost=45195 rows=92) (actual time=16..16.1 rows=89 loops=1)\n                        -> Nested loop inner join  (cost=45195 rows=92) (actual time=16..16 rows=89 loops=1)\n                            -> Table scan on s  (cost=20126..20130 rows=92) (actual time=16..16 rows=89 loops=1)\n                                -> Materialize CTE slot_totals  (cost=20126..20126 rows=92) (actual time=16..16 rows=89 loops=1)\n                                    -> Group aggregate: sum((case when (bookings.memid = 0) then bookings.slots else 0 end)), sum((case when (bookings.memid = 0) then 0 else bookings.slots end))  (cost=20117 rows=92) (actual time=1.78..15.9 rows=89 loops=1)\n                                        -> Covering index scan on bookings using idx_bookings_fac_mem_slots  (cost=10095 rows=100224) (actual time=0.344..9.03 rows=100000 loops=1)\n                            -> Single-row index lookup on f using PRIMARY (facid=s.facid)  (cost=0.25 rows=1) (actual time=715e-6..736e-6 rows=1 loops=89)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "facilities": 1000,
+        "bookings": 1000000
+      },
+      "load_seconds": 6.069,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_position",
+          "status": "ok",
+          "median_s": 1.0836291070000001,
+          "times_s": [
+            1.0827843309999992,
+            1.0836291070000001,
+            1.0983093419999932
+          ],
+          "result_rows": 899,
+          "result_digest": "8bfc85f721b86098a6f13fe0542b496902a69b6d",
+          "explain_analyze": "-> Sort: (((pos.position - 1) * 3) DIV pos.n), pos.`name`  (cost=5.1..5.1 rows=0) (actual time=1398..1398 rows=899 loops=1)\n    -> Table scan on pos  (cost=5..5 rows=0) (actual time=1398..1398 rows=899 loops=1)\n        -> Materialize CTE pos  (cost=2.5..2.5 rows=0) (actual time=1398..1398 rows=899 loops=1)\n            -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=1240..1240 rows=899 loops=1)\n                -> Materialize CTE rev if needed  (cost=0..0 rows=0) (actual time=1240..1240 rows=899 loops=1)\n                    -> Table scan on <temporary>  (actual time=1239..1240 rows=899 loops=1)\n                        -> Aggregate using temporary table  (actual time=1239..1239 rows=899 loops=1)\n                            -> Nested loop inner join  (cost=449599 rows=997632) (actual time=0.434..705 rows=1e+6 loops=1)\n                                -> Table scan on b  (cost=100428 rows=997632) (actual time=0.421..133 rows=1e+6 loops=1)\n                                -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=431e-6..454e-6 rows=1 loops=1e+6)\n"
+        },
+        {
+          "solution": "02_join_aggregate_ntile",
+          "status": "ok",
+          "median_s": 1.0190881249999961,
+          "times_s": [
+            1.0323685700000027,
+            1.0096974430000074,
+            1.0190881249999961
+          ],
+          "result_rows": 899,
+          "result_digest": "8bfc85f721b86098a6f13fe0542b496902a69b6d",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=1180..1180 rows=899 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=1180..1180 rows=899 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=1180..1180 rows=899 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=1179..1180 rows=899 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (cost=2.6..2.6 rows=0) (actual time=1179..1179 rows=899 loops=1)\n                    -> Table scan on rev  (cost=2.5..2.5 rows=0) (actual time=1179..1179 rows=899 loops=1)\n                        -> Materialize CTE rev  (cost=0..0 rows=0) (actual time=1179..1179 rows=899 loops=1)\n                            -> Table scan on <temporary>  (actual time=1179..1179 rows=899 loops=1)\n                                -> Aggregate using temporary table  (actual time=1179..1179 rows=899 loops=1)\n                                    -> Nested loop inner join  (cost=449599 rows=997632) (actual time=0.4..679 rows=1e+6 loops=1)\n                                        -> Table scan on b  (cost=100428 rows=997632) (actual time=0.391..128 rows=1e+6 loops=1)\n                                        -> Single-row index lookup on f using PRIMARY (facid=b.facid)  (cost=0.25 rows=1) (actual time=412e-6..434e-6 rows=1 loops=1e+6)\n"
+        },
+        {
+          "solution": "03_aggregate_slots_then_price",
+          "status": "ok",
+          "median_s": 0.2745040669999952,
+          "times_s": [
+            0.27497101000000157,
+            0.27360142399999177,
+            0.2745040669999952
+          ],
+          "result_rows": 899,
+          "result_digest": "8bfc85f721b86098a6f13fe0542b496902a69b6d",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=298..298 rows=899 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=298..298 rows=899 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=298..298 rows=899 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=297..298 rows=899 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (actual time=297..297 rows=899 loops=1)\n                    -> Stream results  (cost=249410 rows=0) (actual time=296..297 rows=899 loops=1)\n                        -> Nested loop inner join  (cost=249410 rows=0) (actual time=296..297 rows=899 loops=1)\n                            -> Table scan on s  (cost=2.5..2.5 rows=0) (actual time=296..296 rows=899 loops=1)\n                                -> Materialize CTE slot_totals  (cost=0..0 rows=0) (actual time=296..296 rows=899 loops=1)\n                                    -> Table scan on <temporary>  (actual time=296..296 rows=899 loops=1)\n                                        -> Aggregate using temporary table  (actual time=296..296 rows=899 loops=1)\n                                            -> Table scan on bookings  (cost=100428 rows=997632) (actual time=0.395..96 rows=1e+6 loops=1)\n                            -> Single-row index lookup on f using PRIMARY (facid=s.facid)  (cost=0.25 rows=1) (actual time=611e-6..632e-6 rows=1 loops=899)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "facilities": 1000,
+        "bookings": 1000000
+      },
+      "load_seconds": 6.069,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_correlated_position",
+          "status": "ok",
+          "median_s": 1.6517327490000042,
+          "times_s": [
+            1.621076838999997,
+            1.7376087170000005,
+            1.6517327490000042
+          ],
+          "result_rows": 899,
+          "result_digest": "8bfc85f721b86098a6f13fe0542b496902a69b6d",
+          "explain_analyze": "-> Sort: (((pos.position - 1) * 3) DIV pos.n), pos.`name`  (cost=5.1..5.1 rows=0) (actual time=2155..2155 rows=899 loops=1)\n    -> Table scan on pos  (cost=5..5 rows=0) (actual time=2155..2155 rows=899 loops=1)\n        -> Materialize CTE pos  (cost=2.5..2.5 rows=0) (actual time=2155..2155 rows=899 loops=1)\n            -> Table scan on r  (cost=2.5..2.5 rows=0) (actual time=1932..1932 rows=899 loops=1)\n                -> Materialize CTE rev if needed  (cost=0..0 rows=0) (actual time=1932..1932 rows=899 loops=1)\n                    -> Table scan on <temporary>  (actual time=1932..1932 rows=899 loops=1)\n                        -> Aggregate using temporary table  (actual time=1932..1932 rows=899 loops=1)\n                            -> Nested loop inner join  (cost=117070 rows=1.14e+6) (actual time=0.0618..190 rows=1e+6 loops=1)\n                                -> Table scan on f  (cost=102 rows=1000) (actual time=0.0325..0.42 rows=1000 loops=1)\n                                -> Covering index lookup on b using idx_bookings_fac_mem_slots (facid=f.facid)  (cost=3.33 rows=1138) (actual time=0.0178..0.141 rows=1000 loops=1000)\n"
+        },
+        {
+          "solution": "02_join_aggregate_ntile",
+          "status": "ok",
+          "median_s": 1.5669847479999959,
+          "times_s": [
+            1.5669847479999959,
+            1.5855648609999946,
+            1.5660546759999932
+          ],
+          "result_rows": 899,
+          "result_digest": "8bfc85f721b86098a6f13fe0542b496902a69b6d",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=1660..1660 rows=899 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=1660..1660 rows=899 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=1660..1660 rows=899 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=1660..1660 rows=899 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (cost=2.6..2.6 rows=0) (actual time=1659..1659 rows=899 loops=1)\n                    -> Table scan on rev  (cost=2.5..2.5 rows=0) (actual time=1659..1659 rows=899 loops=1)\n                        -> Materialize CTE rev  (cost=0..0 rows=0) (actual time=1659..1659 rows=899 loops=1)\n                            -> Table scan on <temporary>  (actual time=1659..1659 rows=899 loops=1)\n                                -> Aggregate using temporary table  (actual time=1659..1659 rows=899 loops=1)\n                                    -> Nested loop inner join  (cost=117070 rows=1.14e+6) (actual time=0.0526..169 rows=1e+6 loops=1)\n                                        -> Table scan on f  (cost=102 rows=1000) (actual time=0.0268..0.387 rows=1000 loops=1)\n                                        -> Covering index lookup on b using idx_bookings_fac_mem_slots (facid=f.facid)  (cost=3.33 rows=1138) (actual time=0.0129..0.121 rows=1000 loops=1000)\n"
+        },
+        {
+          "solution": "03_aggregate_slots_then_price",
+          "status": "ok",
+          "median_s": 0.13465677099999596,
+          "times_s": [
+            0.13465677099999596,
+            0.13673983700000747,
+            0.13446797199999594
+          ],
+          "result_rows": 899,
+          "result_digest": "8bfc85f721b86098a6f13fe0542b496902a69b6d",
+          "explain_analyze": "-> Sort: bucketed.bucket, bucketed.`name`  (cost=2.6..2.6 rows=0) (actual time=165..165 rows=899 loops=1)\n    -> Table scan on bucketed  (cost=2.5..2.5 rows=0) (actual time=165..165 rows=899 loops=1)\n        -> Materialize CTE bucketed  (cost=0..0 rows=0) (actual time=165..165 rows=899 loops=1)\n            -> Window aggregate with buffering: ntile(3) OVER (ORDER BY rev.revenue desc,rev.facid )   (actual time=164..165 rows=899 loops=1)\n                -> Sort: rev.revenue DESC, rev.facid  (actual time=164..164 rows=899 loops=1)\n                    -> Stream results  (cost=449788 rows=877) (actual time=163..164 rows=899 loops=1)\n                        -> Nested loop inner join  (cost=449788 rows=877) (actual time=163..163 rows=899 loops=1)\n                            -> Table scan on s  (cost=200279..200293 rows=877) (actual time=163..163 rows=899 loops=1)\n                                -> Materialize CTE slot_totals  (cost=200279..200279 rows=877) (actual time=163..163 rows=899 loops=1)\n                                    -> Group aggregate: sum((case when (bookings.memid = 0) then bookings.slots else 0 end)), sum((case when (bookings.memid = 0) then 0 else bookings.slots end))  (cost=200191 rows=877) (actual time=5.63..162 rows=899 loops=1)\n                                        -> Covering index scan on bookings using idx_bookings_fac_mem_slots  (cost=100428 rows=997632) (actual time=0.392..91.2 rows=1e+6 loops=1)\n                            -> Single-row index lookup on f using PRIMARY (facid=s.facid)  (cost=0.25 rows=1) (actual time=562e-6..585e-6 rows=1 loops=899)\n"
+        }
+      ]
+    }
+  ]
+}

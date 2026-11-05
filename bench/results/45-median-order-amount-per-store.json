@@ -1,0 +1,328 @@
+{
+  "problem": "45-median-order-amount-per-store",
+  "generated_at": "2026-11-05T02:52:40+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000,
+      1000000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_self_join_positions",
+    "02_row_number_asc_desc",
+    "03_row_number_and_count"
+  ],
+  "optimal": "03_row_number_and_count",
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python": "3.11.17",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "mem_total": "8122100 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261026.180.1",
+      "GITHUB_RUN_ID": "41957499691",
+      "GITHUB_SHA": "0da7fbc117c86a4ee6dd2b735cd8f7b9d8453c34"
+    },
+    "git_sha": "0da7fbc117c86a4ee6dd2b735cd8f7b9d8453c34"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "StoreOrders": 1000
+      },
+      "load_seconds": 0.014,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_positions",
+          "status": "ok",
+          "median_s": 0.17173525299999426,
+          "times_s": [
+            0.17287903499999402,
+            0.1716104450000131,
+            0.17173525299999426
+          ],
+          "result_rows": 55,
+          "result_digest": "dd5ff4d3f649155c6ee1e4a348dd627b012a8de6",
+          "explain_analyze": "-> Sort: positioned.store_id  (actual time=248..248 rows=55 loops=1)\n    -> Table scan on <temporary>  (actual time=248..248 rows=55 loops=1)\n        -> Aggregate using temporary table  (actual time=248..248 rows=55 loops=1)\n            -> Filter: (positioned.pos in (((positioned.n + 1) DIV 2),((positioned.n DIV 2) + 1)))  (cost=201..115 rows=200) (actual time=248..248 rows=80 loops=1)\n                -> Table scan on positioned  (cost=201..216 rows=1000) (actual time=248..248 rows=1000 loops=1)\n                    -> Materialize CTE positioned  (cost=201..201 rows=1000) (actual time=248..248 rows=1000 loops=1)\n                        -> Table scan on o  (cost=101 rows=1000) (actual time=0.0267..0.128 rows=1000 loops=1)\n                        -> Select #3 (subquery in projection; dependent)\n                            -> Aggregate: count(0)  (cost=8.11 rows=1) (actual time=0.136..0.136 rows=1 loops=1000)\n                                -> Filter: ((x.store_id = o.store_id) and ((x.amount < o.amount) or ((x.amount = o.amount) and (x.order_id < o.order_id))))  (cost=4.56 rows=35.6) (actual time=0.0271..0.134 rows=66.7 loops=1000)\n                                    -> Table scan on x  (cost=4.56 rows=1000) (actual time=0.0162..0.0894 rows=1000 loops=1000)\n                        -> Select #4 (subquery in projection; dependent)\n                            -> Aggregate: count(0)  (cost=21 rows=1) (actual time=0.111..0.111 rows=1 loops=1000)\n                                -> Filter: (x.store_id = o.store_id)  (cost=11 rows=100) (actual time=0.0211..0.108 rows=134 loops=1000)\n                                    -> Table scan on x  (cost=11 rows=1000) (actual time=0.0182..0.0744 rows=1000 loops=1000)\n"
+        },
+        {
+          "solution": "02_row_number_asc_desc",
+          "status": "ok",
+          "median_s": 0.001917491000000382,
+          "times_s": [
+            0.0032978500000098165,
+            0.001917491000000382,
+            0.0012000659999955587
+          ],
+          "result_rows": 55,
+          "result_digest": "dd5ff4d3f649155c6ee1e4a348dd627b012a8de6",
+          "explain_analyze": "-> Sort: numbered.store_id  (actual time=0.93..0.932 rows=55 loops=1)\n    -> Table scan on <temporary>  (actual time=0.919..0.923 rows=55 loops=1)\n        -> Aggregate using temporary table  (actual time=0.919..0.919 rows=55 loops=1)\n            -> Filter: (numbered.rn_asc between (numbered.rn_desc - 1) and (numbered.rn_desc + 1))  (cost=1.04..115 rows=111) (actual time=0.81..0.901 rows=80 loops=1)\n                -> Table scan on numbered  (cost=2.5..2.5 rows=0) (actual time=0.793..0.862 rows=1000 loops=1)\n                    -> Materialize CTE numbered  (cost=0..0 rows=0) (actual time=0.793..0.793 rows=1000 loops=1)\n                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount desc,StoreOrders.order_id desc )   (actual time=0.587..0.725 rows=1000 loops=1)\n                            -> Sort: StoreOrders.store_id, StoreOrders.amount DESC, StoreOrders.order_id DESC  (actual time=0.586..0.615 rows=1000 loops=1)\n                                -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=0.391..0.477 rows=1000 loops=1)\n                                    -> Temporary table  (cost=0..0 rows=0) (actual time=0.391..0.391 rows=1000 loops=1)\n                                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount,StoreOrders.order_id )   (actual time=0.233..0.358 rows=1000 loops=1)\n                                            -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=101 rows=1000) (actual time=0.231..0.258 rows=1000 loops=1)\n                                                -> Table scan on StoreOrders  (cost=101 rows=1000) (actual time=0.0217..0.0964 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_row_number_and_count",
+          "status": "ok",
+          "median_s": 0.0012962610000073482,
+          "times_s": [
+            0.0013145890000032523,
+            0.0012962610000073482,
+            0.0012839630000058833
+          ],
+          "result_rows": 55,
+          "result_digest": "dd5ff4d3f649155c6ee1e4a348dd627b012a8de6",
+          "explain_analyze": "-> Sort: ranked.store_id  (actual time=1.02..1.02 rows=55 loops=1)\n    -> Table scan on <temporary>  (actual time=1.01..1.01 rows=55 loops=1)\n        -> Aggregate using temporary table  (actual time=1.01..1.01 rows=55 loops=1)\n            -> Filter: (ranked.rn in (((ranked.n + 1) DIV 2),((ranked.n DIV 2) + 1)))  (cost=0.575..115 rows=200) (actual time=0.882..0.988 rows=80 loops=1)\n                -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=0.863..0.932 rows=1000 loops=1)\n                    -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=0.863..0.863 rows=1000 loops=1)\n                        -> Window aggregate with buffering: count(0) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)   (actual time=0.493..0.793 rows=1000 loops=1)\n                            -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=0.373..0.472 rows=1000 loops=1)\n                                -> Temporary table  (cost=0..0 rows=0) (actual time=0.373..0.373 rows=1000 loops=1)\n                                    -> Window aggregate: row_number() OVER w  (actual time=0.228..0.34 rows=1000 loops=1)\n                                        -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=101 rows=1000) (actual time=0.227..0.254 rows=1000 loops=1)\n                                            -> Table scan on StoreOrders  (cost=101 rows=1000) (actual time=0.0223..0.0974 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "StoreOrders": 1000
+      },
+      "load_seconds": 0.014,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_positions",
+          "status": "ok",
+          "median_s": 0.03314482999999768,
+          "times_s": [
+            0.03260761699999648,
+            0.03650843299999451,
+            0.03314482999999768
+          ],
+          "result_rows": 55,
+          "result_digest": "dd5ff4d3f649155c6ee1e4a348dd627b012a8de6",
+          "explain_analyze": "-> Sort: positioned.store_id  (actual time=44.8..44.8 rows=55 loops=1)\n    -> Table scan on <temporary>  (actual time=44.8..44.8 rows=55 loops=1)\n        -> Aggregate using temporary table  (actual time=44.8..44.8 rows=55 loops=1)\n            -> Filter: (positioned.pos in (((positioned.n + 1) DIV 2),((positioned.n DIV 2) + 1)))  (cost=201..115 rows=200) (actual time=44.7..44.8 rows=80 loops=1)\n                -> Table scan on positioned  (cost=201..216 rows=1000) (actual time=44.6..44.7 rows=1000 loops=1)\n                    -> Materialize CTE positioned  (cost=201..201 rows=1000) (actual time=44.6..44.6 rows=1000 loops=1)\n                        -> Covering index scan on o using idx_storeorders_store_amount  (cost=101 rows=1000) (actual time=0.0284..0.112 rows=1000 loops=1)\n                        -> Select #3 (subquery in projection; dependent)\n                            -> Aggregate: count(0)  (cost=1.94 rows=1) (actual time=0.0286..0.0286 rows=1 loops=1000)\n                                -> Filter: ((x.amount < o.amount) or ((x.amount = o.amount) and (x.order_id < o.order_id)))  (cost=1.29 rows=6.46) (actual time=0.00197..0.0267 rows=66.7 loops=1000)\n                                    -> Covering index lookup on x using idx_storeorders_store_amount (store_id=o.store_id)  (cost=1.29 rows=18.2) (actual time=0.00162..0.0142 rows=134 loops=1000)\n                        -> Select #4 (subquery in projection; dependent)\n                            -> Aggregate: count(0)  (cost=4.28 rows=1) (actual time=0.0154..0.0155 rows=1 loops=1000)\n                                -> Covering index lookup on x using idx_storeorders_store_amount (store_id=o.store_id)  (cost=2.47 rows=18.2) (actual time=0.00133..0.0119 rows=134 loops=1000)\n"
+        },
+        {
+          "solution": "02_row_number_asc_desc",
+          "status": "ok",
+          "median_s": 0.001160347000009665,
+          "times_s": [
+            0.0012660609999954886,
+            0.001160347000009665,
+            0.0011111719999945535
+          ],
+          "result_rows": 55,
+          "result_digest": "dd5ff4d3f649155c6ee1e4a348dd627b012a8de6",
+          "explain_analyze": "-> Sort: numbered.store_id  (actual time=1.01..1.01 rows=55 loops=1)\n    -> Table scan on <temporary>  (actual time=0.996..1 rows=55 loops=1)\n        -> Aggregate using temporary table  (actual time=0.996..0.996 rows=55 loops=1)\n            -> Filter: (numbered.rn_asc between (numbered.rn_desc - 1) and (numbered.rn_desc + 1))  (cost=1.04..115 rows=111) (actual time=0.887..0.977 rows=80 loops=1)\n                -> Table scan on numbered  (cost=2.5..2.5 rows=0) (actual time=0.871..0.939 rows=1000 loops=1)\n                    -> Materialize CTE numbered  (cost=0..0 rows=0) (actual time=0.871..0.871 rows=1000 loops=1)\n                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount desc,StoreOrders.order_id desc )   (actual time=0.649..0.786 rows=1000 loops=1)\n                            -> Sort: StoreOrders.store_id, StoreOrders.amount DESC, StoreOrders.order_id DESC  (actual time=0.649..0.677 rows=1000 loops=1)\n                                -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=0.475..0.545 rows=1000 loops=1)\n                                    -> Temporary table  (cost=0..0 rows=0) (actual time=0.474..0.474 rows=1000 loops=1)\n                                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount,StoreOrders.order_id )   (actual time=0.297..0.441 rows=1000 loops=1)\n                                            -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=101 rows=1000) (actual time=0.295..0.322 rows=1000 loops=1)\n                                                -> Index scan on StoreOrders using idx_storeorders_store_amount  (cost=101 rows=1000) (actual time=0.0827..0.196 rows=1000 loops=1)\n"
+        },
+        {
+          "solution": "03_row_number_and_count",
+          "status": "ok",
+          "median_s": 0.0011849140000066427,
+          "times_s": [
+            0.0012655959999960942,
+            0.0011849140000066427,
+            0.0011646930000068778
+          ],
+          "result_rows": 55,
+          "result_digest": "dd5ff4d3f649155c6ee1e4a348dd627b012a8de6",
+          "explain_analyze": "-> Sort: ranked.store_id  (actual time=0.941..0.942 rows=55 loops=1)\n    -> Table scan on <temporary>  (actual time=0.931..0.935 rows=55 loops=1)\n        -> Aggregate using temporary table  (actual time=0.931..0.931 rows=55 loops=1)\n            -> Filter: (ranked.rn in (((ranked.n + 1) DIV 2),((ranked.n DIV 2) + 1)))  (cost=0.575..115 rows=200) (actual time=0.811..0.914 rows=80 loops=1)\n                -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=0.792..0.859 rows=1000 loops=1)\n                    -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=0.792..0.792 rows=1000 loops=1)\n                        -> Window aggregate with buffering: count(0) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)   (actual time=0.412..0.724 rows=1000 loops=1)\n                            -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=0.33..0.4 rows=1000 loops=1)\n                                -> Temporary table  (cost=0..0 rows=0) (actual time=0.329..0.329 rows=1000 loops=1)\n                                    -> Window aggregate: row_number() OVER w  (actual time=0.188..0.297 rows=1000 loops=1)\n                                        -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=101 rows=1000) (actual time=0.186..0.213 rows=1000 loops=1)\n                                            -> Index scan on StoreOrders using idx_storeorders_store_amount  (cost=101 rows=1000) (actual time=0.0194..0.0897 rows=1000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "StoreOrders": 100000
+      },
+      "load_seconds": 0.489,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_positions",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_row_number_asc_desc",
+          "status": "ok",
+          "median_s": 0.09482736100000011,
+          "times_s": [
+            0.09477276999999162,
+            0.09511531499998682,
+            0.09482736100000011
+          ],
+          "result_rows": 6156,
+          "result_digest": "4987fb42e0d564f9c5fb740b5686e7155cbab1ee",
+          "explain_analyze": "-> Sort: numbered.store_id  (actual time=123..123 rows=6156 loops=1)\n    -> Table scan on <temporary>  (actual time=121..122 rows=6156 loops=1)\n        -> Aggregate using temporary table  (actual time=121..121 rows=6156 loops=1)\n            -> Filter: (numbered.rn_asc between (numbered.rn_desc - 1) and (numbered.rn_desc + 1))  (cost=1.01..11281 rows=11138) (actual time=106..119 rows=8618 loops=1)\n                -> Table scan on numbered  (cost=2.5..2.5 rows=0) (actual time=106..114 rows=100000 loops=1)\n                    -> Materialize CTE numbered  (cost=0..0 rows=0) (actual time=106..106 rows=100000 loops=1)\n                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount desc,StoreOrders.order_id desc )   (actual time=76.6..97.2 rows=100000 loops=1)\n                            -> Sort: StoreOrders.store_id, StoreOrders.amount DESC, StoreOrders.order_id DESC  (actual time=76.6..80.7 rows=100000 loops=1)\n                                -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=52.2..59.5 rows=100000 loops=1)\n                                    -> Temporary table  (cost=0..0 rows=0) (actual time=52.2..52.2 rows=100000 loops=1)\n                                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount,StoreOrders.order_id )   (actual time=34..49 rows=100000 loops=1)\n                                            -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=10082 rows=100256) (actual time=34..37.1 rows=100000 loops=1)\n                                                -> Table scan on StoreOrders  (cost=10082 rows=100256) (actual time=0.528..8.96 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_row_number_and_count",
+          "status": "ok",
+          "median_s": 0.09964306099999476,
+          "times_s": [
+            0.10031061500001215,
+            0.09853379999998424,
+            0.09964306099999476
+          ],
+          "result_rows": 6156,
+          "result_digest": "4987fb42e0d564f9c5fb740b5686e7155cbab1ee",
+          "explain_analyze": "-> Sort: ranked.store_id  (actual time=109..110 rows=6156 loops=1)\n    -> Table scan on <temporary>  (actual time=108..109 rows=6156 loops=1)\n        -> Aggregate using temporary table  (actual time=108..108 rows=6156 loops=1)\n            -> Filter: (ranked.rn in (((ranked.n + 1) DIV 2),((ranked.n DIV 2) + 1)))  (cost=0.563..11281 rows=20051) (actual time=94.3..107 rows=8618 loops=1)\n                -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=94.1..101 rows=100000 loops=1)\n                    -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=94.1..94.1 rows=100000 loops=1)\n                        -> Window aggregate with buffering: count(0) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)   (actual time=49.6..87.2 rows=100000 loops=1)\n                            -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=48.8..56.1 rows=100000 loops=1)\n                                -> Temporary table  (cost=0..0 rows=0) (actual time=48.8..48.8 rows=100000 loops=1)\n                                    -> Window aggregate: row_number() OVER w  (actual time=34..45.7 rows=100000 loops=1)\n                                        -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=10082 rows=100256) (actual time=34..37 rows=100000 loops=1)\n                                            -> Table scan on StoreOrders  (cost=10082 rows=100256) (actual time=0.542..8.99 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "StoreOrders": 100000
+      },
+      "load_seconds": 0.489,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_positions",
+          "status": "ok",
+          "median_s": 5.252218986999992,
+          "times_s": [
+            5.275381673999988,
+            5.252218986999992,
+            5.233160514000019
+          ],
+          "result_rows": 6156,
+          "result_digest": "4987fb42e0d564f9c5fb740b5686e7155cbab1ee",
+          "explain_analyze": "-> Sort: positioned.store_id  (actual time=7519..7519 rows=6156 loops=1)\n    -> Table scan on <temporary>  (actual time=7518..7518 rows=6156 loops=1)\n        -> Aggregate using temporary table  (actual time=7518..7518 rows=6156 loops=1)\n            -> Filter: (positioned.pos in (((positioned.n + 1) DIV 2),((positioned.n DIV 2) + 1)))  (cost=20107..11281 rows=20051) (actual time=7504..7516 rows=8618 loops=1)\n                -> Table scan on positioned  (cost=20107..21363 rows=100256) (actual time=7504..7510 rows=100000 loops=1)\n                    -> Materialize CTE positioned  (cost=20107..20107 rows=100256) (actual time=7504..7504 rows=100000 loops=1)\n                        -> Covering index scan on o using idx_storeorders_store_amount  (cost=10082 rows=100256) (actual time=0.488..10.2 rows=100000 loops=1)\n                        -> Select #3 (subquery in projection; dependent)\n                            -> Aggregate: count(0)  (cost=2.19 rows=1) (actual time=0.0484..0.0484 rows=1 loops=100000)\n                                -> Filter: ((x.amount < o.amount) or ((x.amount = o.amount) and (x.order_id < o.order_id)))  (cost=1.61 rows=5.81) (actual time=0.0019..0.0452 rows=112 loops=100000)\n                                    -> Covering index lookup on x using idx_storeorders_store_amount (store_id=o.store_id)  (cost=1.61 rows=16.3) (actual time=0.00154..0.0239 rows=225 loops=100000)\n                        -> Select #4 (subquery in projection; dependent)\n                            -> Aggregate: count(0)  (cost=4.29 rows=1) (actual time=0.026..0.0261 rows=1 loops=100000)\n                                -> Covering index lookup on x using idx_storeorders_store_amount (store_id=o.store_id)  (cost=2.66 rows=16.3) (actual time=0.00126..0.0201 rows=225 loops=100000)\n"
+        },
+        {
+          "solution": "02_row_number_asc_desc",
+          "status": "ok",
+          "median_s": 0.0837977649999857,
+          "times_s": [
+            0.0837977649999857,
+            0.08317860300002167,
+            0.08417455199997903
+          ],
+          "result_rows": 6156,
+          "result_digest": "4987fb42e0d564f9c5fb740b5686e7155cbab1ee",
+          "explain_analyze": "-> Sort: numbered.store_id  (actual time=101..101 rows=6156 loops=1)\n    -> Table scan on <temporary>  (actual time=99.7..100 rows=6156 loops=1)\n        -> Aggregate using temporary table  (actual time=99.7..99.7 rows=6156 loops=1)\n            -> Filter: (numbered.rn_asc between (numbered.rn_desc - 1) and (numbered.rn_desc + 1))  (cost=1.01..11281 rows=11138) (actual time=87.5..98 rows=8618 loops=1)\n                -> Table scan on numbered  (cost=2.5..2.5 rows=0) (actual time=87.3..94.2 rows=100000 loops=1)\n                    -> Materialize CTE numbered  (cost=0..0 rows=0) (actual time=87.3..87.3 rows=100000 loops=1)\n                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount desc,StoreOrders.order_id desc )   (actual time=64.5..80.6 rows=100000 loops=1)\n                            -> Sort: StoreOrders.store_id, StoreOrders.amount DESC, StoreOrders.order_id DESC  (actual time=64.5..67.6 rows=100000 loops=1)\n                                -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=40.7..47.9 rows=100000 loops=1)\n                                    -> Temporary table  (cost=0..0 rows=0) (actual time=40.7..40.7 rows=100000 loops=1)\n                                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount,StoreOrders.order_id )   (actual time=23.3..37.6 rows=100000 loops=1)\n                                            -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=10082 rows=100256) (actual time=23.3..26.2 rows=100000 loops=1)\n                                                -> Index scan on StoreOrders using idx_storeorders_store_amount  (cost=10082 rows=100256) (actual time=0.476..8.62 rows=100000 loops=1)\n"
+        },
+        {
+          "solution": "03_row_number_and_count",
+          "status": "ok",
+          "median_s": 0.0869680519999747,
+          "times_s": [
+            0.0867308489999914,
+            0.08760144499999001,
+            0.0869680519999747
+          ],
+          "result_rows": 6156,
+          "result_digest": "4987fb42e0d564f9c5fb740b5686e7155cbab1ee",
+          "explain_analyze": "-> Sort: ranked.store_id  (actual time=98..98.2 rows=6156 loops=1)\n    -> Table scan on <temporary>  (actual time=96.8..97.2 rows=6156 loops=1)\n        -> Aggregate using temporary table  (actual time=96.8..96.8 rows=6156 loops=1)\n            -> Filter: (ranked.rn in (((ranked.n + 1) DIV 2),((ranked.n DIV 2) + 1)))  (cost=0.563..11281 rows=20051) (actual time=82.9..95.2 rows=8618 loops=1)\n                -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=82.7..89.6 rows=100000 loops=1)\n                    -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=82.7..82.7 rows=100000 loops=1)\n                        -> Window aggregate with buffering: count(0) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)   (actual time=38.3..76 rows=100000 loops=1)\n                            -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=37.5..44.7 rows=100000 loops=1)\n                                -> Temporary table  (cost=0..0 rows=0) (actual time=37.5..37.5 rows=100000 loops=1)\n                                    -> Window aggregate: row_number() OVER w  (actual time=22.9..34.4 rows=100000 loops=1)\n                                        -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=10082 rows=100256) (actual time=22.8..25.9 rows=100000 loops=1)\n                                            -> Index scan on StoreOrders using idx_storeorders_store_amount  (cost=10082 rows=100256) (actual time=0.481..8.55 rows=100000 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "StoreOrders": 1000000
+      },
+      "load_seconds": 4.298,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_positions",
+          "status": "skipped",
+          "display": "timeout >60s",
+          "reason": "timed out at size 100000"
+        },
+        {
+          "solution": "02_row_number_asc_desc",
+          "status": "ok",
+          "median_s": 1.5101001650000114,
+          "times_s": [
+            1.4860094169999911,
+            1.5101347869999984,
+            1.5101001650000114
+          ],
+          "result_rows": 61735,
+          "result_digest": "d637b73117840bc73ff0f89f8a71c763795a0fdf",
+          "explain_analyze": "-> Sort: numbered.store_id  (actual time=1665..1667 rows=61735 loops=1)\n    -> Table scan on <temporary>  (actual time=1655..1659 rows=61735 loops=1)\n        -> Aggregate using temporary table  (actual time=1655..1655 rows=61735 loops=1)\n            -> Filter: (numbered.rn_asc between (numbered.rn_desc - 1) and (numbered.rn_desc + 1))  (cost=1.01..112302 rows=110902) (actual time=1462..1635 rows=86930 loops=1)\n                -> Table scan on numbered  (cost=2.5..2.5 rows=0) (actual time=1461..1597 rows=1e+6 loops=1)\n                    -> Materialize CTE numbered  (cost=0..0 rows=0) (actual time=1461..1461 rows=1e+6 loops=1)\n                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount desc,StoreOrders.order_id desc )   (actual time=1072..1227 rows=1e+6 loops=1)\n                            -> Sort: StoreOrders.store_id, StoreOrders.amount DESC, StoreOrders.order_id DESC  (actual time=1072..1104 rows=1e+6 loops=1)\n                                -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=746..892 rows=1e+6 loops=1)\n                                    -> Temporary table  (cost=0..0 rows=0) (actual time=746..746 rows=1e+6 loops=1)\n                                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount,StoreOrders.order_id )   (actual time=373..524 rows=1e+6 loops=1)\n                                            -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=100343 rows=998222) (actual time=373..405 rows=1e+6 loops=1)\n                                                -> Table scan on StoreOrders  (cost=100343 rows=998222) (actual time=0.519..91.9 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_row_number_and_count",
+          "status": "ok",
+          "median_s": 2.717347982000007,
+          "times_s": [
+            2.7694425290000027,
+            2.717347982000007,
+            2.708441233000002
+          ],
+          "result_rows": 61735,
+          "result_digest": "d637b73117840bc73ff0f89f8a71c763795a0fdf",
+          "explain_analyze": "-> Sort: ranked.store_id  (actual time=2885..2887 rows=61735 loops=1)\n    -> Table scan on <temporary>  (actual time=2875..2879 rows=61735 loops=1)\n        -> Aggregate using temporary table  (actual time=2875..2875 rows=61735 loops=1)\n            -> Filter: (ranked.rn in (((ranked.n + 1) DIV 2),((ranked.n DIV 2) + 1)))  (cost=0.563..112302 rows=199644) (actual time=2656..2857 rows=86930 loops=1)\n                -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=2656..2799 rows=1e+6 loops=1)\n                    -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=2656..2656 rows=1e+6 loops=1)\n                        -> Window aggregate with buffering: count(0) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)   (actual time=748..2362 rows=1e+6 loops=1)\n                            -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=745..899 rows=1e+6 loops=1)\n                                -> Temporary table  (cost=0..0 rows=0) (actual time=745..745 rows=1e+6 loops=1)\n                                    -> Window aggregate: row_number() OVER w  (actual time=428..547 rows=1e+6 loops=1)\n                                        -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=101680 rows=998222) (actual time=428..459 rows=1e+6 loops=1)\n                                            -> Table scan on StoreOrders  (cost=101680 rows=998222) (actual time=0.644..123 rows=1e+6 loops=1)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "StoreOrders": 1000000
+      },
+      "load_seconds": 4.298,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_self_join_positions",
+          "status": "timeout",
+          "display": "timeout >60s"
+        },
+        {
+          "solution": "02_row_number_asc_desc",
+          "status": "ok",
+          "median_s": 1.320043367999972,
+          "times_s": [
+            1.307722941999998,
+            1.320043367999972,
+            1.3646149770000306
+          ],
+          "result_rows": 61735,
+          "result_digest": "d637b73117840bc73ff0f89f8a71c763795a0fdf",
+          "explain_analyze": "-> Sort: numbered.store_id  (actual time=1493..1495 rows=61735 loops=1)\n    -> Table scan on <temporary>  (actual time=1483..1487 rows=61735 loops=1)\n        -> Aggregate using temporary table  (actual time=1483..1483 rows=61735 loops=1)\n            -> Filter: (numbered.rn_asc between (numbered.rn_desc - 1) and (numbered.rn_desc + 1))  (cost=1.01..112302 rows=110902) (actual time=1289..1461 rows=86930 loops=1)\n                -> Table scan on numbered  (cost=2.5..2.5 rows=0) (actual time=1289..1423 rows=1e+6 loops=1)\n                    -> Materialize CTE numbered  (cost=0..0 rows=0) (actual time=1289..1289 rows=1e+6 loops=1)\n                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount desc,StoreOrders.order_id desc )   (actual time=898..1050 rows=1e+6 loops=1)\n                            -> Sort: StoreOrders.store_id, StoreOrders.amount DESC, StoreOrders.order_id DESC  (actual time=898..930 rows=1e+6 loops=1)\n                                -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=584..726 rows=1e+6 loops=1)\n                                    -> Temporary table  (cost=0..0 rows=0) (actual time=584..584 rows=1e+6 loops=1)\n                                        -> Window aggregate: row_number() OVER (PARTITION BY StoreOrders.store_id ORDER BY StoreOrders.amount,StoreOrders.order_id )   (actual time=233..371 rows=1e+6 loops=1)\n                                            -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=101905 rows=998222) (actual time=233..263 rows=1e+6 loops=1)\n                                                -> Index scan on StoreOrders using idx_storeorders_store_amount  (cost=101905 rows=998222) (actual time=0.503..84.1 rows=1e+6 loops=1)\n"
+        },
+        {
+          "solution": "03_row_number_and_count",
+          "status": "ok",
+          "median_s": 2.6165762509999695,
+          "times_s": [
+            2.6165762509999695,
+            2.614928156000019,
+            2.8455030700000066
+          ],
+          "result_rows": 61735,
+          "result_digest": "d637b73117840bc73ff0f89f8a71c763795a0fdf",
+          "explain_analyze": "-> Sort: ranked.store_id  (actual time=2791..2793 rows=61735 loops=1)\n    -> Table scan on <temporary>  (actual time=2780..2784 rows=61735 loops=1)\n        -> Aggregate using temporary table  (actual time=2780..2780 rows=61735 loops=1)\n            -> Filter: (ranked.rn in (((ranked.n + 1) DIV 2),((ranked.n DIV 2) + 1)))  (cost=0.563..112302 rows=199644) (actual time=2567..2757 rows=86930 loops=1)\n                -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=2566..2702 rows=1e+6 loops=1)\n                    -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=2566..2566 rows=1e+6 loops=1)\n                        -> Window aggregate with buffering: count(0) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)   (actual time=606..2254 rows=1e+6 loops=1)\n                            -> Table scan on <temporary>  (cost=2.5..2.5 rows=0) (actual time=602..759 rows=1e+6 loops=1)\n                                -> Temporary table  (cost=0..0 rows=0) (actual time=602..602 rows=1e+6 loops=1)\n                                    -> Window aggregate: row_number() OVER w  (actual time=260..388 rows=1e+6 loops=1)\n                                        -> Sort: StoreOrders.store_id, StoreOrders.amount, StoreOrders.order_id  (cost=101905 rows=998222) (actual time=260..295 rows=1e+6 loops=1)\n                                            -> Index scan on StoreOrders using idx_storeorders_store_amount  (cost=101905 rows=998222) (actual time=1.15..98.2 rows=1e+6 loops=1)\n"
+        }
+      ]
+    }
+  ]
+}
