@@ -108,7 +108,7 @@ h1, h2, .serif { font-family: var(--serif); font-weight: 600; letter-spacing: -.
 .brand svg { width: 28px; height: 20px; flex: none; }
 .brand .logo-a { fill: none; stroke: var(--strong); stroke-width: 1.8; }
 .brand .logo-b { fill: var(--accent); }
-.progress { font: .74rem/1.4 var(--mono); color: var(--muted); margin: 10px 0 0; }
+.progress { font: .7rem/1.4 var(--mono); color: var(--muted); margin: 10px 0 0; }
 .meter { height: 4px; background: var(--bar-track); border-radius: 2px; overflow: hidden; margin-top: 6px; display: flex; }
 .meter i { display: block; height: 100%; }
 .meter .m-solved { background: var(--ok); } .meter .m-attempted { background: var(--warn); } .meter .m-revisit { background: var(--rev); }
@@ -251,7 +251,12 @@ pre.code code { background: none; padding: 0; font-size: inherit; border: 0; }
 
 /* ---- bench tables: inline bars computed from the numbers already in each table ---- */
 .bench { margin: 1.2em 0; padding: 14px 16px; border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 8px; background: var(--bg); }
-.bench > .prose > p:first-child em { font-style: normal; font-size: .82rem; color: var(--muted); }
+.bench > p:first-child { margin-top: 0; font-size: .8rem; line-height: 1.5; color: var(--muted); }
+.bench > p:first-child em { font-style: normal; }
+.bench > p:first-child code { font-size: .92em; }
+.bench > p > strong { font-family: var(--serif); font-size: 1.02rem; }
+.bench blockquote { margin: .8em 0 0; padding: 2px 12px; border-left: 3px solid var(--border); color: var(--muted); font-size: .82rem; }
+.bench blockquote p { margin: 0; }
 .bench td { font-variant-numeric: tabular-nums; }
 .bench td[style*="right"] { font-family: var(--mono); font-size: .84rem; white-space: nowrap; overflow-wrap: normal; }
 .bench td.bar { position: relative; padding-bottom: 15px; }
@@ -280,8 +285,6 @@ pre.code code { background: none; padding: 0; font-size: inherit; border: 0; }
 .phrases li { border: 1px solid var(--border); border-left: 3px solid var(--strong); border-radius: 6px; padding: 10px 12px; background: var(--bg); }
 .phrase-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .phrase { font-weight: 600; font-family: var(--serif); font-size: 1.05rem; }
-.phrase::before { content: "\201C"; color: var(--accent); margin-right: 1px; }
-.phrase::after { content: "\201D"; color: var(--accent); margin-left: 1px; }
 .meaning { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
 .after { margin-top: 12px; }
 dl.spec { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 6px 0 0; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
