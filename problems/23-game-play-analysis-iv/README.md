@@ -34,7 +34,7 @@ The key `(player_id, event_date)` gives a useful guarantee: at most one row per 
 
 <details><summary>Hint 1</summary>
 
-Pattern: **day-N retention from a first-event anchor** (a cohort metric). Find each player's first date, test whether there is activity exactly N days later, and average the yes/no flag over all players.
+Pattern: **day-N retention from a first-event anchor** (a cohort metric). Every player belongs to the cohort; the question is what share of it came back on one specific day relative to their own start.
 
 </details>
 
@@ -97,7 +97,7 @@ The SQL is the assembled query in section 4.
 
 **Why it is correct:** within a player's rows ordered by date, `rn = 1` is the first activity and `LEAD(event_date)` at that row is the second distinct day (the key forbids duplicate days). `DATEDIFF(…) = 1` is exactly "second active day is the day after the first". `WHERE rn = 1` leaves one row per player, so `AVG` is over all players.
 
-**Cost model (reasoned):** one scan of `Activity` in primary-key order `(player_id, event_date)`, which is already the window's partition and order, so there is no extra sort; then a filter and a single aggregate over one row per player. No joins, no second read, no separate distinct count. The catch is that every one of the `Activity` rows goes through the window evaluation (row numbering and `LEAD`), although only the first two rows of each player matter.
+**Cost model (reasoned, then checked against the bench's EXPLAIN ANALYZE):** one scan of `Activity` in primary-key order `(player_id, event_date)`, which is already the window's partition and order, so in principle no sort is needed; then a filter and a single aggregate over one row per player. The bench's plan shows MySQL reads the primary key and **sorts anyway**. Then the *window aggregate with buffering* (about 3.2 s of 5.8 s at 1M rows) materialises all 1M rows before `rn = 1` picks one per player. No joins, no second read, no separate distinct count. The catch is that every one of the `Activity` rows goes through the window evaluation (row numbering and `LEAD`), although only the first two rows of each player matter.
 
 ### Approach 3 (optimal): `LEFT JOIN` and average the flag (`solutions/03_left_join_average.sql`)
 
@@ -130,11 +130,11 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Approach 3 exploits the primary key `(player_id, event_date)`: the first login of every player is the first index entry of that player, and "the day after" is one point lookup, so the work grows with the number of players. Approach 1 does the same plus an extra distinct count over all rows. Approach 2 is the most elegant, one ordered pass that yields the anchor, the next date and the denominator together, but it evaluates a window over every row of `Activity` while only two rows per player matter, so on MySQL it is expected to cost more. The bench table is the arbiter; in a distributed engine without a clustered key the balance can flip, because the join back is a second shuffle where the window needs one (section 6c). Teaching-wise, approach 2 is the form to learn first for day-N retention (it generalises to "the n-th event"), and approach 3 is the one to ship when the key order is right.
+Approach 3 exploits the primary key `(player_id, event_date)`: the first login of every player is the first index entry of that player, and "the day after" is one point lookup, so the work grows with the number of players. Approach 1 does the same plus an extra distinct count over all rows. Approach 2 is the most elegant, one ordered pass that yields the anchor, the next date and the denominator together, but it evaluates a window over every row of `Activity` while only two rows per player matter, and on MySQL that costs: measured at 1M rows, approach 2 is about 6× approach 3, and approach 1 about 1.3× (its extra distinct count). Both join-back forms use a *skip scan* of the primary key to find each player's first login, so they touch about one index entry per player; in a distributed engine without a clustered key the balance can flip, because the join back is a second shuffle where the window needs one (section 6c). Teaching-wise, approach 2 is the form to learn first for day-N retention (it generalises to "the n-th event"), and approach 3 is the one to ship when the key order is right.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* nothing is quadratic here, thanks to the primary key. Approach 2 is expected to slow down first as `Activity` grows, because every row passes through the window while the join-back forms touch only about one row per player. Approach 1 adds a separate distinct count on top of approach 3's work.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* nothing is quadratic here, thanks to the primary key. Approach 2 slows down first as `Activity` grows, because every row passes through a sort and a buffered window while the join-back forms touch only about one row per player: 2.8× approach 3 at 100K, 6× at 1M. Approach 1 adds a separate distinct count on top of approach 3's work.
 
 **(b) One machine, ~1M–100M rows.**
 - `Activity`'s primary key `(player_id, event_date)` is clustered, so the table is stored in the exact order that the window, the `MIN(event_date)` group-by and the next-day point lookups need. No secondary index would help (and `indexes.sql` is absent for that reason). If the table had a surrogate key instead, the index to add is `(player_id, event_date)`.
