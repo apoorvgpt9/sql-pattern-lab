@@ -1,7 +1,9 @@
--- Approach 3 (optimal): simulate the boarding. Start with the first person; keep adding the next turn while
+-- Approach 2 (fast path, conditional): simulate the boarding. Start with the first person; keep adding the next turn while
 -- the total still fits; stop at the first overflow (the recursive step produces no row, so the recursion ends).
 -- Work is proportional to the number of people who board (at most 1000 for positive integer weights),
--- not to the length of the queue. Relies on turns being 1..n with no gaps (spec), so "next" is turn + 1.
+-- not to the length of the queue - but only when turn is indexed (indexes.sql); without the index each step scans
+-- the queue and the bench measures it ~2.5x slower than approach 3 at 1M rows.
+-- Relies on turns being 1..n with no gaps (spec), so "next" is turn + 1.
 WITH RECURSIVE boarding AS (
   SELECT turn, person_name, weight AS total_weight
   FROM Queue
