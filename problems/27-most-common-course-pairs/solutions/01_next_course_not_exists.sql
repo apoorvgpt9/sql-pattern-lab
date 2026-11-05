@@ -12,7 +12,7 @@ JOIN course_completions b
 WHERE a.user_id IN (SELECT user_id
                       FROM course_completions
                      GROUP BY user_id
-                    HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(*))
+                    HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(course_rating))
   AND NOT EXISTS (SELECT 1
                     FROM course_completions c
                    WHERE c.user_id = a.user_id
