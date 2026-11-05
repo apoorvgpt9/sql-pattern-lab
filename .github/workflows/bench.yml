@@ -132,12 +132,14 @@ jobs:
           rm -f bench/results/_batch_*.txt
           ls -la bench/results
           python scripts/render_bench.py
+      - name: Rebuild the study app with the new numbers
+        run: python scripts/build_app.py
       - name: Commit to main
         if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bench/results problems/*/README.md
+          git add bench/results problems/*/README.md app/index.html
           if git diff --cached --quiet; then
             echo "no changes"
             exit 0
