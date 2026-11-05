@@ -67,6 +67,18 @@ pytest -q harness -k 01-market-analysis-i --mine
 
 4. Climb the hint ladder (section 3) only when stuck. Then compare with the decomposition (section 4) and the approaches (section 5).
 
+## Study app
+
+`app/index.html` is a single self-contained page: open it straight from disk (double-click, `file://`), no server needed. It shows one problem at a time and reveals the guide in study order (trigger meanings, three hints, decomposition, approaches with the measured bench table, then the rest). Your attempt, status, reveal progress and a time-to-first-attempt stopwatch are kept in the browser's `localStorage` only. The page never runs SQL; paste your attempt into `my_answer.sql` or LeetCode.
+
+It is generated, so do not edit it by hand. After changing a problem's README, `meta.yaml` or solutions, or after a bench run, rebuild and commit it:
+
+```bash
+python scripts/build_app.py
+```
+
+The page template is `app/template.html`. `--check` exits 1 if the committed `app/index.html` is stale. CI runs the build on every PR and fails on structural errors in any problem folder. Bench numbers in the app come from `bench/results/*.json`, never from text typed into a README.
+
 ## Add or complete a problem
 
 ```bash
@@ -111,6 +123,7 @@ problems/<NN>-<slug>/    one folder per problem (see CLAUDE.md)
 harness/                 pytest suite + bench runner (python -m harness.bench)
 scripts/new_problem.py   scaffold a problem folder from problems.yaml
 scripts/render_bench.py  inject bench tables into READMEs
+scripts/build_app.py     compile problems/* into app/index.html (template: app/template.html)
 bench/results/           committed by the bench workflow only
 ```
 

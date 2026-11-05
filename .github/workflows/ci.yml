@@ -65,3 +65,29 @@ jobs:
           cp -r problems "$RUNNER_TEMP/problems-copy"
           python scripts/render_bench.py --results "$RUNNER_TEMP/bench-smoke" --problems "$RUNNER_TEMP/problems-copy"
           python scripts/render_bench.py --results "$RUNNER_TEMP/bench-smoke" --problems "$RUNNER_TEMP/problems-copy" --check
+
+  # Compiles problems/* into the single-file study app. Needs no MySQL, so it is its own job
+  # and fails fast. Any structural error in a problem folder (README headings, hint ladder,
+  # trigger table, bench JSON, missing attribution) makes build_app.py exit 1.
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build study app (fails on any error)
+        run: python scripts/build_app.py --out "$RUNNER_TEMP/index.html"
+
+      # The built page is committed. This only warns, because the bench workflow commits new
+      # results with [skip ci] and does not rebuild the app. Change `|| echo ...` to a plain
+      # command to make a stale app/index.html fail the build instead.
+      - name: Is the committed app/index.html current?
+        run: python scripts/build_app.py --check || echo "::warning file=app/index.html::app/index.html is stale; run python scripts/build_app.py and commit it"
