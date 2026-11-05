@@ -169,14 +169,14 @@ _Measured 2026-11-05 by the bench workflow: MySQL 8.0.46, AMD EPYC 9V45 96-Core 
 
 ### Why the optimal one wins
 
-All three approaches end with the same cheap step, ranking about 1,000 facility rows. Their cost is how they reach one row per facility. Approaches 1 and 2 join every booking to its facility before aggregating. Approach 3 notices that the price is constant per (facility, member type), sums only the slots, and prices afterwards. That is "aggregate before join" applied to arithmetic, and it is what lets the covering index stream the whole aggregation. The window function is the convenience here; the pre-aggregation is the performance step.
+All three approaches end with the same cheap step, ranking about 1,000 facility rows. Their cost is how they reach one row per facility. Approaches 1 and 2 join every booking to its facility before aggregating. Approach 3 notices that the price is constant per (facility, member type), sums only the slots, and prices afterwards. That is "aggregate before join" applied to arithmetic, and it is what lets the covering index stream the whole aggregation. Measured at 1M bookings: approach 3 took 275 ms against about 1.0–1.1 s for approaches 1 and 2 (3.7× faster), and 135 ms vs 1.6 s with the index (12×). The window function is the convenience here; the pre-aggregation is the performance step.
 
 ## 6. At scale
 
 **(a) What breaks first.** *Reasoned, then checked by the bench table:* the per-booking join + temp-table aggregate in approaches 1 and 2 grows with bookings. Approach 3's slot aggregation grows with bookings too, but it is narrower (no join) and can stream off the index. The window and the correlated ranking only see facility rows, so they stay trivial until there are millions of *facilities*. At that point approach 1's correlated count (facilities²) is the first thing to fail.
 
 **(b) One machine, ~1M–100M rows.**
-- `indexes.sql` adds `bookings (facid, memid, slots)`. It is covering for every read of `bookings` here, and it lets approach 3's `GROUP BY facid` stream in index order without a temporary table. The bench runs every approach with and without it.
+- `indexes.sql` adds `bookings (facid, memid, slots)`. It is covering for every read of `bookings` here, and it lets approach 3's `GROUP BY facid` stream in index order without a temporary table: measured at 1M rows, approach 3 went from 275 ms to 135 ms. It made approaches 1 and 2 *slower* (1.02 s → 1.57 s for approach 2). Their plans show the join getting about 4× cheaper (now an index lookup per facility instead of a PK lookup per booking), but the `Aggregate using temporary table` above it took roughly three times as long. The plan does not say why. The lesson that is measured: an index on the input does not make a temporary-table aggregate cheaper, so check the plan before claiming a speed-up.
 - With bookings spread over years, the real question usually has a date range (revenue this quarter). Then put `starttime` into the index after `facid`, or partition by month, so that the range read is narrow.
 - `NTILE` needs all facility totals before it can assign the first bucket, because it must know n. That is inherent, and cheap here because n is small.
 

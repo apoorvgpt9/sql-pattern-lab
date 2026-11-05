@@ -213,11 +213,13 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, INTEL(R) XEON(R) PLATI
 
 ### Why the optimal one wins
 
-Approach 3 turns the one rule that looks inherently pairwise ("session n matches session ((n−1) mod k)+1") into a group-level count. Once every rule is an aggregate, one `GROUP BY` checks them all in a single pass after the window. Approach 2 keeps the pairwise form and pays for it with a self-join and an anti-join. Approach 1 additionally pays a correlated count per session to compute positions. The general move to keep: when a check is "every row agrees with some other row determined by position", look for an invariant that can be counted per group.
+Approach 3 turns the one rule that looks inherently pairwise ("session n matches session ((n−1) mod k)+1") into a group-level count. Once every rule is an aggregate, one `GROUP BY` checks them all in a single pass after the window. Approach 2 keeps the pairwise form and pays for it with a self-join and an anti-join. Approach 1 additionally pays a correlated count per session to compute positions, which times out at 100K rows without an index.
+
+The measured margin is modest: approach 3 is about 1.2× faster than approach 2 at 1M rows (9.93 s vs 12.1 s). Both are dominated by the window sort they share, and the self-join only adds on top. With `indexes.sql`, the brute force catches up with approach 2 (11.6 s vs 12.2 s at 1M), because each position count becomes a short range read inside one student. The rewrite is still worth knowing for its correctness argument, not just for speed: one aggregate per rule is easier to verify than an anti-join. The general move to keep: when a check is "every row agrees with some other row determined by position", look for an invariant that can be counted per group.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 without the index (one full scan per session for its position). Then approach 2's anti-join, whose probes grow with the number of candidate students' sessions. Approach 3 is bounded by the window sort.
+**(a) What breaks first.** *Measured:* approach 1 without the index (one full scan per session for its position): it times out at 100K rows. *Reasoned:* then approach 2's anti-join, whose probes grow with the number of candidate students' sessions. Approach 3 is bounded by the window sort, which approach 2 also pays; that shared cost is why they are within 1.2× of each other at 1M rows.
 
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql`: `(student_id, session_date, session_id, subject)` is exactly the session order the spec defines, and it covers the position, gap and slot logic. It fixes approach 1's correlated count. MySQL 8.0 still sorts for the window even with it (EXPLAIN keeps `Sort: student_id, session_date, session_id`), so for approaches 2 and 3 the index mainly speeds up the k `GROUP BY`.

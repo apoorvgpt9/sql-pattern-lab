@@ -15,4 +15,6 @@ runs AS (
 )
 SELECT DISTINCT num AS ConsecutiveNums
 FROM runs
-WHERE run_length >= 3;
+WHERE run_length >= 3
+  AND num IS NOT NULL;   -- NULLs share one partition but never repeat; filter them only now, after numbering,
+                        -- because a NULL row must still break the adjacency of its neighbours

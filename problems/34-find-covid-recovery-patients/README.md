@@ -179,7 +179,7 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, INTEL(R) XEON(R) PLATI
 
 ### Why the optimal one wins
 
-Approach 3 shrinks one side to one row per patient before the comparison, and each pass reads only the result type it needs. The work is two narrow scans and a keyed lookup, with no full-table sort. With the index, both passes become index range reads. Approach 2 is the right tool when the anchor must be compared row by row with *many* later conditions. For one comparison it pays for a sort it does not need. Approach 1 is fine with the index and catastrophic without it: check the "without indexes" table.
+Approach 3 shrinks one side to one row per patient before the comparison, and each pass reads only the result type it needs. The work is two narrow scans and a keyed lookup, with no full-table sort. With the index, both passes become index range reads. Approach 2 is the right tool when the anchor must be compared row by row with *many* later conditions. For one comparison it pays for a sort it does not need. Approach 1 is fine with the index and catastrophic without it: it times out at 100K rows without the index, and with it it even beats approach 2 at 1M rows (3.10 s vs 4.38 s). Approach 3 led at every size: 1.39 s at 1M without indexes, 3.3× faster than approach 2.
 
 ## 6. At scale
 

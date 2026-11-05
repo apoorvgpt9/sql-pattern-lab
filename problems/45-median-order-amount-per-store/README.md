@@ -45,7 +45,7 @@ Shape: (1) for every order, compute its position among its store's orders (by am
 
 <details><summary>Hint 3</summary>
 
-Key clause: `ROW_NUMBER() OVER w AS rn, COUNT(*) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS n … WINDOW w AS (PARTITION BY store_id ORDER BY amount, order_id)`, then `WHERE rn IN ((n + 1) DIV 2, n DIV 2 + 1)` and `ROUND(AVG(amount), 2)` per store. Use `DIV`, not `/`. Sharing one window ordering lets MySQL sort once.
+Key clause: `ROW_NUMBER() OVER w AS rn, COUNT(*) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS n … WINDOW w AS (PARTITION BY store_id ORDER BY amount, order_id)`, then `WHERE rn IN ((n + 1) DIV 2, n DIV 2 + 1)` and `ROUND(AVG(amount), 2)` per store. Use `DIV`, not `/`. Alternative that needs no count: number each store twice, ascending and descending (the descending tie-break must be `order_id DESC` too); the middle rows are where `rn_asc BETWEEN rn_desc - 1 AND rn_desc + 1`.
 
 </details>
 
@@ -54,7 +54,7 @@ Key clause: `ROW_NUMBER() OVER w AS rn, COUNT(*) OVER (w ROWS BETWEEN UNBOUNDED 
 "Median" names a value, but it is defined by a **position**: the middle of a sorted list. Turn the definition into two numbers per row (my position, my group's size) and one comparison (am I in the middle?).
 
 1. **`ranked`: `ROW_NUMBER` + `COUNT(*)` over the store's window.**
-   *Why a window and not a GROUP BY:* both numbers depend on the whole store, but every order must survive, because the middle rows are what we want. A window adds group-level facts to each row without collapsing. *Why `ROW_NUMBER` with `order_id`:* positions must be 1..n with no ties and no gaps, even for equal amounts (trigger "duplicate amounts"). *Why the explicit frame on `COUNT`:* with an `ORDER BY` in the window, the default frame stops at the current row, which gives a running count. `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING` makes it the whole store. Sharing the ordering with `ROW_NUMBER` lets MySQL sort once (section 5).
+   *Why a window and not a GROUP BY:* both numbers depend on the whole store, but every order must survive, because the middle rows are what we want. A window adds group-level facts to each row without collapsing. *Why `ROW_NUMBER` with `order_id`:* positions must be 1..n with no ties and no gaps, even for equal amounts (trigger "duplicate amounts"). *Why the explicit frame on `COUNT`:* with an `ORDER BY` in the window, the default frame stops at the current row, which gives a running count. `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING` makes it the whole store. Sharing the ordering with `ROW_NUMBER` lets MySQL sort once, though section 5 shows that a single sort is not what makes a window query fast here.
 2. **Filter: `rn IN ((n + 1) DIV 2, n DIV 2 + 1)`.**
    *Why a filter here:* the median uses only the middle row(s). For n = 5 the list is (3, 3), which is one row. For n = 4 it is (2, 3), which is two rows. Integer `DIV` keeps the positions integral.
 3. **`GROUP BY store_id`, `ROUND(AVG(amount), 2)`.**
@@ -74,6 +74,8 @@ WHERE rn IN ((n + 1) DIV 2, n DIV 2 + 1)                  -- step 2: the middle 
 GROUP BY store_id
 ORDER BY store_id;
 ```
+
+This is the version that follows the definition, and it generalises to any percentile (follow-up 1). The measured-fastest version (approach 3) swaps step 1's `n` for a second, descending numbering; the filter in step 2 then becomes `rn_asc BETWEEN rn_desc - 1 AND rn_desc + 1`.
 
 Self-check: for each store, the filter must keep exactly 1 row when n is odd and 2 when n is even. `SELECT store_id, n, COUNT(*) … GROUP BY store_id, n` on the filtered rows shows it at a glance.
 
@@ -101,7 +103,15 @@ ORDER BY store_id;
 
 **Cost model (reasoned, plan shape checked with `EXPLAIN FORMAT=TREE`):** two dependent subqueries per order. Without an index each one scans the whole table, so the cost is orders² overall. With `indexes.sql` (`store_id, amount, order_id`), each becomes a covering range read of one store, so the cost is Σ over stores of n_s². That is still quadratic *within* a store, and `gen.py` deliberately has flagship stores with thousands of orders. Expect this approach to hit the bench's 60-second limit at the larger sizes, with the index or without.
 
-### Approach 2: ROW_NUMBER ascending vs descending (`solutions/02_row_number_asc_desc.sql`)
+### Approach 2: ROW_NUMBER + COUNT over one window (`solutions/02_row_number_and_count.sql`)
+
+The SQL is the assembled query in section 4: the definition-driven version.
+
+**Why it is correct:** `rn` is the 1-based position in (amount, order_id) order, and `n` is the store size (the full-partition frame makes `COUNT` see all of the store's rows, not a running count). The filter keeps the middle row(s), and `AVG` returns the median. `AVG` over `DECIMAL(10,2)` is exact (scale 6), so `ROUND` sees the true midpoint.
+
+**Cost model (plan from the bench's `EXPLAIN ANALYZE` at 1M rows):** **one sort**, by `(store_id, amount, order_id)`, then a streaming `ROW_NUMBER` pass. But `COUNT` with a frame of `UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING` cannot stream: the plan shows *Window aggregate with buffering*, which writes each partition to a frame buffer and re-reads it so every row can see the partition's end. That step took about 1.6 s of the 2.7 s total, much more than the second sort it saved. `gen.py` has flagship stores with thousands of orders, so the buffered partitions are large. (Written as `COUNT(*) OVER (PARTITION BY store_id)` instead, MySQL plans a separate window with its own sort; that variant is not benchmarked here.)
+
+### Approach 3 (optimal, measured): ROW_NUMBER ascending vs descending (`solutions/03_row_number_asc_desc.sql`)
 
 ```sql
 WITH numbered AS (
@@ -119,17 +129,11 @@ ORDER BY store_id;
 
 **Why it is correct:** when the descending order is the exact reverse of the ascending one, `rn_desc = n + 1 − rn_asc`. So `|rn_asc − rn_desc| = |2·rn_asc − n − 1| ≤ 1` holds exactly for the middle row (odd n, where it is 0) or the two middle rows (even n, where it is 1). No count is needed. This is a well-known interview answer. Its fragility: the tie-break must be reversed too (`order_id DESC`), or the two numberings do not mirror each other within groups of equal amounts.
 
-**Cost model (reasoned, plan shape checked):** the plan shows **two sorts**. MySQL sorts by `(store_id, amount, order_id)` for `rn_asc`, writes a temporary table, then sorts again by `(store_id, amount DESC, order_id DESC)` for `rn_desc`. Each sort is O(N log N), so this does twice the sorting work of approach 3. `indexes.sql` does not remove either sort: MySQL still sorts the window input even when an index has the right order.
-
-### Approach 3 (optimal): ROW_NUMBER + COUNT over one window (`solutions/03_row_number_and_count.sql`)
-
-The SQL is the assembled query in section 4.
-
-**Why it is correct:** `rn` is the 1-based position in (amount, order_id) order, and `n` is the store size (the full-partition frame makes `COUNT` see all of the store's rows, not a running count). The filter keeps the middle row(s), and `AVG` returns the median. `AVG` over `DECIMAL(10,2)` is exact (scale 6), so `ROUND` sees the true midpoint.
-
-**Cost model (reasoned, plan shape checked):** **one sort**, by `(store_id, amount, order_id)`. Then a streaming `ROW_NUMBER` pass and a buffered `COUNT` pass over each partition, which is linear. A detail worth knowing: written as `COUNT(*) OVER (PARTITION BY store_id)`, a different window from the `ROW_NUMBER` one, MySQL plans it as a *separate* window with its own extra sort (checked with `EXPLAIN`). Sharing the named window `w` and giving `COUNT` the full frame keeps it to a single sort. As with approach 2, the index does not remove the window sort.
+**Cost model (plan from the bench's `EXPLAIN ANALYZE` at 1M rows):** **two sorts**. MySQL sorts by `(store_id, amount, order_id)` for `rn_asc`, writes a temporary table, then sorts again by `(store_id, amount DESC, order_id DESC)` for `rn_desc`. Both window functions are *streaming*: `ROW_NUMBER` only needs the rows seen so far, so neither has to hold a partition in memory. The second sort cost about 0.2 s of the 1.5 s total. `indexes.sql` does not remove either sort: MySQL still sorts the window input even when an index has the right order.
 
 **Measured** (`gen.py` data, generated by the bench workflow; the table is filled in automatically, so never type numbers here):
+
+> **Renumbered after this bench run.** The table below was measured when the ascending/descending query was file `02_row_number_asc_desc` and the count query was `03_row_number_and_count` (then labelled optimal). They are now `03_row_number_asc_desc` (optimal) and `02_row_number_and_count`. The numbers are unchanged; the labels refresh on the next bench run.
 
 <!-- BENCH:45-median-order-amount-per-store -->
 _Measured 2026-11-05 by the bench workflow: MySQL 8.0.46, AMD EPYC 9V45 96-Core Processor, 2 vCPU. Median of 3 runs after 1 warm-up; each statement capped at 60 s. Sizes are main-table rows from `gen.py`. Raw numbers and EXPLAIN ANALYZE: `bench/results/45-median-order-amount-per-store.json`._
@@ -161,14 +165,14 @@ A ratio below 1.0× means that approach was faster than the one labelled optimal
 
 ### Why the optimal one wins
 
-A median needs each row's position in a sorted group, so one sort of the data is the irreducible cost. Approach 3 pays exactly that once: the count rides on the same sorted partition. Approach 2 pays it twice to avoid counting. Approach 1 avoids sorting altogether by counting, for every row, how many rows precede it. That is a sort done the slowest possible way: quadratic within each store, which large stores make visible.
+Counting sorts is the wrong cost model here. Approach 3 sorts twice, but both of its window functions stream; approach 2 sorts once, but its whole-partition `COUNT` frame has to buffer every store's rows and re-read them. In the bench, buffering cost far more than a second in-memory sort: approach 3 was about 1.8× faster at 1M rows without the index (1.51 s vs 2.72 s) and 2× faster with it (1.32 s vs 2.62 s), and the two were tied at 100K. Approach 1 avoids sorting altogether by counting, for every row, how many rows precede it. That is a sort done the slowest possible way: quadratic within each store, and it times out at 100K rows without the index and at 1M with it. Lesson for interviews: when you claim a window plan is cheaper, check which window functions need a buffered frame, not just how many sorts there are.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1, with or without the index: its cost is Σ n_s², and one store with 10,000 orders already means 100M comparisons. Next is approach 2's second sort. Approach 3's single sort spills to disk when `sort_buffer_size` is exceeded, which is still O(N log N) with sequential I/O.
+**(a) What breaks first.** *Measured (bench table), with the reasons reasoned:* approach 1, with or without the index: its cost is Σ n_s², and one store with 10,000 orders already means 100M comparisons; it times out at 100K rows without the index. Next is approach 2's buffered whole-partition frame, which grows with the size of the largest store. Approach 3's two sorts spill to disk when `sort_buffer_size` is exceeded (reasoned), which is still O(N log N) with sequential I/O.
 
 **(b) One machine, ~1M–100M rows.**
-- `indexes.sql` adds `StoreOrders (store_id, amount, order_id)`. It turns approach 1's subqueries into per-store range reads, from quadratic in the table to quadratic per store. On MySQL 8.0 it does **not** remove the window sort in approaches 2 and 3 (the plans still show `Sort` above the index scan), so measure before expecting a window to benefit from an index.
+- `indexes.sql` adds `StoreOrders (store_id, amount, order_id)`. It turns approach 1's subqueries into per-store range reads, from quadratic in the table to quadratic per store (measured: 5.25 s at 100K instead of a timeout, still a timeout at 1M). On MySQL 8.0 it does **not** remove the window sort in approaches 2 and 3 (the plans still show `Sort` above the index scan), and the bench shows only small gains for them (1.51 s → 1.32 s for approach 3 at 1M).
 - The window version materialises every order with its `rn` and `n` before filtering out all but 1–2 rows per store. A store-at-a-time alternative, a correlated `LIMIT 1 OFFSET k`, is not available, because MySQL requires `LIMIT`/`OFFSET` to be literals or prepared-statement parameters, not expressions. A stored procedure looping over stores with a prepared statement can read just the middle rows from the index. That is worth it only when stores are few and huge.
 - If medians are needed per day as well, partition the table by date so each run sorts only the new slice; see (d).
 

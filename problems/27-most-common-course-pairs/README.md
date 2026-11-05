@@ -35,7 +35,7 @@ Bugs come from doing these in the wrong order or at the wrong key: windowing acr
 
 1. **Same completion date.** The spec says same-date completions for one user are not addressed. Our interpretation: break the tie by `course_id` (smaller id first). Every solution orders by `completion_date, course_id`. Tested in `tests/edge_same_date.sql`; `mistakes/tiebreak_by_name.sql` shows a different tie-break fails.
 2. **Pairs are counted by course name**, as the output grain says, so two `course_id`s with one name merge. Tested in `tests/edge_ordering.sql` (`mistakes/group_by_course_id.sql` fails it).
-3. **"Average rating ≥ 4"** is evaluated as `SUM(course_rating) >= 4 * COUNT(*)`. For integer ratings this is exactly equivalent to `AVG(...) >= 4`, and it avoids relying on how many decimal places a division keeps. Tested at the exact boundary (average 4.0) in `tests/edge_thresholds.sql`.
+3. **"Average rating ≥ 4"** is evaluated as `SUM(course_rating) >= 4 * COUNT(course_rating)`. For integer ratings this is exactly equivalent to `AVG(course_rating) >= 4`, NULLs included: both skip an unrated completion (NULL `course_rating`), which still counts toward the 5 completed courses. It also avoids relying on how many decimal places a division keeps. Tested at the exact boundary (average 4.0) in `tests/edge_thresholds.sql`, and with unrated completions in `tests/edge_null_rating.sql`. The tempting `SUM(course_rating) >= 4 * COUNT(*)` is **not** equivalent: it counts an unrated course as a 0 (`mistakes/null_rating_as_zero.sql`).
 4. **"At least 5 completed courses"** counts the user's rows: the primary key allows each course once per user.
 5. Names are compared and sorted with MySQL's default case-insensitive collation. The datasets avoid names that differ only by case.
 
@@ -43,7 +43,7 @@ Bugs come from doing these in the wrong order or at the wrong key: windowing acr
 
 <details><summary>Hint 1</summary>
 
-Pattern: **filter a cohort first, then neighbour access (`LEAD`) inside each member's ordered history, then count the transitions.** Three different grains in one query, in that order.
+Pattern: **filter a cohort first, then neighbour access inside each member's ordered history, then count the transitions.** Three different grains in one query, in that order.
 
 </details>
 
@@ -55,7 +55,7 @@ Shape: (1) find the users who qualify (count and average, per user). (2) For tho
 
 <details><summary>Hint 3</summary>
 
-Key trick: `LEAD(course_name) OVER (PARTITION BY user_id ORDER BY completion_date, course_id)` produces each course together with its successor in one pass. Without the `PARTITION BY`, a user's last course is paired with the next user's first course. The cohort test is `HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(*)`, applied to users, not to rows.
+Key trick: `LEAD(course_name) OVER (PARTITION BY user_id ORDER BY completion_date, course_id)` produces each course together with its successor in one pass. Without the `PARTITION BY`, a user's last course is paired with the next user's first course. The cohort test is `HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(course_rating)`, applied to users, not to rows.
 
 </details>
 
@@ -63,7 +63,7 @@ Key trick: `LEAD(course_name) OVER (PARTITION BY user_id ORDER BY completion_dat
 
 Read the wording in the order the data must be reduced: *who* (the cohort), *which pairs* (adjacent in time), *how many* (count by pair).
 
-1. **`top_users`: `GROUP BY user_id HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(*)`.**
+1. **`top_users`: `GROUP BY user_id HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(course_rating)`.**
    *Why a GROUP BY here:* "at least 5 courses" and "average rating" are properties of a *user*, not of a row. Doing it first also means the window in step 2 sees only top performers' rows.
 2. **`transitions`: join `course_completions` to `top_users`, then `LEAD(course_name) OVER (PARTITION BY user_id ORDER BY completion_date, course_id)`.**
    *Why a join and a window here:* the join keeps only cohort members. The window reads the next row in each user's own history: `PARTITION BY user_id` makes "next" mean "next course of this user", and the `ORDER BY` defines "next" as the next completion in time.
@@ -78,7 +78,7 @@ Assembled:
 WITH top_users AS (                                                   -- step 1
   SELECT user_id FROM course_completions
   GROUP BY user_id
-  HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(*)
+  HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(course_rating)
 ),
 transitions AS (                                                      -- step 2
   SELECT cc.course_name AS first_course,
@@ -109,7 +109,7 @@ JOIN course_completions b
   ON b.user_id = a.user_id
  AND (b.completion_date, b.course_id) > (a.completion_date, a.course_id)
 WHERE a.user_id IN (SELECT user_id FROM course_completions
-                    GROUP BY user_id HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(*))
+                    GROUP BY user_id HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(course_rating))
   AND NOT EXISTS (SELECT 1 FROM course_completions c
                    WHERE c.user_id = a.user_id
                      AND (c.completion_date, c.course_id) > (a.completion_date, a.course_id)
@@ -175,7 +175,7 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Approach 3 does the sequencing with `ROW_NUMBER`, which MySQL evaluates as a stream, and then pairs positions *n* and *n + 1* with a 1:1 join. Approach 2 gets the same pairs from `LEAD` in one expression, but MySQL has to buffer rows to look ahead. Approach 1 does the same job by comparing every pair of a user's completions, so it grows with the cube of history length. Filtering the cohort *before* windowing keeps the sort to top performers' rows in both 2 and 3. The ranking of 2 and 3 is a statement about MySQL 8.0's window implementation; the bench table is the evidence, and in an engine with cheap look-ahead `LEAD` is the natural choice.
+Approach 3 does the sequencing with `ROW_NUMBER`, which MySQL evaluates as a stream, and then pairs positions *n* and *n + 1* with a 1:1 join. Approach 2 gets the same pairs from `LEAD` in one expression, but MySQL has to buffer rows to look ahead. Approach 1 does the same job by comparing every pair of a user's completions, so it grows with the cube of history length. Filtering the cohort *before* windowing keeps the sort to top performers' rows in both 2 and 3. Measured at 1M rows: approach 3 took 2.78 s, approach 2 3.96 s (1.4× slower), and approach 1 6.87 s (2.5× slower). Approach 1's *k³* growth stays mild here only because `gen.py` users have short histories. At 100K rows, 2 and 3 were within 10% of each other. The ranking of 2 and 3 is a statement about MySQL 8.0's window implementation, and `indexes.sql` changed none of the timings by more than a few percent. In an engine with cheap look-ahead, `LEAD` is the natural choice.
 
 ## 6. At scale
 
@@ -184,7 +184,7 @@ Approach 3 does the sequencing with `ROW_NUMBER`, which MySQL evaluates as a str
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql` adds a covering index `(user_id, completion_date, course_id, course_rating, course_name)`. The cohort scan, the window input and the correlated lookups of approach 1 can all be served from it without touching the table rows. Whether the window skips its sort is up to the optimizer; check `EXPLAIN ANALYZE` in the bench output rather than assuming it.
 - Filter the cohort first. The cohort query is cheap (one aggregate by `user_id`), and anything that shrinks the window's input is worth it. Computing the window over all users and filtering afterwards does strictly more work.
-- Compare `SUM(course_rating) >= 4 * COUNT(*)` rather than `AVG(...) >= 4`. They give the same answer for integer ratings, but the SUM form is exact and cannot be affected by how many decimal places a division keeps.
+- Compare `SUM(course_rating) >= 4 * COUNT(course_rating)` rather than `AVG(...) >= 4`. They give the same answer for integer ratings, NULLs included, but the SUM form is exact and cannot be affected by how many decimal places a division keeps. Use `COUNT(course_rating)`, not `COUNT(*)`, on the right: `COUNT(*)` would count unrated courses as zeros.
 - The final `GROUP BY` is over name pairs. With *C* distinct course names there are at most *C²* groups, so it is small whatever the table size.
 
 **(c) Distributed engines, billions of rows. *Reasoned, not measured.***
@@ -227,6 +227,7 @@ Each "breaks" claim below is checked by execution: `mistakes/*.sql` are tempting
 |---|---|---|
 | Two top performers share a pair; a third user has only 4 courses; one user's course ids run against date order | `tests/edge_typical.sql` | `no_user_partition` (pair spans two users), `no_cohort_filter`, `count_gt_5`, `order_by_course_id`, `unordered_pair`, `keep_null_successor`, `order_keys_wrong` |
 | Exactly 5 courses with average exactly 4.0 (qualifies); average 3.8 (does not); 4 courses with average 5 (does not) | `tests/edge_thresholds.sql` | `avg_gt_4`, `count_gt_5`, `row_level_rating_filter`, `no_cohort_filter`, `keep_null_successor` |
+| Unrated completions (NULL rating): they count as completions but not in the average; a user with no ratings at all is not a top performer | `tests/edge_null_rating.sql` | `null_rating_as_zero` (`SUM >= 4 * COUNT(*)` treats NULL as 0, so nobody qualifies) |
 | Nobody qualifies (low average; too few courses) | `tests/edge_no_top_performers.sql` | `no_cohort_filter` |
 | Two courses on the same date (tie-break by `course_id`) | `tests/edge_same_date.sql` | `tiebreak_by_name`, `count_gt_5` (only a 5-course user, so it also drops) |
 | Output order and pair semantics: count ties broken by first then second course; A→B ≠ B→A; one name on two course ids; a pair of identical names | `tests/edge_ordering.sql` | `group_by_course_id`, `unordered_pair`, `order_keys_wrong`, `order_by_course_id`, `no_user_partition` |

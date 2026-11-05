@@ -13,4 +13,5 @@ runs AS (
 )
 SELECT DISTINCT num AS ConsecutiveNums
 FROM runs
-WHERE run_length >= 3;
+WHERE run_length >= 3
+  AND num IS NOT NULL;   -- NULLs share one partition but never repeat (README Assumptions 3)

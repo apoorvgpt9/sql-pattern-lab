@@ -42,7 +42,7 @@ Shape: (1) keep only the busy days. (2) Give every busy row a label that is the 
 
 <details><summary>Hint 3</summary>
 
-Key trick: after filtering, `id - ROW_NUMBER() OVER (ORDER BY id)` is constant inside a run of consecutive ids. Each id gap makes `id` jump by more than `ROW_NUMBER()` does, so the difference steps up. Then `COUNT(*) OVER (PARTITION BY that_difference)` gives every row its island size without a join.
+Key trick: after filtering, `id - ROW_NUMBER() OVER (ORDER BY id)` is constant inside a run of consecutive ids (in MySQL, write `CAST(ROW_NUMBER() … AS SIGNED)`: the row number is unsigned). Each id gap makes `id` jump by more than `ROW_NUMBER()` does, so the difference steps up. Then `COUNT(*) OVER (PARTITION BY that_difference)` gives every row its island size without a join.
 
 </details>
 
@@ -50,10 +50,10 @@ Key trick: after filtering, `id - ROW_NUMBER() OVER (ORDER BY id)` is constant i
 
 Translate each phrase into one step. Notice that "three or more" is a statement about a *group of rows*, while "display the records" asks for *rows*. When you see that pair of phrases, plan to compute a group property and attach it to each row.
 
-1. **`busy`: `WHERE people >= 100`.**
-   *Why a filter here, first:* the quiet days are what create the gaps. If you number rows before removing them, the quiet days get numbers too, the busy rows on either side of them look consecutive, and no gap is ever detected.
-2. **`busy`, same CTE: `island = id - ROW_NUMBER() OVER (ORDER BY id)`.**
-   *Why a window here:* "consecutive" is about order, and only a window can see a row's position among the other busy rows. The order key is `id`, because the wording says consecutive *ids*. Numbering by `visit_date` would also give the right *order* here, but the island label must subtract a number from `id`, not from a date.
+1. **`busy`: `WHERE people >= 100 AND id IS NOT NULL`.**
+   *Why a filter here, first:* the quiet days are what create the gaps. If you number rows before removing them, the quiet days get numbers too, the busy rows on either side of them look consecutive, and no gap is ever detected. A row with a NULL id has no position in "consecutive ids", so it goes too (otherwise all NULL-id rows share one NULL label in step 3 and look like an island).
+2. **`busy`, same CTE: `island = id - CAST(ROW_NUMBER() OVER (ORDER BY id) AS SIGNED)`.**
+   *Why a window here:* "consecutive" is about order, and only a window can see a row's position among the other busy rows. The order key is `id`, because the wording says consecutive *ids*. Numbering by `visit_date` would also give the right *order* here, but the island label must subtract a number from `id`, not from a date. *Why the `CAST`:* MySQL returns `ROW_NUMBER()` as `BIGINT UNSIGNED`, so `id - ROW_NUMBER()` is unsigned arithmetic. Whenever `id` is smaller than its row number (ids starting at 0, negative ids), MySQL raises *BIGINT UNSIGNED value is out of range* instead of returning a negative label. LeetCode's ids start at 1, so the bare subtraction passes there and fails on the first table that doesn't.
 3. **`sized`: `COUNT(*) OVER (PARTITION BY island)`.**
    *Why a window and not GROUP BY:* the output is the rows themselves. A partition-only window counts the island and keeps every row, so no join back is needed.
 4. **Final: `WHERE island_size >= 3 ORDER BY visit_date`.**
@@ -62,9 +62,9 @@ Translate each phrase into one step. Notice that "three or more" is a statement 
 ```sql
 WITH busy AS (                                   -- steps 1 + 2: filter, then label islands
   SELECT id, visit_date, people,
-         id - ROW_NUMBER() OVER (ORDER BY id) AS island
+         id - CAST(ROW_NUMBER() OVER (ORDER BY id) AS SIGNED) AS island
   FROM Stadium
-  WHERE people >= 100
+  WHERE people >= 100 AND id IS NOT NULL
 ),
 sized AS (                                       -- step 3: island size on every row
   SELECT id, visit_date, people,
@@ -158,7 +158,7 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, INTEL(R) XEON(R) PLATI
 
 ### Why the optimal one wins
 
-Approach 3 is the only one whose cost and code do not depend on the threshold. "At least 3" and "at least 30" are the same query with a different constant, and the island label is reusable for follow-ups (run start, run end, longest run). Approach 2 is a legitimate competitor on MySQL for a fixed small k, so read the bench table rather than assuming. Approach 1 is the one to avoid: without an index its OR-join is a cartesian product, and with an index it is fast only because the planner re-plans the probe for every row.
+Approach 3 is the only one whose cost and code do not depend on the threshold. "At least 3" and "at least 30" are the same query with a different constant, and the island label is reusable for follow-ups (run start, run end, longest run). Approach 2 is close at 100K rows (425 ms vs 361 ms) but falls behind at 1M (10.9 s vs 5.06 s, 2.1× slower): its four LAG/LEAD columns need a look-ahead buffer, while approach 3's `ROW_NUMBER` streams. Approach 1 is the one to avoid: without an index its OR-join is a cartesian product, and with an index it is fast only because the planner re-plans the probe for every row.
 
 ## 6. At scale
 
@@ -189,7 +189,7 @@ USING (
     UNION ALL
     SELECT id FROM stadium_batch WHERE people >= 100
   ), lbl AS (
-    SELECT id, id - ROW_NUMBER() OVER (ORDER BY id) AS island FROM tail
+    SELECT id, id - CAST(ROW_NUMBER() OVER (ORDER BY id) AS SIGNED) AS island FROM tail
   )
   SELECT MIN(id) AS island_start_id, MAX(id) AS island_end_id, COUNT(*) AS size
   FROM lbl GROUP BY island
@@ -221,8 +221,10 @@ Each "breaks" claim below is checked by execution: `mistakes/*.sql` are the temp
 | Busy days everywhere, but no run reaches 3 | `tests/edge_no_qualifying_run.sql` | none; every approach returns empty |
 | `people` is NULL in the middle of a run | `tests/edge_nulls.sql` | `breaker_count_skips_null`: `SUM(people < 100)` skips the NULL, so the unknown day does not split the run. `islands_before_filter` also fails. |
 | Rows inserted out of order; runs at the very first and very last row (where LAG/LEAD are NULL) | `tests/edge_ordering.sql` | `start_of_triple_only`, `middle_row_only` |
+| Three busy rows with a NULL `id`, plus a real run of 3 | `tests/edge_null_id.sql` | `null_ids_form_an_island` (the NULL labels share one partition of size 3). A bare `id - ROW_NUMBER()` *errors* here: the NULLs sort first and take row numbers 1–3, so id 1 gets row number 4. |
+| ids start at 0 | `tests/edge_id_starts_at_zero.sql` | A bare `id - ROW_NUMBER()` errors (`0 - 1` in unsigned arithmetic). Not in `mistakes/`: the harness requires a mistake to return a wrong result, not an error. |
 
-No approach in `solutions/` is broken by any of these. Approach 1 is slow without an index, not wrong.
+No approach in `solutions/` is broken by any of these. Approach 3 originally used a bare `id - ROW_NUMBER()` with no NULL filter and failed both of the last two datasets; that is why it now has the `CAST` and the `id IS NOT NULL` filter. Approach 1 is slow without an index, not wrong.
 
 One trap that is not in `mistakes/`: forgetting `ORDER BY visit_date`. MySQL usually returns window output in `id` order anyway, so no dataset can reliably catch the omission. It is still a wrong answer, because without `ORDER BY` the order is not guaranteed.
 
@@ -232,7 +234,7 @@ One trap that is not in `mistakes/`: forgetting `ORDER BY visit_date`. MySQL usu
 2. **"Consecutive days instead of consecutive ids."** Change the label to `DATE_SUB(visit_date, INTERVAL ROW_NUMBER() OVER (ORDER BY visit_date) DAY)`. Never write `visit_date - ROW_NUMBER()`: MySQL turns the date into the number `20240131` and the subtraction breaks at every month boundary. See `33-find-users-with-persistent-behavior-patterns`.
 3. **"What if ids can repeat or have gaps by design?"** Then id adjacency is the wrong definition, and you number the busy rows *and* all rows by date. The robust label is `ROW_NUMBER() OVER (ORDER BY d) - ROW_NUMBER() OVER (PARTITION BY is_busy ORDER BY d)` over **all** rows: the "difference of two row numbers" form, which does not need integer keys at all.
 4. **"Only the longest run."** Group to island grain, then `ORDER BY COUNT(*) DESC LIMIT 1`, after deciding a tie rule (earliest run first is the usual choice). Same move as in problem 33.
-5. **"Why not LAG/LEAD?"** Approach 2 is fine for a fixed small threshold, and on MySQL it may even be a little faster (one sort fewer). The trade-off is generality: it does not extend to "at least k" or to run-level outputs without growing the query.
+5. **"Why not LAG/LEAD?"** Approach 2 is correct for a fixed small threshold, and it has one sort fewer, but on MySQL that did not make it faster: the bench measured it 2.1× slower at 1M rows, because its four LAG/LEAD columns run as a buffered window. The trade-off is generality: it does not extend to "at least k" or to run-level outputs without growing the query.
 
 ## 9. Snowflake notes (UNVERIFIED)
 

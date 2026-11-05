@@ -147,9 +147,11 @@ A ratio below 1.0× means that approach was faster than the one labelled optimal
 
 Approach 3 answers "has a child?" for all nodes at once, with one deduplicated set built in a single pass. Approach 2 asks the same question once per node. That is fine with an index on `p_id` and quadratic without one, so its speed depends on physical design the problem does not give you. Approach 1 is linear too, but reads the table about five times and has two NULL-sensitive subqueries. Approach 3 is also the shape that carries to distributed engines (section 6c): one aggregation and one equi-join, with no per-row subquery to decorrelate.
 
+The measured margins are small, so do not oversell it. Without an index, approach 3 beat approach 1 by about 1.2× at 1M rows (8.43 s vs 10.2 s) and the two were tied at 100K; approach 2 timed out at 100K. With `indexes.sql`, approach 2 became the *fastest* at 1M rows (7.22 s vs 7.74 s for approach 3), because each `EXISTS` turns into one index probe that stops at the first child, while approach 3 still builds and joins a deduplicated parent set. Approach 3 is the right default because it needs no index and never goes quadratic. If `p_id` is indexed, the correlated `EXISTS` is just as good on MySQL.
+
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 2 without an index goes first, because each leaf rescans the whole table (nodes² growth). Approaches 1 and 3 are linear. Approach 1 reads more rows, so it falls behind next. Approach 3's temporary parent set is the last thing to outgrow memory (`tmp_table_size`), because it holds only non-leaf ids.
+**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 2 without an index goes first, because each leaf rescans the whole table (nodes² growth). Approaches 1 and 3 are linear. Approach 1 reads more rows, so it falls behind next, but only slightly (1.2× at 1M rows, measured). Approach 3's temporary parent set is the last thing to outgrow memory (`tmp_table_size`), because it holds only non-leaf ids.
 
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql` adds `Tree (p_id)`. It is the index any self-referencing hierarchy needs: it turns "children of X" into a range read. For approach 2 it is the difference between quadratic and linear. For approach 3 it lets `DISTINCT p_id` stream off the index in order instead of hashing. The bench runs every approach with and without it.

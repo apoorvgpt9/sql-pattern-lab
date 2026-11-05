@@ -4,7 +4,7 @@
 WITH top_users AS (
   SELECT user_id FROM course_completions
   GROUP BY user_id
-  HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(*)
+  HAVING COUNT(*) >= 5 AND SUM(course_rating) >= 4 * COUNT(course_rating)
 ),
 transitions AS (
   SELECT cc.course_id AS first_id, cc.course_name AS first_course,
