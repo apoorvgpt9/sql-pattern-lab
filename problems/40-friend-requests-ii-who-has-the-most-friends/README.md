@@ -95,7 +95,7 @@ LIMIT 1;
 
 **Why it is correct:** `people` is the set of everyone who appears in either column, and here `UNION` (dedup) is exactly right, because it is a list of people. For each person, the subquery counts rows that mention them in either role. No row mentions the same person twice, so each row counts once. It is the natural first attempt because it mirrors the sentence "for each person, count their friendships".
 
-**Cost model (reasoned, plan shape checked with `EXPLAIN FORMAT=TREE`):** the subquery sits in the select list, so MySQL runs it as a *dependent subquery* once per person. Without an index on `accepter_id`, the `OR` cannot use the primary key alone, so each run scans the whole table. The cost is people × rows, which is quadratic. With `indexes.sql`, the plan shows "Index range scan … re-planned for each iteration": each run probes the PK for `requester_id` and the new index for `accepter_id`, so the cost becomes roughly linear. A top-1 sort (`limit input to 1 row`) then keeps only the best row.
+**Cost model (reasoned, plan shape checked with `EXPLAIN FORMAT=TREE`):** the subquery sits in the select list, so MySQL runs it as a *dependent subquery* once per person. Without an index on `accepter_id`, the `OR` cannot use the primary key alone, so each run scans the whole table. The cost is people × rows, which is quadratic. With `indexes.sql`, the plan changes to "Index range scan … (re-planned for each iteration)", which looks like a per-person probe of the PK and the new index. It is not: the bench's `EXPLAIN ANALYZE` shows that range scan reading every row of the table for every person (`rows=1000 loops=332` at 1K rows). The `OR` across two columns does not become two narrow lookups, so the cost stays people × rows. Measured: 59 ms at 1K with or without the index, and a timeout at 100K either way. Writing the two roles as two separate correlated counts, `(SELECT COUNT(*) … WHERE requester_id = p.id) + (SELECT COUNT(*) … WHERE accepter_id = p.id)`, gives each one a single-column equality that the PK and the index can serve (reasoned, not benchmarked). A top-1 sort (`limit input to 1 row`) then keeps only the best row.
 
 ### Approach 2: UNION ALL, then GROUP BY (`solutions/02_union_all_then_group.sql`)
 
@@ -154,14 +154,14 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Approach 3 does the heavy counting where the data is already ordered (the PK for requesters, the index for accepters). It hands the final aggregate one row per person per role instead of one row per friendship endpoint. Approach 2 has the same logic, but hashes every endpoint row. Approach 1 recounts the table once per person, so it is quadratic without the accepter index. The pre-aggregate-then-combine shape is also what keeps the shuffle small at scale (section 6c).
+Approach 3 does the heavy counting where the data is already ordered (the PK for requesters, the index for accepters). It hands the final aggregate one row per person per role instead of one row per friendship endpoint. Approach 2 has the same logic, but hashes every endpoint row. Approach 1 recounts the table once per person, so it is quadratic, and the accepter index does not save it (the `OR` defeats it; see its cost model). Measured at 1M rows: approach 3 took 4.18 s without the index and 1.82 s with it; approach 2 took 4.90 s and 5.33 s. The two were tied at 100K without the index. The index helps approach 3 because both of its branches can stream in index order; approach 2 still hashes every endpoint. The pre-aggregate-then-combine shape is also what keeps the shuffle small at scale (section 6c).
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 without the index goes first, because people × rows grows quadratically. Approach 2's temporary table of 2 × rows endpoint ids comes next, once it no longer fits in memory and spills. Approach 3's temporary tables hold one row per person, so they are smaller by the average degree.
+**(a) What breaks first.** *Measured:* approach 1 goes first, with or without the index, because people × rows grows quadratically: it takes ~60 ms at 1K rows and times out at 100K. *Reasoned:* Approach 2's temporary table of 2 × rows endpoint ids comes next, once it no longer fits in memory and spills. Approach 3's temporary tables hold one row per person, so they are smaller by the average degree.
 
 **(b) One machine, ~1M–100M rows.**
-- `indexes.sql` adds `RequestAccepted (accepter_id)`. The PK already covers `requester_id`. With both, each role's `GROUP BY` streams in index order. The bench runs every approach with and without it.
+- `indexes.sql` adds `RequestAccepted (accepter_id)`. The PK already covers `requester_id`. With both, each role's `GROUP BY` streams in index order. Measured at 1M rows it more than halves approach 3 (4.18 s → 1.82 s), does nothing for approach 2 (4.90 s → 5.33 s), and does not rescue approach 1.
 - `ORDER BY num DESC LIMIT 1` is not a full sort: MySQL keeps a top-1 buffer (the plan shows `limit input to 1 row(s) per chunk`). The cost sits in the aggregation, not the sort.
 - If this is a product query ("top users by friends"), don't recompute it. Keep a `friend_count` per user, maintained on write; see (d).
 
