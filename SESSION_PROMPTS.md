@@ -167,3 +167,37 @@ Read CLAUDE.md. Build the study app.
 5. Add a CI step that runs build_app.py and fails if it errors. Commit the built app/index.html.
 Open PR "app: study canvas".
 ```
+
+---
+
+## Step 5 — Frontend reskin (time-boxed, optional)
+
+```
+Read CLAUDE.md, then app/template.html and scripts/build_app.py. If a frontend-design skill is available, load it.
+
+Goal: give the study app (now public at https://apoorvgpt9.github.io/sql-pattern-lab/) a distinctive, polished
+visual design. It doubles as a portfolio piece for a senior data engineer. This is a RESKIN, hard time box 40 minutes.
+
+You may change ONLY app/template.html (markup, CSS, the page's JS) and then regenerate app/index.html with
+python scripts/build_app.py. Do not touch build_app.py, problems/, the harness or workflows.
+
+Must keep (these are tested):
+- Every existing element id the JS relies on, the embedded JSON data contract, and the reveal order:
+  Hint 1 → 2 → 3 → Decomposition → Approaches → At scale → Edge cases → Follow-ups → Snowflake notes → Pattern links.
+  Nothing gated may be in the visible DOM before its reveal.
+- Works from file:// and from Pages; zero external requests (no CDN fonts or scripts; system font stacks only).
+- localStorage wrapped in try/catch; the page must work with storage blocked.
+- Light and dark themes via CSS variables and prefers-color-scheme; WCAG AA contrast (≥ 4.5:1 body text).
+- 360px phone width with no horizontal page scroll; code scrolls inside its block.
+
+Worth improving:
+- The landing view: in 3 seconds a visitor should understand what this is (45 SQL problems, decomposition-first,
+  every approach executed and benchmarked on MySQL 8.0), with a clear "start" path and a link to the repo.
+- Visual hierarchy of the problem view: spec → attempt box → reveal ladder should read as one flow.
+- The bench tables: add a small inline bar or ratio visual next to each time (pure CSS, from data already in the page).
+
+Process: commit and push after the first working pass, open a draft PR immediately, then refine. Before marking
+ready, verify in headless Chromium (Playwright is preinstalled): open a problem, click every reveal step in order,
+check no console errors and no non-file requests, screenshot light, dark and 360px. Run python scripts/build_app.py
+--check. Open PR "app: visual redesign" and make CI green.
+```
