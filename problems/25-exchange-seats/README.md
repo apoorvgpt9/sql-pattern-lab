@@ -138,7 +138,7 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Approach 3 asks each row only about itself, so it has no join, no window frame and no neighbour dependence that could fail at the ends of the table. That matters most in distributed engines (section 6c), where "my neighbour" means a global sort or a shuffle, and "my new id" is free. On a single machine it still pays one final sort on the computed id, but it avoids approach 2's two buffered window passes and approach 1's *n* lookups; the measured table shows how that nets out.
+Approach 3 asks each row only about itself, so it has no join, no window frame and no neighbour dependence that could fail at the ends of the table. That matters most in distributed engines (section 6c), where "my neighbour" means a global sort or a shuffle, and "my new id" is free. On a single machine it still pays one final sort on the computed id, but it avoids approach 2's two buffered window passes and approach 1's *n* lookups. Measured at 1M seats: approach 3 took 5.63 s, approach 1 6.60 s (only 1.2× slower: primary-key lookups are cheap), and approach 2 24.8 s (4.4× slower). The two buffered windows are the expensive part on MySQL, not the neighbour lookups.
 
 ## 6. At scale
 
