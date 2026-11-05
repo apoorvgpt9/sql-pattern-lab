@@ -234,7 +234,7 @@ One trap that is not in `mistakes/`: forgetting `ORDER BY visit_date`. MySQL usu
 2. **"Consecutive days instead of consecutive ids."** Change the label to `DATE_SUB(visit_date, INTERVAL ROW_NUMBER() OVER (ORDER BY visit_date) DAY)`. Never write `visit_date - ROW_NUMBER()`: MySQL turns the date into the number `20240131` and the subtraction breaks at every month boundary. See `33-find-users-with-persistent-behavior-patterns`.
 3. **"What if ids can repeat or have gaps by design?"** Then id adjacency is the wrong definition, and you number the busy rows *and* all rows by date. The robust label is `ROW_NUMBER() OVER (ORDER BY d) - ROW_NUMBER() OVER (PARTITION BY is_busy ORDER BY d)` over **all** rows: the "difference of two row numbers" form, which does not need integer keys at all.
 4. **"Only the longest run."** Group to island grain, then `ORDER BY COUNT(*) DESC LIMIT 1`, after deciding a tie rule (earliest run first is the usual choice). Same move as in problem 33.
-5. **"Why not LAG/LEAD?"** Approach 2 is fine for a fixed small threshold, and on MySQL it may even be a little faster (one sort fewer). The trade-off is generality: it does not extend to "at least k" or to run-level outputs without growing the query.
+5. **"Why not LAG/LEAD?"** Approach 2 is correct for a fixed small threshold, and it has one sort fewer, but on MySQL that did not make it faster: the bench measured it 2.1× slower at 1M rows, because its four LAG/LEAD columns run as a buffered window. The trade-off is generality: it does not extend to "at least k" or to run-level outputs without growing the query.
 
 ## 9. Snowflake notes (UNVERIFIED)
 
