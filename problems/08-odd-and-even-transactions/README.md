@@ -61,7 +61,7 @@ Read the output column list first: `transaction_date, odd_sum, even_sum`. One ke
 2. **Bucket test: parity of `amount`.**
    *Why a CASE here, not a filter:* the two sums must come from the **same group**. A `WHERE` on parity would remove the other parity's rows before they reach their own sum, and you would need a second query. A `CASE` inside the aggregate lets one pass compute both.
 3. **Missing side: `ELSE 0`.**
-   *Why not leave it NULL:* "display as 0". `SUM` of an empty or all-NULL input is NULL; a `CASE` with no `ELSE` yields NULL for every non-matching row. `ELSE 0` makes the non-matching rows contribute a real zero.
+   *Why not leave it NULL:* the spec wants 0 for a side with no transactions. `SUM` of an empty or all-NULL input is NULL; a `CASE` with no `ELSE` yields NULL for every non-matching row. `ELSE 0` makes the non-matching rows contribute a real zero.
 4. **Order: `ORDER BY transaction_date`.**
    *Why explicit:* the spec fixes an order; `GROUP BY` does not promise one in MySQL 8.0.
 
@@ -111,7 +111,7 @@ ORDER BY d.transaction_date;
 
 **Why it is correct:** each CTE is at day grain, so both LEFT JOINs are 1:1 from `days` and cannot duplicate rows. `days` carries every date, so a date missing from `odd_day` or `even_day` still survives, and `COALESCE` supplies the 0. Replace either `LEFT JOIN` with `JOIN`, or build the date list from one of the sums, and one-sided days vanish (`mistakes/inner_join_of_parities.sql`).
 
-**Cost model (reasoned):** three scans of `transactions` (the CTEs are referenced once each, so MySQL 8.0 can merge or materialise them), two small hash joins on day-grain rows, no per-date loop. The joins are cheap because the day-grain inputs are small; the cost is the repeated scans of the big table. Linear in rows, with a constant about three times approach 3.
+**Cost model (reasoned):** three scans of `transactions` (the CTEs are referenced once each, so MySQL 8.0 can merge or materialise them), two small hash joins on day-grain rows, no per-date loop. The joins are cheap because the day-grain inputs are small; the cost is the repeated scans of the big table. Linear in rows. Measured, it is about 1.4× approach 3 at 1M rows, with or without the index, not the 3× that counting scans suggests. Reasoned explanation: the extra scans run over a narrow table and stay in the buffer pool, and the per-row aggregation work is similar in both.
 
 ### Approach 3 (optimal): conditional aggregation (`solutions/03_conditional_aggregation.sql`)
 
@@ -153,7 +153,7 @@ Approach 3 reads the table once and never has to reassemble anything, so the "mi
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 goes first without an index, because its cost is days × rows. Approach 2 degrades next, as three full scans. Approach 3 degrades last and most gently, since it is one scan and its state is two numbers per distinct date.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* approach 1 goes first without an index, because its cost is days × rows: it times out at 100K rows. Approach 2 degrades next (about 1.4× approach 3 at 1M). Approach 3 degrades last and most gently, since it is one scan and its state is two numbers per distinct date.
 
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql` adds `transactions (transaction_date, amount)`. It is *covering*: no other column is read. Approach 1 turns each subquery into a short index range read; approach 3 aggregates in index order.

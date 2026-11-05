@@ -155,11 +155,11 @@ Approach 3 asks both questions of each user's rows while it already holds them, 
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1, because of users × rows when users and rows grow together, and it is the one most sensitive to which index exists. Approach 2 degrades with its second scan and its join. Approach 3 degrades last.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* nothing breaks here; all three scale linearly (each grows about 10× from 100K to 1M rows). Approach 1 is not quadratic, because the primary key starts with `user_id` and each subquery is a seek. It is the slowest (about 1.65× approach 3 at 1M) because it visits each user's rows twice and materialises two derived tables. Approach 2 is about 1.1× approach 3: its second pass and join cost little, since both intermediate results are at user grain.
 
 **(b) One machine, ~1M–100M rows.**
 - The primary key `(user_id, activity_date, activity_type)` already clusters each user's rows, which helps every approach. It does not group by type within a user, and it makes each row carry `activity_date`, which this query never reads.
-- `indexes.sql` adds `(user_id, activity_type, activity_duration)`. It is *covering*, narrower than the clustered row, and keeps each user's trial rows contiguous and paid rows contiguous. It turns approach 1's subqueries into two short ranges and lets approach 3 stream.
+- `indexes.sql` adds `(user_id, activity_type, activity_duration)`. It is *covering*, narrower than the clustered row, and keeps each user's trial rows contiguous and paid rows contiguous. In theory it turns approach 1's subqueries into two short ranges and lets approach 3 stream. Measured, it changes nothing: every approach runs within noise of its no-index time at every size. Approach 3 already streams on the primary key, which is ordered by `user_id`, and the narrower covering scan saves too little to show up. On this schema, don't add it.
 - The `activity_type` filter is a handful of distinct values, so on its own it is not selective. Low-cardinality columns only pay off as the *second* column behind `user_id`.
 - Do not "pre-filter" with `activity_type <> 'cancelled'`: an `IN` list of the wanted values is explicit and survives a new type being added later.
 

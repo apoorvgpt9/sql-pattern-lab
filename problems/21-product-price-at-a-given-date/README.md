@@ -66,6 +66,8 @@ FROM (
 GROUP BY product_id;
 ```
 
+This assembly is approach 2, the one-pass form, chosen because it shows every step. On MySQL it measures slowest (about 2.2× the others at 1M rows; section 5). Approach 3 keeps step 3 and replaces steps 1–2 with one correlated "latest change on or before the date" lookup per distinct product.
+
 Self-check before you submit: the number of output rows equals `SELECT COUNT(DISTINCT product_id) FROM Products`. Then find one product whose only changes are after the date and confirm it shows 10.
 
 ## 5. Approaches: brute force → optimal
@@ -84,7 +86,7 @@ SELECT product_id, 10 FROM Products GROUP BY product_id HAVING MIN(change_date) 
 
 **Why it is correct:** every product falls in exactly one of two disjoint groups: it has a change on or before the date (first branch) or its earliest change is after the date (second branch; `HAVING MIN(change_date) > …` is true exactly when no change qualifies). `UNION ALL` is safe because the groups cannot overlap. The join back on `(product_id, change_date)` returns exactly one row per product.
 
-**Cost model (reasoned):** three reads of `Products`: the filtered `GROUP BY MAX`, the join back, and the `GROUP BY … HAVING` in the second branch. The two group-bys are each a single linear pass; the join back is on one row per product. It scales linearly in practice, but it does about three times the work of a single pass, and any change in the date logic has to be made in two branches. This multi-pass UNION is the classic textbook answer and a natural first attempt.
+**Cost model (from the bench's EXPLAIN ANALYZE at 1M rows):** on paper, three reads of `Products`: the filtered `GROUP BY MAX`, the join back, and the `GROUP BY … HAVING` in the second branch. In practice MySQL runs **both group-bys as skip scans** of the primary key (*covering index skip scan for grouping*): it jumps through `(product_id, change_date)` one product at a time instead of reading every row. The join back is a primary-key lookup per product. So the "three passes" cost far less than three full scans, and this approach measures as fast as approach 3 (section 5 table). The real cost is maintenance: any change in the date logic has to be made in two branches. This multi-pass UNION is the classic textbook answer and a natural first attempt.
 
 ### Approach 2: one scan, window + conditional aggregate (`solutions/02_one_scan_window_pivot.sql`)
 
@@ -92,7 +94,7 @@ The SQL is the assembled query in section 4.
 
 **Why it is correct:** the window gives each row its product's latest qualifying date (NULL if none) without removing any row, so the `GROUP BY product_id` still sees every product. The conditional `MAX` picks the single row on that date. `COALESCE` handles the NULL. There is exactly one output row per distinct product by construction.
 
-**Cost model (reasoned):** one scan of `Products`, with every row going through the window evaluation, into a window partitioned by `product_id`, then a group-by on the same key. When the rows arrive grouped by `product_id` (the primary key and `indexes.sql` both provide that order), neither step needs a sort or a hash table of the whole input. There is no join and no second read.
+**Cost model (reasoned):** one scan of `Products`, with every row going through the window evaluation, into a window partitioned by `product_id`, then a group-by on the same key. There is no join and no second read. In theory the rows already arrive grouped by `product_id` (the primary key provides that order), so no sort is needed. The bench's plan shows otherwise. MySQL scans and **sorts** by `product_id` anyway, with or without `indexes.sql`. Then a *window aggregate with buffering* (about 2.6 s of the total at 1M rows) materialises all 1M rows, and an aggregate using a temporary table groups them again. It is about 2.2× approach 3 at 1M rows.
 
 ### Approach 3 (optimal): correlated lookup per product (`solutions/03_correlated_latest.sql`)
 
@@ -106,7 +108,7 @@ FROM (SELECT DISTINCT product_id FROM Products) p;
 
 **Why it is correct:** the outer query is the unfiltered list of distinct products, so no product can be lost. The subquery returns the price of the latest qualifying change, or no row (NULL) when none qualifies, and `COALESCE` supplies 10. It reads like the spec, one product at a time, which is why many people write it first; it is listed last here because on this schema (primary key `(product_id, change_date)`) it is the one that exploits the physical order.
 
-**Cost model (reasoned):** one subquery per distinct product. Without an index on `product_id`, each execution scans the table and sorts the qualifying rows, so the cost is products × rows. The primary key `(product_id, change_date)` already lets MySQL find a product's changes, so even without `indexes.sql` each probe reads one product's rows, not the whole table; whether the plan reads backward from the date boundary and stops at the first row (cheap) is something to read in `EXPLAIN`.
+**Cost model (reasoned):** one subquery per distinct product. Without an index on `product_id`, each execution scans the table and sorts the qualifying rows, so the cost is products × rows. The primary key `(product_id, change_date)` already lets MySQL find a product's changes, so even without `indexes.sql` each probe reads one product's rows, not the whole table; whether the plan reads backward from the date boundary and stops at the first row (cheap) is something to read in `EXPLAIN`. (The bench's EXPLAIN ANALYZE shows only the outer skip scan that lists the distinct products, about 0.36 s at 1M rows; the remaining ~2.2 s is the 235K subquery executions, which the plan text does not break down.)
 
 **Measured** (`gen.py` data, generated by the bench workflow; the table is filled in automatically, so never type numbers here):
 
@@ -136,15 +138,15 @@ A ratio below 1.0× means that approach was faster than the one labelled optimal
 
 ### Why the optimal one wins
 
-Approach 3 asks the question the way the data is stored: the primary key `(product_id, change_date)` keeps each product's changes in date order, so "latest change on or before the date" is one backward index probe that stops at the first qualifying entry, and the work per product does not depend on how long its history is. Approaches 1 and 2 read every row of `Products` (several passes in approach 1, a window over all rows in approach 2) to answer something that depends on one row per product. The default case is handled by the outer list of distinct products plus `COALESCE`, so no second branch is needed. This is a physical-design result: with a table that lacks the key, or on an engine without ordered storage, the correlated probe loses its advantage and the single-pass window (approach 2) becomes the more robust choice. Read the "with indexes" and "without" bench tables rather than assuming.
+It wins on clarity and robustness, and on speed only at 100K rows; the bench does not support a clear speed claim at 1M. Approach 3 asks the question the way the data is stored: the primary key `(product_id, change_date)` keeps each product's changes in date order, so "latest change on or before the date" is one probe per product, and the default case is one `COALESCE` with no second branch. Measured: at 100K rows approach 3 is the fastest (approach 1 is 1.3×). At 1M rows approach 1 is about 10% faster without `indexes.sql`, and the two tie with it. The reason is that MySQL turns approach 1's two `GROUP BY`s into skip scans over the same primary key, so the "multi-pass" textbook answer exploits the ordered storage just as well. Approach 2, the single-pass window, is the clear loser on MySQL (about 2.2× at 1M), because the window buffers, sorts and materialises every row. This is a physical-design result. With a table that lacks the `(product_id, change_date)` key, both approach 1's skip scans and approach 3's probes lose their advantage (reasoned).
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 does about three passes and degrades linearly with table size. Approach 2 pushes every row through a window, which is expected to cost more per row than the aggregate passes in MySQL. Approach 3 degrades last as long as the ordered key exists; without it each probe becomes a scan and it degrades first.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* approach 2 first: it pushes every row through a buffered window, then materialises and re-aggregates them (about 2.2× the others at 1M). Approaches 1 and 3 both lean on the primary key's order (skip scans and per-product probes) and stay level with each other. Without that key (reasoned), approach 3's probes become scans, products × rows, and it degrades first.
 
 **(b) One machine, ~1M–100M rows.**
-- The primary key `(product_id, change_date)` already orders each product's history by date, which is what every approach needs. `indexes.sql` adds `new_price` to make a covering index, so the query never touches the base table.
-- For a table where products have *long* histories, the backward probe in approach 3 reads only the newest qualifying row, so it is expected to be the fastest on a single machine; for short histories the difference shrinks. This is a case where the index order, not the SQL shape, decides.
+- The primary key `(product_id, change_date)` already orders each product's history by date, which is what every approach needs. `indexes.sql` adds `new_price` to make a covering index, so the query never touches the base table. Measured, it changes nothing: every approach runs in the same time with and without it. The clustered primary key already holds `new_price`, because InnoDB stores the row in the primary key.
+- For a table where products have *long* histories, the backward probe in approach 3 reads only the newest qualifying row, so it should pull ahead as histories grow (reasoned; the bench data has about 4 changes per product, and there approach 1 keeps up). This is a case where the index order, not the SQL shape, decides.
 - If the date is always "today", filter on a recent window of changes first, since older rows can only matter for products without a recent change (a two-step query), or keep the current price in a separate table (section 6d).
 
 **(c) Distributed engines, billions of rows. *Reasoned, not measured.***

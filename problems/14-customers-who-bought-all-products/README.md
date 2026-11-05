@@ -35,7 +35,7 @@ Confidence is `high`; the spec does not say the following, so the guide fixes th
 
 <details><summary>Hint 1</summary>
 
-Pattern: **relational division**, "customers who have done *all* of X". Counting form: compare a customer's number of distinct matches with the total number of X.
+Pattern: **relational division**: "customers who have done *all* of X". "All" is a universal quantifier, and SQL has no FOR ALL, so it has to be rewritten into something SQL can express.
 
 </details>
 
@@ -143,11 +143,11 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, Intel(R) Xeon(R) Plati
 
 ### Why the optimal one wins
 
-Approach 3 does work proportional to the purchases that exist; approaches 1 and 2 do work proportional to the purchases that *could* exist (customers × products). It also states the idea at the level of the problem ("how many distinct products, against how many exist"). The price is one assumption (the foreign key). If that assumption is in doubt, either join to `Product` before counting (`JOIN Product p ON p.product_key = c.product_key`) or use approach 1, which does not depend on it.
+Approach 3 does work proportional to the purchases that exist; approaches 1 and 2 do work proportional to the purchases that *could* exist (customers × products). It also states the idea at the level of the problem ("how many distinct products, against how many exist"). The price is one assumption (the foreign key). Measured at 1M rows it is about 12× faster than approach 2, and about 4× faster than approach 1 once approach 1 has its index (without it, approach 1 does not finish). If that assumption is in doubt, either join to `Product` before counting (`JOIN Product p ON p.product_key = c.product_key`) or use approach 1, which does not depend on it.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 2, because the grid is customers × products regardless of the data. Approach 1 comes next if the probes are not indexed: customers × products scans of `Customer`. Approach 3 scales with purchases.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* approach 1 without the index. Each of its customers × products probes is a scan of the unindexed `Customer` heap, and it times out already at 100K rows. With the index each probe is a point lookup, and it finishes 1M rows in about 2 s. Approach 2 never times out but pays for the full grid: about 12× approach 3 at 1M without the index, and 12× with it. Approach 3 scales with purchases and is the fastest at every size, with or without the index.
 
 **(b) One machine, ~1M–100M rows.**
 - `Customer` has no primary key (duplicates are allowed), so without help it is a heap. `indexes.sql` adds `(customer_id, product_key)`, which is covering for all three approaches. It makes the distinct count streamable, and each `NOT EXISTS` probe a point lookup.

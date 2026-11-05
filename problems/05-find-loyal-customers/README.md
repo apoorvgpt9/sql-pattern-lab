@@ -183,11 +183,11 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 9V74 80-Core 
 
 ### Why the optimal one wins
 
-Approach 3 evaluates all criteria in the same pass over the same groups, so there is nothing to join and nothing to re-scan; the number of passes does not grow with the number of criteria (approach 1 grows with customers × criteria, approach 2 with criteria). Adding a fourth criterion is one more `HAVING` line, not another CTE and join. Its performance depends little on physical design, and its measures are decomposable, which is what distributed engines need (section 6c).
+Approach 3 evaluates all criteria in the same pass over the same groups, so there is nothing to join and nothing to re-scan; the number of passes does not grow with the number of criteria (approach 1 grows with customers × criteria, approach 2 with criteria). Adding a fourth criterion is one more `HAVING` line, not another CTE and join. It is the fastest approach in every measured column: at 1M rows, approach 2 takes about 1.8× as long without the index and 2× with it, and approach 1 times out without the index. `indexes.sql` more than halves approach 3's time, because the `GROUP BY` then streams in index order. Its measures are decomposable, which is what distributed engines need (section 6c).
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, to be checked against the bench table:* approach 1 without an index on `customer_id` goes first (quadratic, with 5 scans per customer). Approach 2 is linear but pays three scans and three temporary tables, so it spills earlier. Approach 3 degrades last: one scan, and memory proportional to the number of distinct customers, not rows.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* approach 1 without an index on `customer_id` goes first. It already times out at 100K rows (quadratic, with 5 scans per customer). Approach 2 is linear but pays three scans and three temporary tables, so it spills earlier. Approach 3 degrades last: one scan, and memory proportional to the number of distinct customers, not rows.
 
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql` adds `(customer_id, transaction_type, transaction_date)`. It is covering for all three solutions, makes approach 1 feasible, and lets approaches 2 and 3 aggregate in index order without a temporary table. The bench runs with and without it.
@@ -246,7 +246,7 @@ Each "breaks" claim below is checked by execution: `mistakes/*.sql` are the temp
 | Span exactly 30 days qualifies; 29 days does not; all on one day; a span that crosses a leap February | `tests/edge_span_boundary.sql` | `span_strictly_greater` (`> 30`) |
 | Refund rate exactly 20% does not qualify; 1/6 does; 1/4 does not | `tests/edge_refund_rate.sql` | `refund_rate_inclusive` (`<=`), `refund_rate_over_purchases` (wrong denominator), `where_purchase_only` |
 | Refund extends the span beyond the purchase window | `tests/edge_span_includes_refunds.sql` | `span_purchases_only`, `where_purchase_only` |
-| Output order is ascending by `customer_id` regardless of insertion order | `tests/edge_ordering.sql` | `no_order_by` |
+| Output order is ascending by `customer_id` regardless of insertion order | `tests/edge_ordering.sql` | none listed. A query without `ORDER BY` is wrong, but whether it *fails* this dataset depends on the order MySQL happens to emit groups in, which is unspecified, so it is not kept as an executable mistake. |
 | Empty table | `tests/edge_empty.sql` | none: an empty result |
 | NULLs | not applicable: every column is NOT NULL | none |
 | Counting purchases vs counting all rows for the "at least 3" criterion | not testable | indistinguishable given the rate rule (see Assumptions) |

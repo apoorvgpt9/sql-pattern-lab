@@ -40,7 +40,7 @@ Shape: (1) group by student and subject. (2) For each group find the score at th
 
 <details><summary>Hint 3</summary>
 
-Key trick: in one pass, `FIRST_VALUE(score)` and `LAST_VALUE(score)` over `PARTITION BY student_id, subject ORDER BY exam_date`, with the frame `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`. The frame is the catch: with only an `ORDER BY`, the default frame stops at the current row and `LAST_VALUE` just returns the current row's score. Then collapse the repeated rows with a `GROUP BY` or by keeping one row per pair.
+Key trick: in one pass, `FIRST_VALUE(score)` and `LAST_VALUE(score)` over `PARTITION BY student_id, subject ORDER BY exam_date`, with the frame `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`. The frame is the catch: with only an `ORDER BY`, the default frame stops at the current row and `LAST_VALUE` just returns the current row's score. Then collapse the repeated rows with a `GROUP BY` or by keeping one row per pair. The form that measures fastest on MySQL avoids the window: `MIN(exam_date)` and `MAX(exam_date)` per pair with `HAVING COUNT(*) >= 2`, then join `Scores` back twice, once on each date, to read the two scores.
 
 </details>
 
@@ -72,6 +72,8 @@ GROUP BY student_id, subject, first_score, latest_score    -- step 3
 ORDER BY student_id, subject;
 ```
 
+This assembly is approach 2: it maps the wording onto steps most directly. On MySQL it measures about 2.5× slower than approach 3 at 1M rows (section 5). Approach 3 keeps the same three ideas, but computes step 1 as `MIN`/`MAX(exam_date)` per pair and reads the two scores by joining back on the primary key.
+
 Self-check before you submit: take one improving pair with three exams and confirm that the returned first/latest are the first and last *by date*, not the lowest/highest. Check that no (student, subject) appears twice.
 
 ## 5. Approaches: brute force → optimal
@@ -98,7 +100,7 @@ The SQL is the assembled query in section 4.
 
 **Why it is correct:** the window orders each pair by `exam_date` and exposes the whole partition to both functions, so `FIRST_VALUE` is the score at the earliest date and `LAST_VALUE` the score at the latest. Filtering on `latest > first` and grouping on the four columns returns one row per improving pair.
 
-**Cost model (reasoned):** one scan; the window needs rows ordered by `(student_id, subject, exam_date)`, which is exactly the primary-key order, so MySQL can read them in that order without an extra sort. There are no joins and no subqueries. The `GROUP BY` at the end works on rows that are already grouped. In an engine without a matching physical order, the cost is one sort of the table. Every exam row, not only the two ends of each pair, goes through the window evaluation, and `FIRST_VALUE`/`LAST_VALUE` with a full-partition frame make MySQL buffer the partition.
+**Cost model (reasoned, then checked against the bench's EXPLAIN ANALYZE):** one scan; the window needs rows ordered by `(student_id, subject, exam_date)`, which is exactly the primary-key order, so in principle MySQL could read them in that order without an extra sort. The bench's plan shows it does not: it scans the table and **sorts** it anyway. Then the *window aggregate with buffering* takes about 3.9 s of the 6 s at 1M rows. The 1M-row result is materialised, and duplicates are removed in a temporary table for the outer `GROUP BY`. There are no joins and no subqueries. The `GROUP BY` at the end works on rows that are already grouped. In an engine without a matching physical order, the cost is one sort of the table. Every exam row, not only the two ends of each pair, goes through the window evaluation, and `FIRST_VALUE`/`LAST_VALUE` with a full-partition frame make MySQL buffer the partition.
 
 ### Approach 3 (optimal): one `GROUP BY`, two joins back (`solutions/03_group_dates_then_join_twice.sql`)
 
@@ -135,11 +137,11 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Approach 3 does the expensive part, finding the two extreme dates of every pair, as a plain aggregate over the primary-key order, and then fetches exactly two rows per pair by key. Approach 2 reads each exam once but sends every row through a window, which MySQL evaluates by buffering partitions. So the ranking in MySQL is expected to favour approach 3 and the bench table is the arbiter; this is not a general law, and in an engine with cheap windows or aggregates like `MIN_BY`/`MAX_BY` (section 9) the one-pass forms win. The mechanism that makes all three acceptable here is the same: the primary key already orders rows by `(student_id, subject, exam_date)`, so the clustered key *is* the best index (section 6b) and there is no `indexes.sql`. Approach 2 is still the form that is hardest to get wrong about *which* rows are the ends; it only needs the right frame.
+Approach 3 does the expensive part, finding the two extreme dates of every pair, as a plain aggregate over the primary-key order, and then fetches exactly two rows per pair by key. Approach 2 reads each exam once but sends every row through a window, which MySQL evaluates by buffering partitions. Measured at 1M rows: approach 2 is about 2.5× approach 3 and approach 1 about 3.4× (at 100K: 1.4× and 4.4×). The plan shows why approach 2 loses: MySQL sorts the table even though the primary key already has that order, and the buffered window over all 1M rows is most of the time; this is not a general law, and in an engine with cheap windows or aggregates like `MIN_BY`/`MAX_BY` (section 9) the one-pass forms win. The mechanism that makes all three acceptable here is the same: the primary key already orders rows by `(student_id, subject, exam_date)`, so the clustered key *is* the best index (section 6b) and there is no `indexes.sql`. Approach 2 is still the form that is hardest to get wrong about *which* rows are the ends; it only needs the right frame.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1, since it forms k × k pairs of rows per (student, subject) before filtering and runs two subqueries per row. Approach 2 sends every row through a window and buffers partitions, so it is expected to slow down next, with total rows. Approach 3 degrades last, as the number of pairs (two lookups each) grows.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* approach 1, since it forms k × k pairs of rows per (student, subject) before filtering and runs two subqueries per row (about 3.4× approach 3 at 1M). Approach 2 sends every row through a sort and a buffered window, so it comes next (about 2.5×), and its gap to approach 3 grew from 1.4× at 100K. Approach 3 degrades last, as the number of pairs (two lookups each) grows.
 
 **(b) One machine, ~1M–100M rows.**
 - `schema.sql` declares the primary key `(student_id, subject, exam_date)`. In InnoDB the table *is* that index (clustered), and it contains `score` too, so every approach is already served by an ordered, covering structure. A secondary index would only add write cost, so `indexes.sql` is intentionally absent.

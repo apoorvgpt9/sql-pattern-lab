@@ -94,7 +94,7 @@ WHERE rn = 1                                           -- step 4
 ORDER BY season;
 ```
 
-Step 1 is an optimisation, not part of the logic: dropping it and grouping the joined rows by (season, category) directly gives the same result (that is approach 3). Whether the pre-aggregation pays off depends on how expensive the join is in your engine; see section 5.
+Step 1 is an optimisation, not part of the logic: dropping it and grouping the joined rows by (season, category) directly gives the same result (that is approach 3, the one labelled optimal). Whether the pre-aggregation pays off depends on how expensive the join is in your engine. On MySQL the bench says it pays at 100K rows (about 1.8× faster) and costs at 1M rows (about 2× slower), because its (product, season) group-by grows with the catalogue (section 5). Learn the decomposition with step 1, and ship it without step 1 unless the join is the expensive part.
 
 Self-check before you submit: at most 4 rows, one per season, no season repeated. Then take one boundary day (31 May, 1 June, 29 February) and confirm it lands in the season you expect.
 
@@ -156,11 +156,11 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-On MySQL, approach 3 gets by with one pass: a primary-key lookup per sale and a group-by with very few groups, which fits in memory. Approach 1 shares that aggregation, so it is not slower for being a NOT EXISTS; it simply has a clumsier ranking step. Approach 2 looks cleverer, because it joins a much smaller input, but it pays for a group-by with up to 4 × products groups first and then aggregates again, and that extra work can outweigh the cheap lookups it saves. So "reduce before you join" is a conclusion about engines where the join is expensive (a shuffle), not a rule for a primary-key lookup join. Read the bench table: if it contradicts this paragraph, trust the table and fix the paragraph.
+It wins on stability, not by a wide margin, and the bench shows a crossover worth knowing. Approaches 1 and 3 run the same aggregation (a primary-key lookup per sale, then a group-by with a few dozen groups) and are within noise of each other at every size. The NOT EXISTS is not the slow part; the ranking step costs nothing measurable. Approach 2 is the interesting one. At 100K rows it is the **fastest**, about 1.8× faster than approach 3, because it skips the 100K primary-key lookups and joins only about 4K pre-aggregated rows. At 1M rows it is the **slowest**, about 2× slower. Its first group-by, keyed on (product_id, season), grows with the catalogue (about 40K groups at 1M rows against 4K at 100K). In the plan, that one aggregation goes from about 0.08 s to 3.8 s, roughly 4× more time per input row; the plan does not show why. So "reduce before you join" is a conclusion about engines where the join is expensive (a shuffle), not a rule for a primary-key lookup join, and a two-size benchmark can rank the same query first and last.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* the group-by on a derived expression over the full `sales` table, in every approach: nothing can index a `CASE` over the month. The approach whose group-by has the most groups (approach 2, keyed on product and season) needs the biggest temporary table and degrades first once it no longer fits in memory; the (season, category) group-bys of approaches 1 and 3 stay tiny. The join to `products` is a key lookup, so it scales linearly with the number of sales.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* the group-by on a derived expression over the full `sales` table, in every approach: nothing can index a `CASE` over the month. The approach whose group-by has the most groups (approach 2, keyed on product and season) degrades first. Measured, its first aggregation grows from about 0.08 s at 100K rows to 3.8 s at 1M, far faster than the input, while the (season, category) group-bys of approaches 1 and 3 stay tiny and scale linearly (about 0.19 s → 1.9 s). The join to `products` is a key lookup, so it scales linearly with the number of sales.
 
 **(b) One machine, ~1M–100M rows.**
 - There is no index worth recommending, so there is no `indexes.sql`. The query reads every sale (a season covers a quarter of every year), so an index cannot skip rows, and the table is narrow enough that a covering index is about as wide as the base table. The group key contains an expression of the date, which an index cannot provide in order.
