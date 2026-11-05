@@ -102,7 +102,7 @@ WHERE (SELECT COUNT(*) FROM Insurance j WHERE j.tiv_2015 = i.tiv_2015) > 1
 
 **Why it is correct:** for each policy the first subquery counts everyone with its `tiv_2015`, itself included, so "> 1" means "at least one other". The second counts everyone at its location, itself included, so "= 1" means "nobody else". A NULL `tiv_2015` matches nothing, so its count is 0 and the policy is out.
 
-**Cost model (reasoned):** a dependent subquery runs once per policy per condition. Without an index it scans the table each time, so cost is rows² comparisons: this is the approach that can time out outright (the bench records a timeout as a result). With `indexes.sql` each run is an index range read of one key's entries, so total cost is about rows × twins. Note it counts *every* twin when one would do.
+**Cost model (reasoned):** a dependent subquery runs once per policy per condition. Without an index it scans the table each time, so cost is rows² comparisons: this is the approach that can time out outright (the bench records a timeout as a result). With `indexes.sql` each run is an index range read of one key's entries, so total cost is about rows × twins. Note it counts *every* twin when one would do. Measured: it times out (>60 s) at 100K rows without the indexes, and with them it runs 1M rows in about 8 s.
 
 ### Approach 2: window counts (`solutions/02_window_counts.sql`)
 
@@ -120,9 +120,9 @@ WHERE tiv_2015 IS NOT NULL AND n_same_tiv > 1 AND n_same_loc = 1;
 
 **Why it is correct:** each window count is the size of the row's group, attached to the row without collapsing it, so the grain stays at policy level. `IS NOT NULL` implements assumption 1.
 
-**Cost model (reasoned):** no self-join and no per-row probes: the table is read once, but the engine sorts it twice (once per distinct `PARTITION BY`) into a buffered window operator, and then materialises the result. Cost is dominated by the two sorts, O(n log n) each, unless an index already provides the order. The EXPLAIN on a sample shows both sorts and a temporary table.
+**Cost model (reasoned):** no self-join and no per-row probes: the table is read once, but the engine sorts it twice (once per distinct `PARTITION BY`) into a buffered window operator, and then materialises the result. The bench's EXPLAIN ANALYZE at 1M rows shows exactly that: a sort by `tiv_2015`, a window pass, a temporary table, a second sort by `(lat, lon)`, a second window pass, then the CTE materialised. The window passes and the temporary table between them cost more than the sorts themselves. `indexes.sql` does not change the plan: MySQL still sorts, because each window needs the *whole row*, and the indexes only cover the key columns. Same time with and without them (about 6 s at 1M).
 
-### Approach 3 (optimal on MySQL 8.0): `EXISTS` / `NOT EXISTS` (`solutions/03_exists_not_exists.sql`)
+### Approach 3 (optimal on MySQL 8.0 without the indexes): `EXISTS` / `NOT EXISTS` (`solutions/03_exists_not_exists.sql`)
 
 ```sql
 SELECT ROUND(SUM(i.tiv_2016), 2) AS tiv_2016
@@ -133,7 +133,9 @@ WHERE EXISTS (SELECT 1 FROM Insurance j WHERE j.tiv_2015 = i.tiv_2015 AND j.pid 
 
 **Why it is correct:** `EXISTS` is true iff some *other* row has the same `tiv_2015` (so NULL never matches); `NOT EXISTS` is true iff no other row is at the same pair. Both are evaluated against the whole table, independently. No join multiplies rows, so there is no fan-out.
 
-**Cost model (reasoned, plan shape checked with EXPLAIN on a sample):** syntactically this looks like approach 1, but it is not executed that way. MySQL 8.0 rewrites `EXISTS` into a *semi-join* and `NOT EXISTS` into an *anti-join*, and without a useful index it runs them as **hash** joins: the table is scanned and hashed on the key, and the `pid <>` condition is a residual filter on each bucket. That is a few linear passes with no sort and no temporary table. With `indexes.sql` the optimizer may switch to index nested-loop plans (with duplicate weed-out), which is not automatically faster; the "with indexes" bench table is the authority.
+**Cost model (reasoned, plan shape checked with EXPLAIN on a sample):** syntactically this looks like approach 1, but it is not executed that way. MySQL 8.0 rewrites `EXISTS` into a *semi-join* and `NOT EXISTS` into an *anti-join*, and without a useful index it runs them as **hash** joins: the table is scanned and hashed on the key, and the `pid <>` condition is a residual filter on each bucket. That is a few linear passes with no sort and no temporary table; the bench's EXPLAIN ANALYZE at 1M rows shows exactly this *hash semijoin* followed by a *hash antijoin*, and it is the fastest plan measured (about 1.7 s).
+
+**The trap: adding `indexes.sql` makes this approach about 10× slower** (about 17 s at 1M, slower than both other approaches). With an index on `(tiv_2015, pid)` available, the optimizer switches the semi-join to an index nested loop *driven from the other side*: for each row `j` it looks up every `i` with the same `tiv_2015`, then removes the duplicate `i` rows with a temporary table (*duplicate weed-out*). In the plan, the weed-out alone takes most of the time. The optimizer's cost estimate preferred that plan; the measurement did not. An index is not automatically a speed-up, and a semi-join is the classic place where it is not.
 
 **Measured** (`gen.py` data, generated by the bench workflow; the table is filled in automatically, so never type numbers here):
 
@@ -165,14 +167,14 @@ A ratio below 1.0× means that approach was faster than the one labelled optimal
 
 ### Why the optimal one wins
 
-Approach 3 is the only one that asks the engine what the wording asks, "does another row exist?", so the optimizer is free to use semi/anti-join algorithms that stop at the first match, instead of counting every twin (approach 1) or sorting the whole table twice (approach 2). That reading is reasoned and checked against plan shapes, not assumed: on a different engine or with different indexes approach 2 can win, and the bench has both "without" and "with indexes" tables so you can see where the ranking flips. Approach 3 also never depends on `IS NOT NULL` for correctness, because `NULL = NULL` is simply not a match.
+Without indexes, it wins clearly: about 3.6× faster than the window approach at 1M rows, while the brute force times out at 100K. Approach 3 is the only one that asks the engine what the wording asks, "does another row exist?". That lets MySQL use hash semi/anti-joins that never sort and never count every twin. The "with indexes" table is the counter-lesson: the same query becomes the *slowest* of the three, because the optimizer picks a nested-loop semi-join with duplicate weed-out. So "optimal" here means: the right shape, *and* a check that the plan is the one you expect. If you add `indexes.sql`, approach 1 (now about 8 s) and approach 2 (about 6 s, unaffected by the indexes) both beat it. Approach 3 also never depends on `IS NOT NULL` for correctness, because `NULL = NULL` is simply not a match.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, to be checked against the bench table:* approach 1 without an index breaks first, since rows² comparisons stop being feasible within thousands to tens of thousands of rows. Approach 2 degrades next as the two sorts spill to disk. Approach 3 stays near-linear as long as the hash tables fit in memory (the build side is the whole table, keyed on a FLOAT).
+**(a) What breaks first.** *Measured to 1M rows:* approach 1 without an index breaks first: it already times out at 100K rows, because every policy rescans the table twice (rows² comparisons). Approach 2 is linear in practice but carries two sorts, a temporary table and a materialised CTE: about 3.6× approach 3 at 1M. Approach 3 with hash joins stays near-linear as long as the hash tables fit in memory (reasoned beyond 1M: the build side is the whole table, keyed on a FLOAT, and a hash join that outgrows `join_buffer_size` spills to disk in chunks).
 
 **(b) One machine, ~1M–100M rows.**
-- `indexes.sql` adds `(tiv_2015, pid)` and `(lat, lon, pid)`. They are covering for the probes, and are what makes approach 1 feasible at all. For approach 3 they let the optimizer choose index lookups instead of hash joins; whether that wins depends on how many twins there are. Read both tables of the bench.
+- `indexes.sql` adds `(tiv_2015, pid)` and `(lat, lon, pid)`. They are covering for the probes, and are what makes approach 1 feasible at all (timeout → about 8 s at 1M). For approach 3 they are harmful: the optimizer chooses an index nested-loop semi-join with duplicate weed-out over the hash join, and the query becomes about 10× slower (measured). If approach 3 is the query you run, do not create the `tiv_2015` index. If the index must exist for other queries, check the plan with `EXPLAIN ANALYZE` and steer it, for example with an optimizer hint such as `/*+ NO_SEMIJOIN(...) */` or `SEMIJOIN(FIRSTMATCH)` on the subquery (untested here; verify with the plan).
 - `GROUP BY … HAVING` + `IN (subquery)` (or a join to those aggregated sets) is correct, but it builds two grouped temporary tables keyed on FLOATs and then probes them per row. That is extra materialisation the question does not need, so expect it to lose to approach 3 (reasoned; it is not one of the benchmarked solutions).
 - `FLOAT` keys are a smell for equality: with real coordinates, store `DECIMAL(9,6)` or a geohash / H3 cell id and compare that.
 

@@ -1,6 +1,8 @@
 -- Approach 3 (optimal on MySQL 8.0): the wording is about EXISTENCE of another row, not a count, so say exactly
 -- that. EXISTS / NOT EXISTS lets the optimizer use a semi-join and an anti-join (hash joins in 8.0) that stop
 -- at the first match, instead of counting every twin. `pid <> i.pid` is what makes it "another" policy.
+-- Measured: fastest of the three without indexes; about 10x slower once indexes.sql exists, because the optimizer
+-- then picks a nested-loop semi-join with duplicate weed-out (see README section 5).
 SELECT ROUND(SUM(i.tiv_2016), 2) AS tiv_2016
 FROM Insurance i
 WHERE EXISTS (SELECT 1 FROM Insurance j
