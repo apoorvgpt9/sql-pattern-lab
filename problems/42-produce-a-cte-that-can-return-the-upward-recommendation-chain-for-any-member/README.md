@@ -121,7 +121,7 @@ There is no `indexes.sql` for this problem (section 6b explains why), so the ben
 
 ### Why the optimal one wins
 
-Both approaches run the same recursion. They differ only in where the member filter sits. A filter after a recursive CTE cannot shrink the recursion in MySQL, because the optimizer does not push predicates into a recursive anchor. So approach 1 pays for every member's chain to answer a question about two. Approach 3 writes the pushdown by hand and does work proportional to the answer. The reusable form still has its place: building the closure **once** and storing it (section 6d) serves every member's question afterwards, and then approach 1's cost is paid at load time, not query time.
+Both approaches run the same recursion. They differ only in where the member filter sits. A filter after a recursive CTE cannot shrink the recursion in MySQL, because the optimizer does not push predicates into a recursive anchor. So approach 1 pays for every member's chain to answer a question about two. Approach 3 writes the pushdown by hand and does work proportional to the answer. Measured: approach 1 grows with the table (183 ms at 100K members, 5.56 s at 1M), while approach 3 stays at about 1 ms at every size. The reusable form still has its place: building the closure **once** and storing it (section 6d) serves every member's question afterwards, and then approach 1's cost is paid at load time, not query time.
 
 ## 6. At scale
 
