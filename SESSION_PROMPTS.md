@@ -130,6 +130,12 @@ For each problem, check and fix:
    table: where it contradicts "Why the optimal one wins" or the At-scale ranking, rewrite the text to match the
    measurements (or reorder solutions if the "optimal" one is clearly beaten without indexes).
    Remove any mistakes/*.sql whose failure depends on unspecified row order (e.g. relying on GROUP BY output order).
+   Known from the bench (fix if in your scope):
+   - 28: 02_window_running_sum is ~2.5x faster than the "optimal" 03_recursive_boarding at 1M rows. Make the window
+     approach the optimal one (renumber files) or rewrite the text; keep the recursive CTE as a taught alternative.
+   - 45: 02_row_number_asc_desc beats 03_row_number_and_count (~1.5s vs ~2.7s at 1M). Same treatment.
+   - 43: benchmarked only at 1K and 100K, because 01 (correlated subqueries over a recursive closure) cannot finish
+     at 1M and hung the bench. Say so in section 5/6 and explain why: closure size x per-employee rescans.
 7. No reproduced problem text beyond the trigger phrases in problems.yaml.
 
 Write REVIEW-<a|b>.md: one row per problem with score 1–5 on correctness, decomposition, hints, at-scale; and what
