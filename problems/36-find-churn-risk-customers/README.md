@@ -57,7 +57,7 @@ Shape: (1) pick each user's latest event, with a deterministic tiebreak. (2) Sep
 
 <details><summary>Hint 3</summary>
 
-Key trick: `ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_date DESC, event_id DESC)` is the only safe way to pick one latest row when two events share a date. The history summary is a plain `GROUP BY user_id` with `MAX`, `MIN` and `SUM(event_type = 'downgrade')`. Join them on `user_id` with `rn = 1`, and both sides are exactly one row per user.
+Key trick: `ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_date DESC, event_id DESC)` picks exactly one latest row even when two events share a date (the `event_id DESC` tiebreak is what makes it deterministic). The history summary is a plain `GROUP BY user_id` with `MAX`, `MIN` and `SUM(event_type = 'downgrade')`. Join them on `user_id` with `rn = 1`, and both sides are exactly one row per user.
 
 </details>
 
