@@ -1,6 +1,8 @@
--- Index recommended in README "At scale" (b). The bench runs every solution without it, then with it.
--- (departmentId, salary) covers every approach (no other Employee column is needed to rank or count):
---   01: each "how many distinct higher salaries" probe is a range read inside one department's entries;
---   02: DISTINCT departmentId, salary can be read straight from the index without a temp table;
---   03: PARTITION BY departmentId ORDER BY salary DESC matches the index, so the sort can be avoided.
+-- Index discussed in README "At scale" (b). The bench runs every solution without it, then with it.
+-- (departmentId, salary) covers the ranking, the correlated count and the distinct list. What the bench's EXPLAIN
+-- ANALYZE showed at 1M rows:
+--   01: each "how many distinct higher salaries" probe reads the WHOLE department's entries and filters them,
+--       not just the higher-salary range (sum of department sizes squared);
+--   02: DISTINCT departmentId, salary becomes a streaming group over the index (02 about 2x faster);
+--   03: no change. The window also needs `name`, which is not in the index, so MySQL still scans and sorts.
 CREATE INDEX idx_employee_dept_salary ON Employee (departmentId, salary);
