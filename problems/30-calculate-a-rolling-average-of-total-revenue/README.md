@@ -186,7 +186,7 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Approach 3 does the expensive work (reading and pricing bookings) exactly once per booking, restricts it to the 45 days that matter using a range on the raw column, and leaves only a 45-row calendar and a 45-row window to do the clever part. Approach 1 re-reads each booking in every window it belongs to; approach 2 reads the whole history because of the function on `starttime`. The shape (filter, aggregate, then join to the spine) is the general lesson: shrink the big table before attaching the scaffold.
+Approach 3 does the expensive work (reading and pricing bookings) exactly once per booking, restricts it to the 45 days that matter using a range on the raw column, and leaves only a 45-row calendar and a 45-row window to do the clever part. Approach 1 re-reads each booking in every window it belongs to; approach 2 reads the whole history because of the function on `starttime`. The shape (filter, aggregate, then join to the spine) is the general lesson: shrink the big table before attaching the scaffold. Measured at 1M bookings: approach 1 took 11.8 s, about 21× approach 3's 0.56 s. Without an index, approach 2 is only 1.3× slower than approach 3 (0.75 s), because both scan the whole table and approach 3's `WHERE` merely discards rows earlier. The range filter pays off with `indexes.sql`: approach 3 drops to 0.25 s, while approach 2, whose `DATE(starttime)` join cannot use the index for a range, stays at 0.55 s (2.2× slower).
 
 ## 6. At scale
 
