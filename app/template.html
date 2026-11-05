@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="generator" content="scripts/build_app.py">
+<title>SQL Pattern Lab</title>
+<style>
+/* Source: app/template.html. Do not edit app/index.html by hand; run scripts/build_app.py. */
+:root {
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --surface-2: #efede6;
+  --text: #1d1c19;
+  --muted: #5c5a53;
+  --border: #d6d3c9;
+  --accent: #1c5bb8;
+  --accent-text: #ffffff;
+  --focus: #1c5bb8;
+  --code-bg: #f1efe8;
+  --ok: #17692f;
+  --warn: #8a4b00;
+  --warn-bg: #fdf0d8;
+  --bad: #9c2323;
+  --bad-bg: #fbe4e4;
+  --rev: #6a3aa8;
+  --sx-k: #7b2d9e;
+  --sx-f: #1c5bb8;
+  --sx-s: #0c6a4a;
+  --sx-n: #a14a00;
+  --sx-c: #6b685f;
+  --sx-i: #8a2c52;
+  --shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131419;
+    --surface: #1b1d24;
+    --surface-2: #262935;
+    --text: #e9e7e1;
+    --muted: #a9a69d;
+    --border: #353948;
+    --accent: #7fa9f2;
+    --accent-text: #0d1424;
+    --focus: #9dbdf7;
+    --code-bg: #101117;
+    --ok: #62c17f;
+    --warn: #e5b05a;
+    --warn-bg: #3a2c12;
+    --bad: #f08a8a;
+    --bad-bg: #3d1d1d;
+    --rev: #bb97ee;
+    --sx-k: #c99aee;
+    --sx-f: #8db5f5;
+    --sx-s: #78cba4;
+    --sx-n: #efac6a;
+    --sx-c: #9d9a91;
+    --sx-i: #ee9ebd;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: auto; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-wrap: anywhere;
+}
+[hidden] { display: none !important; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+code, pre, textarea, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+code { font-size: .9em; background: var(--code-bg); padding: .08em .35em; border-radius: 4px; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.muted { color: var(--muted); }
+.skip { position: absolute; left: 8px; top: -60px; background: var(--accent); color: var(--accent-text); padding: 8px 12px; border-radius: 6px; z-index: 100; }
+.skip:focus { top: 8px; }
+
+/* ---- layout ---- */
+.app { display: grid; grid-template-columns: minmax(270px, 330px) minmax(0, 1fr); min-height: 100vh; }
+.topbar { display: none; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--surface); border-right: 1px solid var(--border);
+}
+.side-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+.brand { font-weight: 700; font-size: 1.05rem; color: var(--text); text-decoration: none; }
+.progress { font-size: .85rem; color: var(--muted); margin: 4px 0 0; }
+.filters { padding: 12px 16px; display: grid; gap: 8px; border-bottom: 1px solid var(--border); }
+.filters label { display: grid; gap: 2px; font-size: .78rem; color: var(--muted); font-weight: 600; }
+.filters select { width: 100%; font: inherit; font-size: .92rem; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.filters .opt { display: flex; align-items: center; gap: 8px; font-weight: 400; font-size: .86rem; }
+.filters .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .82rem; color: var(--muted); }
+#list h3 { margin: 0; padding: 14px 16px 4px; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.plist { list-style: none; margin: 0; padding: 0 8px 4px; }
+.item {
+  display: grid; grid-template-columns: 1.4em 2.4ch 1fr auto; gap: 8px; align-items: baseline;
+  padding: 7px 8px; border-radius: 8px; color: var(--text); text-decoration: none; font-size: .94rem; line-height: 1.3;
+}
+.item:hover { background: var(--surface-2); }
+.item[aria-current="page"] { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
+.item .num { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; }
+.st { text-align: center; font-size: .95rem; }
+.st-not_started { color: var(--muted); }
+.st-attempted { color: var(--warn); }
+.st-solved { color: var(--ok); }
+.st-revisit { color: var(--rev); }
+.pad { padding: 8px 16px; }
+main { padding: 24px 32px 96px; max-width: 980px; min-width: 0; outline: none; }
+.scrim { display: none; }
+
+@media (max-width: 860px) {
+  .app { display: block; }
+  .topbar {
+    display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 20;
+    padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .topbar .brand { flex: 1; }
+  .sidebar {
+    position: fixed; z-index: 40; top: 0; left: 0; bottom: 0; height: auto; width: min(88vw, 340px);
+    transform: translateX(-102%); visibility: hidden; transition: transform .16s ease, visibility 0s linear .16s;
+    box-shadow: 4px 0 20px rgba(0,0,0,.25);
+  }
+  .sidebar.open { transform: none; visibility: visible; transition: transform .16s ease; }
+  .scrim.on { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 30; }
+  main { padding: 16px 16px 80px; }
+}
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none !important; } }
+
+/* ---- buttons, badges ---- */
+.btn {
+  font: inherit; font-size: .92rem; font-weight: 600; cursor: pointer; padding: 7px 14px; border-radius: 8px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); line-height: 1.25; min-height: 36px;
+}
+.btn.ghost { background: transparent; color: var(--accent); border-color: var(--border); }
+.btn.ghost:hover { border-color: var(--accent); }
+.btn.sm { padding: 4px 10px; font-size: .84rem; min-height: 30px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.danger { color: var(--bad); }
+.badge { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.badge.medium { color: var(--warn); background: var(--warn-bg); }
+.badge.hard { color: var(--bad); background: var(--bad-bg); }
+.badge.plain { color: var(--muted); border-color: var(--border); background: transparent; }
+.item .badge { font-size: .64rem; padding: 0 6px; }
+
+/* ---- problem header and cards ---- */
+.phead { margin-bottom: 8px; }
+.phead .crumb { margin: 0; color: var(--muted); font-size: .9rem; }
+.blind .pattern-only { display: none; }   /* blind mode: no pattern names outside the revealed hints */
+.phead h1 { margin: 2px 0 8px; font-size: 1.7rem; line-height: 1.2; outline: none; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.orig { margin: 12px 0 0; }
+.attrib { margin: 10px 0 0; padding: 8px 12px; border-left: 3px solid var(--border); color: var(--muted); font-size: .88rem; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin: 16px 0; box-shadow: var(--shadow); min-width: 0; }
+.card > h2, .card > summary > h2 { margin: 0 0 8px; font-size: 1.2rem; }
+.card h3 { margin: 18px 0 6px; font-size: 1rem; }
+@media (max-width: 860px) { .card { padding: 14px; } .phead h1 { font-size: 1.45rem; } }
+
+/* ---- prose (rendered markdown) ---- */
+.prose > p, .prose > ul, .prose > ol, .prose > blockquote { max-width: 80ch; }
+.prose p { margin: .6em 0; }
+.prose ul, .prose ol { padding-left: 1.4em; margin: .6em 0; }
+.prose li { margin: .25em 0; }
+.prose blockquote { margin: .8em 0; padding: 2px 14px; border-left: 3px solid var(--border); color: var(--muted); }
+.prose h3 { margin: 1.4em 0 .4em; }
+.prose > :first-child { margin-top: 0; }
+.prose > :last-child { margin-bottom: 0; }
+a.plink { text-decoration: none; }
+a.plink code { color: var(--accent); }
+a.plink:hover code { text-decoration: underline; }
+
+/* ---- code ---- */
+.codewrap { margin: .8em 0; border: 1px solid var(--border); border-radius: 8px; background: var(--code-bg); min-width: 0; }
+.codebar { display: flex; justify-content: space-between; align-items: center; padding: 3px 6px 3px 12px; border-bottom: 1px solid var(--border); font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+pre.code { margin: 0; padding: 10px 12px; overflow-x: auto; font-size: .86rem; line-height: 1.5; tab-size: 2; overflow-wrap: normal; white-space: pre; }
+pre.code code { background: none; padding: 0; font-size: inherit; }
+.sx-k { color: var(--sx-k); font-weight: 600; } .sx-f { color: var(--sx-f); } .sx-s { color: var(--sx-s); }
+.sx-n { color: var(--sx-n); } .sx-c { color: var(--sx-c); font-style: italic; } .sx-i { color: var(--sx-i); }
+
+/* ---- tables: scroll on desktop only if needed, stack on phones (no sideways page scroll) ---- */
+.tbl { overflow-x: auto; margin: .8em 0; }
+.tbl table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+.tbl th, .tbl td { border: 1px solid var(--border); padding: 6px 10px; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
+.tbl th { background: var(--surface-2); font-weight: 600; }
+@media (max-width: 640px) {
+  .tbl { overflow: visible; }
+  .tbl table, .tbl tbody, .tbl tr, .tbl td { display: block; width: 100%; }
+  .tbl thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  .tbl tr { border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); margin: 0 0 10px; padding: 4px 10px; }
+  .tbl td { border: 0; padding: 4px 0; text-align: left !important; }
+  .tbl td::before { content: attr(data-label); display: block; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .tbl td:first-child { font-weight: 600; }
+  .tbl td:first-child::before { content: none; }
+}
+.bench { border-left: 3px solid var(--accent); padding-left: 14px; margin: 1em 0; }
+
+/* ---- trigger phrases ---- */
+.phrases { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.phrases li { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg); }
+.phrase-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.phrase { font-weight: 600; }
+.meaning { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.after { margin-top: 12px; }
+dl.spec { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 6px 0 0; }
+dl.spec dt { color: var(--muted); font-size: .88rem; }
+dl.spec dd { margin: 0; }
+dl.spec code { margin-right: 4px; }
+@media (max-width: 520px) { dl.spec { grid-template-columns: 1fr; } dl.spec dd { margin-bottom: 6px; } }
+details.disclosure { margin-top: 14px; border: 1px solid var(--border); border-radius: 8px; padding: 0 12px; }
+details.disclosure > summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+details.disclosure[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+details.disclosure > :last-child { margin-bottom: 12px; }
+.conf { color: var(--warn); font-weight: 600; }
+
+/* ---- attempt ---- */
+.attempt-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.attempt-head h2 { margin: 0; }
+.sw { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sw output { font-size: 1.15rem; min-width: 5ch; font-variant-numeric: tabular-nums; }
+.sw .label { font-size: .8rem; color: var(--muted); }
+textarea#attempt {
+  width: 100%; min-height: 220px; resize: vertical; padding: 10px 12px; font-size: .92rem; line-height: 1.5; tab-size: 2;
+  background: var(--code-bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+}
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.row .grow { flex: 1 1 220px; font-size: .84rem; color: var(--muted); }
+.row label { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9rem; }
+.row select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+
+/* ---- reveal ladder ---- */
+.stepper { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.stepper button { font: inherit; font-size: .8rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: default; min-height: 28px; }
+.stepper .done button { color: var(--text); cursor: pointer; border-color: var(--accent); }
+.stepper .next button { color: var(--accent-text); background: var(--accent); border-color: var(--accent); cursor: pointer; font-weight: 700; }
+.stepper .locked button { opacity: .65; }
+details.step { padding: 0; }
+details.step > summary { cursor: pointer; padding: 12px 20px; list-style-position: inside; }
+details.step > summary h2 { display: inline; margin: 0; font-size: 1.2rem; }
+details.step > .body { padding: 0 20px 16px; }
+details.step { scroll-margin-top: 64px; }
+@media (max-width: 860px) { details.step > summary { padding: 12px 14px; } details.step > .body { padding: 0 14px 14px; } }
+.next-card { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.next-card p { margin: 0; color: var(--muted); font-size: .9rem; flex: 1 1 240px; }
+.files .file { margin-top: 10px; }
+.files .fname { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .86rem; margin: 10px 0 0; }
+
+/* ---- banners, home ---- */
+.banner { margin: 0 0 14px; padding: 10px 14px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: .9rem; border: 1px solid var(--warn); }
+.home h1 { margin-top: 0; }
+.stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; padding: 0; list-style: none; }
+.stats li { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; }
+.stats b { font-size: 1.3rem; display: block; }
+footer.foot { margin-top: 40px; font-size: .82rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to problem</a>
+<div class="app">
+  <header class="topbar">
+    <button type="button" class="btn ghost" id="navToggle" aria-expanded="false" aria-controls="sidebar">☰ Problems</button>
+    <a class="brand" href="#/">SQL Pattern Lab</a>
+  </header>
+  <aside class="sidebar" id="sidebar" aria-label="Problems">
+    <div class="side-head">
+      <a class="brand" href="#/">SQL Pattern Lab</a>
+      <p class="progress" id="progress"></p>
+    </div>
+    <form class="filters" id="filters" onsubmit="return false" aria-label="Filter problems">
+      <label id="fPatternWrap">Pattern <select id="fPattern"></select></label>
+      <label>Difficulty <select id="fDifficulty"></select></label>
+      <label>Status <select id="fStatus"></select></label>
+      <label>Batch <select id="fBatch"></select></label>
+      <label class="opt"><input type="checkbox" id="blind"> Hide pattern names (blind mode)</label>
+      <div class="row"><span id="count" aria-live="polite"></span><button type="button" class="btn ghost sm" id="clearFilters">Clear filters</button></div>
+    </form>
+    <nav id="list" aria-label="Problem list"></nav>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" tabindex="-1"><noscript><p>This study page needs JavaScript.</p></noscript></main>
+</div>
+<div class="sr-only" id="live" role="status" aria-live="polite"></div>
+
+<script type="application/json" id="app-data">__APP_DATA__</script>
+<script>
+(() => {
+'use strict';
+
+/* ================================================================ helpers */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad2 = n => String(n).padStart(2, '0');
+const escCode = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');   // meta.yaml text uses `backticks`
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+const announce = msg => { const l = $('#live'); l.textContent = ''; setTimeout(() => { l.textContent = msg; }, 20); };
+
+let DATA;
+try { DATA = JSON.parse($('#app-data').textContent); }
+catch (e) { $('#main').textContent = 'Could not read the embedded problem data: ' + e.message; return; }
+const PROBLEMS = DATA.problems;
+const BY_DIR = Object.fromEntries(PROBLEMS.map(p => [p.dir, p]));
+const PATTERN_LABEL = Object.fromEntries(DATA.patterns.map(p => [p.slug, p.label]));
+const N_STEPS = PROBLEMS[0].steps.length;
+const STATUS = [['not_started', 'Not started', '○'], ['attempted', 'Attempted', '◐'], ['solved', 'Solved', '●'], ['revisit', 'Revisit', '↻']];
+const STATUS_KEYS = STATUS.map(s => s[0]);
+const STATUS_LABEL = Object.fromEntries(STATUS.map(s => [s[0], s[1]]));
+const DIFFICULTIES = [...new Set(PROBLEMS.map(p => p.difficulty))];
+
+/* ================================================================ storage
+   Every access is inside try/catch (reading the localStorage property itself can throw).
+   Writes go to an in-memory map first, so the page keeps working when storage is blocked. */
+const Store = (() => {
+  const mem = new Map();
+  let broken = false, listener = null;
+  const fail = () => { if (!broken) { broken = true; if (listener) listener(); } };
+  return {
+    get(k) {
+      try { const v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) { fail(); }
+      return mem.has(k) ? mem.get(k) : null;
+    },
+    set(k, v) {
+      mem.set(k, v);
+      try { window.localStorage.setItem(k, v); } catch (e) { fail(); }
+    },
+    probe() {
+      try { const k = 'spl:v1:probe'; window.localStorage.setItem(k, '1'); window.localStorage.removeItem(k); } catch (e) { fail(); }
+    },
+    onBroken(fn) { listener = fn; if (broken) fn(); },
+  };
+})();
+
+const REC_KEY = dir => 'spl:v1:p:' + dir;
+const UI_KEY = 'spl:v1:ui';
+const finite = v => (typeof v === 'number' && isFinite(v) && v >= 0) ? v : null;
+
+function sanitizeRec(r) {
+  r = (r && typeof r === 'object') ? r : {};
+  const sw = (r.sw && typeof r.sw === 'object') ? r.sw : {};
+  const out = {
+    status: STATUS_KEYS.includes(r.status) ? r.status : 'not_started',
+    attempt: typeof r.attempt === 'string' ? r.attempt : '',
+    revealed: Number.isInteger(r.revealed) ? clamp(r.revealed, 0, N_STEPS) : 0,
+    phr: Array.isArray(r.phr) ? r.phr.map(Boolean) : [],
+    sw: { acc: finite(sw.acc) ?? 0, since: finite(sw.since), beat: finite(sw.beat), first: finite(sw.first) },
+  };
+  // Running when the page was closed: come back paused, losing at most one heartbeat (5 s).
+  if (out.sw.since !== null) {
+    if (out.sw.beat !== null && out.sw.beat >= out.sw.since) out.sw.acc += out.sw.beat - out.sw.since;
+    out.sw.since = null; out.sw.beat = null;
+  }
+  return out;
+}
+function loadRec(dir) {
+  let r = null;
+  try { const raw = Store.get(REC_KEY(dir)); if (raw) r = JSON.parse(raw); } catch (e) { r = null; }
+  return sanitizeRec(r);
+}
+const recs = Object.fromEntries(PROBLEMS.map(p => [p.dir, loadRec(p.dir)]));
+const saveRec = dir => Store.set(REC_KEY(dir), JSON.stringify(recs[dir]));
+
+function loadUI() {
+  let u = null;
+  try { const raw = Store.get(UI_KEY); if (raw) u = JSON.parse(raw); } catch (e) { u = null; }
+  u = (u && typeof u === 'object') ? u : {};
+  const f = (u.filters && typeof u.filters === 'object') ? u.filters : {};
+  const pick = (v, allowed) => allowed.includes(v) ? v : '';
+  return {
+    filters: {
+      pattern: pick(f.pattern, DATA.patterns.map(p => p.slug)),
+      difficulty: pick(f.difficulty, DIFFICULTIES),
+      status: pick(f.status, STATUS_KEYS),
+      batch: pick(f.batch, DATA.batches),
+    },
+    blind: u.blind === true,
+    last: BY_DIR[u.last] ? u.last : '',
+  };
+}
+const ui = loadUI();
+const saveUI = () => Store.set(UI_KEY, JSON.stringify(ui));
+
+/* ================================================================ clipboard */
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+  } catch (e) { /* fall through to the legacy path */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch (e) { return false; }
+}
+async function copyWithFeedback(btn, text) {
+  const idle = btn.dataset.idle || btn.textContent;
+  btn.dataset.idle = idle;
+  const ok = text.length ? await copyText(text) : false;
+  btn.textContent = !text.length ? 'Nothing to copy' : ok ? 'Copied ✓' : 'Copy failed: select the text manually';
+  announce(btn.textContent);
+  clearTimeout(btn._t);
+  btn._t = setTimeout(() => { btn.textContent = idle; }, 2200);
+}
+
+/* ================================================================ sidebar */
+let current = null;       // dir of the open problem, or null (home)
+
+function matches(p) {
+  const f = ui.filters;
+  return (!f.pattern || p.pattern === f.pattern) && (!f.difficulty || p.difficulty === f.difficulty) &&
+         (!f.status || recs[p.dir].status === f.status) && (!f.batch || p.batch === f.batch);
+}
+function itemHTML(p) {
+  const st = recs[p.dir].status, label = STATUS_LABEL[st];
+  const glyph = STATUS.find(s => s[0] === st)[2];
+  return `<li><a class="item" href="#/p/${esc(p.dir)}"${p.dir === current ? ' aria-current="page"' : ''}>` +
+    `<span class="st st-${st}" role="img" aria-label="${esc(label)}" title="${esc(label)}">${glyph}</span>` +
+    `<span class="num">${pad2(p.id)}</span><span class="ttl">${esc(p.title)}</span>` +
+    `<span class="badge ${esc(p.difficulty)}">${esc(p.difficulty)}</span></a></li>`;
+}
+function renderList() {
+  const shown = PROBLEMS.filter(matches);
+  $('#count').textContent = `Showing ${shown.length} of ${PROBLEMS.length}`;
+  const nav = $('#list');
+  if (!shown.length) { nav.innerHTML = '<p class="muted pad">No problems match these filters.</p>'; return; }
+  if (ui.blind) { nav.innerHTML = `<ul class="plist">${shown.map(itemHTML).join('')}</ul>`; return; }
+  nav.innerHTML = DATA.patterns.map(pt => {
+    const items = shown.filter(p => p.pattern === pt.slug);
+    return items.length ? `<h3>${esc(pt.label)} <span class="muted">(${items.length})</span></h3><ul class="plist">${items.map(itemHTML).join('')}</ul>` : '';
+  }).join('');
+}
+function updateProgress() {
+  const n = s => PROBLEMS.filter(p => recs[p.dir].status === s).length;
+  $('#progress').textContent = `${n('solved')} of ${PROBLEMS.length} solved · ${n('attempted')} attempted · ${n('revisit')} to revisit`;
+}
+function initFilters() {
+  const opts = (sel, all, items) => { sel.innerHTML = `<option value="">${all}</option>` + items.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); };
+  opts($('#fPattern'), 'All patterns', DATA.patterns.map(p => [p.slug, p.label]));
+  opts($('#fDifficulty'), 'All difficulties', DIFFICULTIES.map(d => [d, d[0].toUpperCase() + d.slice(1)]));
+  opts($('#fStatus'), 'All statuses', STATUS.map(s => [s[0], s[1]]));
+  opts($('#fBatch'), 'All batches', DATA.batches.map(b => [b, b]));
+  syncFilterControls();
+  const bind = (id, key) => $(id).addEventListener('change', e => { ui.filters[key] = e.target.value; saveUI(); renderList(); });
+  bind('#fPattern', 'pattern'); bind('#fDifficulty', 'difficulty'); bind('#fStatus', 'status'); bind('#fBatch', 'batch');
+  $('#clearFilters').addEventListener('click', () => { ui.filters = { pattern: '', difficulty: '', status: '', batch: '' }; saveUI(); syncFilterControls(); renderList(); });
+  $('#blind').addEventListener('change', e => {
+    ui.blind = e.target.checked;
+    if (ui.blind) ui.filters.pattern = '';   // an active pattern filter would leak the pattern
+    saveUI(); syncFilterControls(); renderList();
+  });
+}
+function syncFilterControls() {
+  $('#fPattern').value = ui.filters.pattern; $('#fDifficulty').value = ui.filters.difficulty;
+  $('#fStatus').value = ui.filters.status; $('#fBatch').value = ui.filters.batch;
+  $('#blind').checked = ui.blind;
+  $('#fPatternWrap').hidden = ui.blind;
+  document.body.classList.toggle('blind', ui.blind);
+}
+
+/* mobile drawer */
+function setNav(open) {
+  $('#sidebar').classList.toggle('open', open);
+  $('#scrim').classList.toggle('on', open);
+  $('#navToggle').setAttribute('aria-expanded', String(open));
+  const m = $('#main'); if ('inert' in m) m.inert = open;
+}
+$('#navToggle').addEventListener('click', () => setNav(!$('#sidebar').classList.contains('open')));
+$('#scrim').addEventListener('click', () => setNav(false));
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#sidebar').classList.contains('open')) { setNav(false); $('#navToggle').focus(); } });
+
+/* ================================================================ stopwatch (per problem) */
+let tick = null, tickN = 0;
+const swElapsed = (sw, now = Date.now()) => sw.acc + (sw.since !== null ? now - sw.since : 0);
+function fmtMs(ms) {
+  const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return (h ? h + ':' + pad2(m) : pad2(m)) + ':' + pad2(s % 60);
+}
+function stopTick() { if (tick) { clearInterval(tick); tick = null; } }
+function startTick() {
+  stopTick(); tickN = 0;
+  tick = setInterval(() => {
+    if (!current) return;
+    const sw = recs[current].sw;
+    if (sw.since === null) return stopTick();
+    const out = $('#swTime'); if (out) out.textContent = fmtMs(swElapsed(sw));
+    if (++tickN % 5 === 0) { sw.beat = Date.now(); saveRec(current); }
+  }, 1000);
+}
+function swPause(dir) {
+  const sw = recs[dir].sw;
+  if (sw.since === null) return;
+  sw.acc = swElapsed(sw); sw.since = null; sw.beat = null; saveRec(dir); stopTick();
+}
+function renderSw() {
+  const sw = recs[current].sw, running = sw.since !== null, done = sw.first !== null;
+  const state = done ? 'done' : running ? 'running' : sw.acc > 0 ? 'paused' : 'idle';
+  $('#swTime').textContent = fmtMs(done ? sw.first : swElapsed(sw));
+  $('#swLabel').textContent = done ? 'Time to first attempt' : running ? 'Running' : state === 'paused' ? 'Paused' : 'Stopwatch';
+  const toggle = $('#swToggle');
+  toggle.hidden = false;
+  toggle.textContent = state === 'running' ? 'Pause' : (state === 'paused' || state === 'done') ? 'Resume' : 'Start';
+  $('#swDone').hidden = done || state === 'idle';
+  $('#swReset').hidden = state === 'idle';
+}
+function swAction(act) {
+  const rec = recs[current], sw = rec.sw, now = Date.now();
+  if (act === 'toggle') {
+    if (sw.since !== null) swPause(current);
+    else { sw.first = null; sw.since = now; sw.beat = now; saveRec(current); startTick(); }
+  } else if (act === 'done') {
+    const t = swElapsed(sw, now);
+    sw.acc = t; sw.first = t; sw.since = null; sw.beat = null; stopTick();
+    if (rec.status === 'not_started') { rec.status = 'attempted'; $('#status').value = 'attempted'; renderList(); updateProgress(); }
+    saveRec(current);
+  } else if (act === 'reset') {
+    rec.sw = { acc: 0, since: null, beat: null, first: null }; stopTick(); saveRec(current);
+  }
+  renderSw();
+}
+
+/* ================================================================ problem view */
+const decorateCode = root => {
+  $$('pre.code', root).forEach(pre => {
+    if (pre.parentElement.classList.contains('codewrap')) return;
+    const m = /language-(\w+)/.exec((pre.firstElementChild || {}).className || '');
+    const wrap = document.createElement('div');
+    wrap.className = 'codewrap';
+    wrap.innerHTML = `<div class="codebar"><span>${esc(m && m[1] !== 'text' ? m[1] : '')}</span>` +
+                     `<button type="button" class="btn ghost sm" data-act="copy-code">Copy</button></div>`;
+    pre.replaceWith(wrap); wrap.appendChild(pre); pre.tabIndex = 0;
+  });
+};
+
+function linkHTML(p) {
+  if (p.source === 'leetcode' && p.url) return `<a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">Open the original on LeetCode ↗</a> <span class="muted">(LeetCode ${esc(p.source_id)}; read the statement there)</span>`;
+  if (p.url) return `<a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">Open the original exercise ↗</a>`;
+  return '<span class="muted">Original problem written for this repo; there is no external statement.</span>';
+}
+function outputHTML(p) {
+  const labels = { ties: 'Ties', nulls: 'NULLs', empty: 'Empty input', other: 'Also' };
+  const rules = Object.entries(p.rules).filter(([, v]) => !/^n\/a\b/i.test(v.trim()))
+    .map(([k, v]) => `<dt>${esc(labels[k] || k)}</dt><dd>${escCode(v)}</dd>`).join('');
+  return `<dl class="spec"><dt>Columns</dt><dd>${p.output.columns.map(c => `<code>${esc(c)}</code>`).join(' ')}</dd>` +
+    `<dt>One row per</dt><dd>${escCode(p.output.grain.replace(/^one row per /i, ''))}</dd>` +
+    `<dt>Ordering</dt><dd>${escCode(p.output.ordering)}</dd>${rules}</dl>`;
+}
+function renderProblemShell(p) {
+  const rec = recs[p.dir];
+  const secondary = p.pattern_secondary.map(s => PATTERN_LABEL[s] || s.replace(/_/g, ' '));
+  const lowConf = p.confidence !== 'high';
+  $('#main').innerHTML = `
+  <article data-dir="${esc(p.dir)}">
+    <div id="storageBanner" class="banner" hidden>Browser storage is unavailable, so your attempt, status and progress will be lost when this tab closes. Copy your work out before leaving.</div>
+    <header class="phead">
+      <p class="crumb"><span class="mono">#${pad2(p.id)}</span> <span class="pattern-only">· ${esc(PATTERN_LABEL[p.pattern] || p.pattern)}</span></p>
+      <h1 id="ptitle" tabindex="-1">${esc(p.title)}</h1>
+      <div class="badges"><span class="badge ${esc(p.difficulty)}">${esc(p.difficulty)}</span><span class="badge plain">${esc(p.batch)}</span><span class="badge plain">${esc(p.source)}</span></div>
+      <p class="orig">${linkHTML(p)}</p>
+      ${p.attribution ? `<p class="attrib">${esc(p.attribution)} Licensed <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 3.0</a>.</p>` : ''}
+    </header>
+
+    <section class="card" aria-labelledby="h-problem">
+      <h2 id="h-problem">Problem &amp; trigger phrases</h2>
+      <div class="prose">${p.problem.prose}</div>
+      <h3>Expected output</h3>
+      ${outputHTML(p)}
+      <h3>Trigger phrases</h3>
+      <p class="muted" style="margin-top:0">Read each phrase and decide what it forces in SQL before revealing the answer.</p>
+      <div id="phrases"></div>
+      ${p.assumptions ? `<details class="disclosure"${lowConf ? ' open' : ''}><summary>Assumptions: how this repo reads the spec${lowConf ? ` <span class="conf">(confidence: ${esc(p.confidence)})</span>` : ''}</summary><div class="prose">${p.assumptions}</div></details>` : ''}
+    </section>
+
+    <section class="card" aria-labelledby="h-schema">
+      <h2 id="h-schema">Schema &amp; grain</h2>
+      <div class="prose">${p.schema}</div>
+      <details class="disclosure"><summary><code>schema.sql</code> (MySQL 8.0)</summary>
+        <div class="codewrap"><div class="codebar"><span>sql</span><button type="button" class="btn ghost sm" data-act="copy-code">Copy</button></div><pre class="code" tabindex="0"><code class="language-sql">${p.schema_sql}</code></pre></div>
+      </details>
+    </section>
+
+    <section class="card attempt" aria-labelledby="h-attempt">
+      <div class="attempt-head">
+        <h2 id="h-attempt">My attempt</h2>
+        <div class="sw" role="group" aria-label="Stopwatch: time to first attempt">
+          <span class="label" id="swLabel"></span><output id="swTime" class="mono">00:00</output>
+          <button type="button" class="btn ghost sm" id="swToggle" data-act="sw-toggle">Start</button>
+          <button type="button" class="btn sm" id="swDone" data-act="sw-done">First attempt made</button>
+          <button type="button" class="btn ghost sm" id="swReset" data-act="sw-reset">Reset</button>
+        </div>
+      </div>
+      <label for="attempt" class="sr-only">Your SQL attempt for ${esc(p.title)}</label>
+      <textarea id="attempt" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" rows="12"
+        placeholder="-- Write your query here. It is saved in this browser only.&#10;-- This page does not run SQL: copy it into problems/${esc(p.dir)}/my_answer.sql or LeetCode."></textarea>
+      <div class="row">
+        <button type="button" class="btn" data-act="copy-attempt">Copy</button>
+        <label>Status
+          <select id="status">${STATUS.map(s => `<option value="${s[0]}">${s[1]}</option>`).join('')}</select>
+        </label>
+        <span class="grow">Runs nowhere in this page. Paste into <code>my_answer.sql</code> or LeetCode to execute.</span>
+      </div>
+    </section>
+
+    <div id="ladder"></div>
+  </article>`;
+  const ta = $('#attempt'); ta.value = rec.attempt; $('#status').value = rec.status;
+  decorateCode($('#main'));
+  Store.onBroken(() => { const b = $('#storageBanner'); if (b) b.hidden = false; });
+  renderPhrases(p);
+  renderLadder();
+  renderSw();
+  if (rec.sw.since !== null) startTick();
+}
+
+function renderPhrases(p, focusSel) {
+  const rec = recs[p.dir], rows = p.problem.phrases;
+  const all = rows.every((_, i) => rec.phr[i]);
+  $('#phrases').innerHTML = `<ul class="phrases">${rows.map((r, i) => `<li>
+      <div class="phrase-row"><span class="phrase">${r.phrase}</span>
+        <button type="button" class="btn ghost sm" data-act="phr" data-i="${i}" aria-expanded="${!!rec.phr[i]}">${rec.phr[i] ? 'Hide' : 'What does it force?'}</button></div>
+      ${rec.phr[i] ? `<div class="meaning prose">${r.meaning}</div>` : ''}</li>`).join('')}</ul>
+    <div class="row"><button type="button" class="btn ghost sm" data-act="phr-all">${all ? 'Hide all meanings' : 'Show all meanings'}</button></div>
+    ${all && p.problem.after ? `<div class="prose after">${p.problem.after}</div>` : ''}`;
+  decorateCode($('#phrases'));
+  if (focusSel) { const f = $(focusSel, $('#phrases')); if (f) f.focus({ preventScroll: true }); }
+}
+
+function renderLadder(focusKey) {
+  const p = BY_DIR[current], rec = recs[current], steps = p.steps;
+  const chips = steps.map((s, i) => {
+    const cls = i < rec.revealed ? 'done' : i === rec.revealed ? 'next' : 'locked';
+    const dis = cls === 'locked' ? ' disabled aria-disabled="true"' : '';
+    const act = cls === 'done' ? `data-act="goto" data-i="${i}"` : cls === 'next' ? 'data-act="reveal"' : '';
+    return `<li class="${cls}"><button type="button" ${act}${dis}>${esc(s.title.replace(/:.*$/, '').replace(/ \(UNVERIFIED\)/, ''))}</button></li>`;
+  }).join('');
+  const cards = steps.slice(0, rec.revealed).map((s, i) => {
+    let extra = '';
+    if (s.key === 'approaches') {
+      extra = `<details class="disclosure files"><summary>Runnable files: <code>solutions/*.sql</code></summary>${p.solutions.map(f =>
+        `<p class="fname"><code>${esc(f.file)}</code>${f.optimal ? ' <span class="badge plain">optimal (bench)</span>' : ''}</p>` +
+        `<div class="codewrap"><div class="codebar"><span>sql</span><button type="button" class="btn ghost sm" data-act="copy-code">Copy</button></div><pre class="code" tabindex="0"><code class="language-sql">${f.html}</code></pre></div>`).join('')}</details>`;
+    }
+    return `<details class="card step" id="step-${esc(s.key)}" open data-i="${i}"><summary><h2>${esc(s.title)}</h2></summary><div class="body"><div class="prose">${s.html}</div>${extra}</div></details>`;
+  }).join('');
+  const more = rec.revealed < steps.length;
+  const next = more ? `<div class="card next-card"><button type="button" class="btn" data-act="reveal" id="revealBtn">Reveal: ${esc(steps[rec.revealed].title)}</button>
+      <p>${rec.revealed < 3 ? 'Write an attempt first, or at least a plan, before opening the next hint.' : 'Compare against your own attempt before moving on.'} (${rec.revealed} of ${steps.length} revealed)</p></div>`
+    : `<div class="card next-card"><p>Everything is revealed.</p>`
+      + `</div>`;
+  const reset = rec.revealed > 0
+    ? `<div class="row"><button type="button" class="btn ghost sm danger" data-act="reset-reveals">Hide everything again</button></div>` : '';
+  $('#ladder').innerHTML = `<h2 class="sr-only">Study path</h2><ol class="stepper" aria-label="Reveal order">${chips}</ol>${cards}${next}${reset}`;
+  decorateCode($('#ladder'));
+  if (focusKey) {
+    const d = $('#step-' + focusKey);
+    if (d) {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      d.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+      const s = $('summary', d); if (s) s.focus({ preventScroll: true });
+    }
+  }
+}
+
+let resetArmed = false;
+async function onMainClick(e) {
+  const b = e.target.closest('button[data-act]');
+  if (!b || !current) return;
+  const p = BY_DIR[current], rec = recs[current], act = b.dataset.act;
+  if (act === 'reveal') {
+    if (rec.revealed >= N_STEPS) return;
+    rec.revealed += 1; saveRec(current);
+    renderLadder(p.steps[rec.revealed - 1].key);
+  } else if (act === 'goto') {
+    const d = $('#step-' + p.steps[+b.dataset.i].key);
+    if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); const s = $('summary', d); if (s) s.focus({ preventScroll: true }); }
+  } else if (act === 'reset-reveals') {
+    if (!resetArmed) { resetArmed = true; b.textContent = 'Click again to hide all revealed sections'; setTimeout(() => { resetArmed = false; if (b.isConnected) b.textContent = 'Hide everything again'; }, 4000); return; }
+    resetArmed = false; rec.revealed = 0; saveRec(current); renderLadder();
+  } else if (act === 'phr') {
+    const i = +b.dataset.i; rec.phr[i] = !rec.phr[i]; saveRec(current);
+    renderPhrases(p, `[data-act="phr"][data-i="${i}"]`);
+  } else if (act === 'phr-all') {
+    const all = p.problem.phrases.every((_, i) => rec.phr[i]);
+    rec.phr = p.problem.phrases.map(() => !all); saveRec(current);
+    renderPhrases(p, '[data-act="phr-all"]');
+  } else if (act === 'copy-attempt') {
+    copyWithFeedback(b, $('#attempt').value);
+  } else if (act === 'copy-code') {
+    const pre = b.closest('.codewrap').querySelector('pre');
+    copyWithFeedback(b, pre.textContent);
+  } else if (act === 'sw-toggle') swAction('toggle');
+  else if (act === 'sw-done') swAction('done');
+  else if (act === 'sw-reset') swAction('reset');
+}
+const mainEl = $('#main');
+mainEl.addEventListener('click', onMainClick);
+mainEl.addEventListener('input', e => {
+  if (e.target.id === 'attempt' && current) { recs[current].attempt = e.target.value; saveRec(current); }
+});
+mainEl.addEventListener('change', e => {
+  if (e.target.id === 'status' && current && STATUS_KEYS.includes(e.target.value)) {
+    recs[current].status = e.target.value; saveRec(current); renderList(); updateProgress();
+  }
+});
+
+/* ================================================================ home + routing */
+function renderHome(notFound) {
+  const n = s => PROBLEMS.filter(p => recs[p.dir].status === s).length;
+  const resume = ui.last ? BY_DIR[ui.last] : (PROBLEMS.find(p => recs[p.dir].status !== 'solved') || PROBLEMS[0]);
+  mainEl.innerHTML = `<div class="home">
+    <div id="storageBanner" class="banner" hidden>Browser storage is unavailable, so progress will be lost when this tab closes.</div>
+    ${notFound ? '<p class="banner">That problem link does not exist. Pick one from the list.</p>' : ''}
+    <h1 id="ptitle" tabindex="-1">SQL Pattern Lab</h1>
+    <p>${PROBLEMS.length} problems that train decomposition: reading the wording and knowing which steps need a JOIN, GROUP BY, window function or CTE.</p>
+    <ul class="stats"><li><b>${n('solved')}</b>solved</li><li><b>${n('attempted')}</b>attempted</li><li><b>${n('revisit')}</b>to revisit</li><li><b>${n('not_started')}</b>not started</li></ul>
+    <p><a class="btn" href="#/p/${esc(resume.dir)}" style="text-decoration:none;display:inline-block">${ui.last ? 'Resume' : 'Start'}: ${pad2(resume.id)} ${esc(resume.title)}</a></p>
+    <h2>How a problem works</h2>
+    <ol>
+      <li>Read the spec, the trigger phrases and the schema. Say aloud what each phrase forces before revealing it.</li>
+      <li>Write your attempt in the box. Start the stopwatch, and press <b>First attempt made</b> when you have something.</li>
+      <li>Reveal one thing at a time, in order: three hints, the decomposition, the approaches with measured timings, then scale, edge cases, follow-ups, Snowflake notes and related problems.</li>
+      <li>Set the status. Run your query for real in <code>my_answer.sql</code> against MySQL 8.0 or on LeetCode; this page never executes SQL.</li>
+    </ol>
+    <p class="muted">Progress is stored in this browser only (localStorage). Benchmark figures come from <code>bench/results/*.json</code>; anything about billions of rows is reasoned and says so. LeetCode problems are linked, not reproduced. Problems adapted from pgexercises.com carry their CC BY-SA 3.0 attribution on the problem page.</p>
+  </div>`;
+  Store.onBroken(() => { const b = $('#storageBanner'); if (b) b.hidden = false; });
+}
+
+function leaveCurrent() {
+  if (current) { swPause(current); saveRec(current); }
+  stopTick(); resetArmed = false;
+}
+function route() {
+  leaveCurrent();
+  const m = /^#\/p\/([A-Za-z0-9-]+)$/.exec(location.hash);
+  const p = m && BY_DIR[m[1]];
+  if (p) {
+    current = p.dir; ui.last = p.dir; saveUI();
+    document.title = `${p.title} · SQL Pattern Lab`;
+    renderProblemShell(p);
+  } else {
+    current = null; document.title = 'SQL Pattern Lab';
+    renderHome(!!m || (location.hash && location.hash !== '#/' && location.hash !== '#'));
+  }
+  setNav(false); renderList(); updateProgress();
+  window.scrollTo(0, 0);
+  const h = $('#ptitle'); if (h) h.focus({ preventScroll: true });
+}
+
+window.addEventListener('hashchange', route);
+window.addEventListener('pagehide', () => { if (current) { swPause(current); saveRec(current); } });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && current && recs[current].sw.since !== null) { recs[current].sw.beat = Date.now(); saveRec(current); }
+});
+
+Store.probe();
+initFilters();
+route();
+})();
+</script>
+</body>
+</html>
