@@ -110,7 +110,7 @@ FROM employees e
 
 **Why it is correct:** for each employee, the derived table builds that employee's weekly totals, and the outer `COUNT(*)` counts those over 20. It is the spec read one employee at a time. MySQL 8.0.14 and later accept the outer reference `e.employee_id` inside a derived table. Older versions and some other engines do not, and need `LATERAL` or a rewrite.
 
-**Cost model (reasoned from EXPLAIN):** a *dependent* subquery per employee. Without an index, each one is a `Table scan on m` of the whole `meetings` table plus a temporary-table aggregation, so the cost is employees × meetings, which is quadratic. With `indexes.sql`, each run becomes a `Covering index lookup … (employee_id=e.employee_id)` that reads only that employee's meetings, and the total is roughly linear. Employees with no meetings still pay for one probe each.
+**Cost model (reasoned from EXPLAIN):** a *dependent* subquery per employee. Without an index, each one is a `Table scan on m` of the whole `meetings` table plus a temporary-table aggregation, so the cost is employees × meetings, which is quadratic. With `indexes.sql`, each run becomes a `Covering index lookup … (employee_id=e.employee_id)` that reads only that employee's meetings, and the total is roughly linear. Employees with no meetings still pay for one probe each. Measured: it times out at 100K rows without the index, and with the index it is the **fastest approach at 1M rows** (0.83 s vs 1.66 s for approach 3). The bench's `EXPLAIN ANALYZE` shows why: each employee's weekly aggregate is a temporary table of about 4 rows (~0.01 ms each), and 66K of those cost less than approach 3's single temporary table of 261K (employee, week) groups.
 
 ### Approach 2: join, then two-level GROUP BY (`solutions/02_join_then_two_level_group.sql`)
 
@@ -171,14 +171,16 @@ A ratio below 1.0× means that approach was faster than the one labelled optimal
 
 ### Why the optimal one wins
 
-Approach 3 does all the heavy work on the narrow fact table and joins only the handful of survivors. The intermediate results shrink at every step: meetings, then heavy weeks, then qualifying employees. Approach 2 does the same aggregations but drags the employee columns through them. That costs a little on one machine and a lot more when the join forces a shuffle (section 6c). Approach 1 is only competitive with the index, and it still pays one probe per employee, including employees without meetings.
+On the schema as given (no index), approach 3 is the fastest: it does all the heavy work on the narrow fact table and joins only the survivors, and the intermediate results shrink at every step (1M meetings → 261K employee-weeks → 130K heavy weeks → 31K employees at 1M rows). Approach 2 does the same aggregations but drags the employee columns through them: a four-column group key with two `VARCHAR`s, which made it 2.2× slower at 1M rows (4.24 s vs 1.94 s), and would cost more again when the join forces a shuffle (section 6c). Approach 1 times out at 100K rows without an index.
+
+The ranking flips with `indexes.sql`: approach 1 becomes 2× faster than approach 3 at 1M rows (0.83 s vs 1.66 s). With an index on `(employee_id, meeting_date, …)`, "one small aggregate per employee" is cheaper in MySQL than "one big temporary table of every employee-week". Say this in an interview: approach 3 is the right default, because it needs no index and is the shape that distributes (section 6c); when the index exists and the work stays on one MySQL server, the correlated version is measurably faster.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 without the index, because it rescans `meetings` once per employee. Then the temporary tables of approaches 2 and 3, once (employee, week) groups outgrow `tmp_table_size` and spill to disk. Approach 2 reaches that point sooner because its rows are wider.
+**(a) What breaks first.** *Measured:* approach 1 without the index, because it rescans `meetings` once per employee: it already times out at 100K rows. *Reasoned:* then the temporary tables of approaches 2 and 3, once (employee, week) groups outgrow `tmp_table_size` and spill to disk. Approach 2 reaches that point sooner because its rows are wider.
 
 **(b) One machine, ~1M–100M rows.**
-- `indexes.sql` adds `meetings (employee_id, meeting_date, duration_hours)`. It is covering, turns approach 1 into per-employee range reads, and narrows the scan for 2 and 3.
+- `indexes.sql` adds `meetings (employee_id, meeting_date, duration_hours)`. It is covering, turns approach 1 into per-employee range reads (from a timeout to the fastest approach), and narrows the scan for 2 and 3, which gain only 10–15% (1.94 s → 1.66 s for approach 3 at 1M): their week-level `GROUP BY` still builds one big temporary table.
 - Making step 1 stream instead of using a temporary table would need the week key to be an indexed column. MySQL 8.0 can index a **functional key part**, `INDEX ((DATE_SUB(meeting_date, INTERVAL WEEKDAY(meeting_date) DAY)))`, or a stored generated column `week_start`. With (`employee_id`, `week_start`) indexed, the `GROUP BY` can read in key order. This is reasoned and not benchmarked: it is a schema change, which is why it is not in `indexes.sql`.
 - Bound the date range whenever the question allows it ("in the last quarter"). The week grouping itself cannot prune anything.
 
