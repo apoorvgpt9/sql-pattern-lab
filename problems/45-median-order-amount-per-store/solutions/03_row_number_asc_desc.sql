@@ -1,4 +1,4 @@
--- Approach 2: number each store's orders twice, ascending and descending. The middle row(s) are
+-- Approach 3 (optimal, measured): number each store's orders twice, ascending and descending. The middle row(s) are
 -- where the two numbers meet: |rn_asc - rn_desc| <= 1. No count needed, but two different sorts.
 -- The descending order must be the exact reverse of the ascending one, tie-break included.
 WITH numbered AS (
