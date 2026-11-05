@@ -38,7 +38,7 @@ Other readings, fixed by the spec and not by us: ratings are not NULL; employees
 
 <details><summary>Hint 1</summary>
 
-Pattern: **top-N per group, then neighbour comparison** (`ROW_NUMBER` / `LAG` / `LEAD`). Restrict each employee to a short, ordered sequence, and then ask a yes/no question about consecutive elements of it.
+Pattern: **top-N per group, then neighbour comparison**. Restrict each employee to a short, ordered sequence, and then ask a yes/no question about consecutive elements of it.
 
 </details>
 
@@ -180,7 +180,7 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Approach 3 turns the problem into "rank, cut, pivot": a streaming `ROW_NUMBER`, a filter that leaves three rows per employee, and a tiny aggregation. Approach 2 expresses the same thing with neighbour access, which is shorter, but in MySQL 8.0 it needs a buffered window. Approach 1 shows what `ROW_NUMBER` replaces: a correlated count that rescans the table per row. This ranking is a statement about MySQL's window implementation: the bench table is the evidence, and in an engine without that buffering cost approach 2 may well be as fast, so the choice depends on the engine.
+Approach 3 turns the problem into "rank, cut, pivot": a streaming `ROW_NUMBER`, a filter that leaves three rows per employee, and a tiny aggregation. Approach 2 expresses the same thing with neighbour access, which is shorter, but in MySQL 8.0 it needs a buffered window. Approach 1 shows what `ROW_NUMBER` replaces: a correlated count that rescans the table per row. Measured at 1M rows: approach 3 took 1.41 s and approach 2 7.21 s (5× slower); approach 1 timed out at 100K rows without an index and took 8.43 s at 1M with it. This ranking is a statement about MySQL's window implementation, and in an engine without that buffering cost approach 2 may well be as fast, so the choice depends on the engine.
 
 ## 6. At scale
 
