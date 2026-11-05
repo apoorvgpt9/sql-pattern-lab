@@ -31,7 +31,7 @@ Also notice: there is no aggregate in the wording. "Appears three times" would b
 
 1. **"Consecutive" means adjacent in id order**, not "ids differ by 1". If rows were deleted and ids have holes, three neighbouring rows with equal `num` still count. All three solutions find the next row by order (`MIN(id) > …`, `LEAD`, `ROW_NUMBER`), not by `id + 1`. Tested in `tests/edge_id_gaps.sql`; `mistakes/id_plus_one_join.sql` shows the textbook `id + 1` join fails it. With gap-free ids, which is what the spec describes, both readings coincide.
 2. **`num` is compared as a string** (it is a `VARCHAR`), with MySQL's default case-insensitive collation. The datasets use values where that does not matter.
-3. **No NULLs.** The spec says nulls are not a case, so they are not tested. They would make the approaches disagree: in a quick manual trial with three NULL rows in a row, approach 3 (islands) reported a NULL row, because `PARTITION BY` and `GROUP BY` treat NULLs as equal, while approaches 1 and 2 returned nothing, because `NULL = NULL` is not true. Decide explicitly if your data can contain them.
+3. **A NULL `num` is never part of a run, but it still breaks one.** The spec does not mention NULLs and the schema allows them. Since `NULL = NULL` is not true, three NULLs in a row are not "a number that appears three times", and a NULL between two equal values separates them. Approaches 1 and 2 behave this way naturally. Approach 3 needs an explicit `num IS NOT NULL` at the end, because `PARTITION BY` and `GROUP BY` treat NULLs as equal and would report a NULL run. The filter has to come *after* numbering: dropping NULL rows first would close the gap they leave. Tested by `tests/edge_null_num.sql`; `mistakes/null_run_reported.sql` and `mistakes/drop_nulls_before_numbering.sql` are the two wrong versions.
 
 ## 3. Hint ladder
 
@@ -61,8 +61,8 @@ Read the wording as "runs, filtered by length, reduced to a set".
    *Why two windows here:* "consecutive" is about position in the whole log, so the first counter runs over all rows in id order. The second counter restarts for each value. They advance together exactly while the value does not change, so the difference labels the run (the "island"). A plain `GROUP BY num` cannot separate two runs of the same value; the difference can.
 2. **`runs`: `GROUP BY num, island`, `COUNT(*)`.**
    *Why a GROUP BY here:* this collapses each run to one row and measures its length. This is the grain change from rows to runs.
-3. **Filter `run_length >= 3`.**
-   *Why a filter here:* "at least three" is a condition on run length. `>=`, not `=`, since longer runs qualify.
+3. **Filter `run_length >= 3 AND num IS NOT NULL`.**
+   *Why a filter here:* "at least three" is a condition on run length. `>=`, not `=`, since longer runs qualify. The NULL test belongs here, not in step 1: a NULL row must keep its place in the global numbering so that it still separates its neighbours, but its own "run" is not a repeated value (Assumptions, item 3).
 4. **`SELECT DISTINCT num`.**
    *Why DISTINCT here:* the spec asks for a set. A number with two qualifying runs would otherwise appear twice.
 
@@ -82,7 +82,7 @@ runs AS (                                                            -- step 2
 )
 SELECT DISTINCT num AS ConsecutiveNums                               -- step 4
 FROM runs
-WHERE run_length >= 3;                                               -- step 3
+WHERE run_length >= 3 AND num IS NOT NULL;                           -- step 3
 ```
 
 Self-check before you submit: test a run of 5 (one output row, not three), a number with two separate runs (one output row), and a number that appears three times but never in a row (no output).
@@ -147,7 +147,7 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core 
 
 ### Why the optimal one wins
 
-Approach 3 labels runs once instead of asking every row about its neighbours: it avoids the quadratic neighbour search of approach 1 and the look-ahead buffer of approach 2, and its structure does not change with the run length. It is also the form that answers the follow-ups (longest run, where a run starts, "exactly N") with a small edit. Approach 2 is shorter and perfectly good for a fixed 3 on small data, and it is the one to write first in an interview if you can state its cost. The ordering of 2 and 3 on large inputs is an empirical question for the bench table; the reasoning above is why 3 is expected to hold up.
+Approach 3 labels runs once instead of asking every row about its neighbours: it avoids the quadratic neighbour search of approach 1 and the look-ahead buffer of approach 2, and its structure does not change with the run length. It is also the form that answers the follow-ups (longest run, where a run starts, "exactly N") with a small edit. Approach 2 is shorter and perfectly good for a fixed 3 on small data, and it is the one to write first in an interview if you can state its cost. Measured: approaches 2 and 3 tie at 100K rows (233 ms vs 224 ms), and approach 3 is 1.6× faster at 1M (6.56 s vs 10.4 s). Approach 1 already takes 0.45 s at 1K rows and times out at 100K.
 
 ## 6. At scale
 
@@ -196,8 +196,9 @@ Each "breaks" claim below is checked by execution: `mistakes/*.sql` are tempting
 | Holes in the ids: three adjacent rows with ids 1, 2, 4 (our assumption: adjacent in order) | `tests/edge_id_gaps.sql` | `id_plus_one_join` |
 | Two rows only | `tests/edge_too_few_rows.sql` | none; every approach returns empty |
 | Empty table | `tests/edge_empty.sql` | none; every approach returns empty |
+| Three NULLs in a row; a NULL between equal values | `tests/edge_null_num.sql` | `null_run_reported` (reports NULL), `drop_nulls_before_numbering` (reports '7': deleting the NULL row makes ids 7, 9, 10 adjacent) |
 
-NULL values of `num` are outside the spec and not tested (see Assumptions, item 3: the islands approach would differ). No approach in `solutions/` is broken by any tested case.
+No approach in `solutions/` is broken by any tested case. Approach 3 originally had no NULL filter and reported a NULL run on `edge_null_num`; that is why step 3 tests `num IS NOT NULL`.
 
 ## 8. Interviewer follow-ups
 
