@@ -180,11 +180,11 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, Intel(R) Xeon(R) Plati
 
 ### Why the optimal one wins
 
-The expensive part of any solution here is the self-join's output, and approach 3 produces it with the fewest moving parts: it runs straight over the base table's primary key, with no temporary table before the aggregation and no extra pass. Approach 1 pays for every possible pair rather than every shared pair. Approach 2 has a sound idea, fewer join rows, but buys it with an extra pass and a materialised intermediate; when its saving is smaller than that bill it loses, which is why it pays to measure before calling an optimisation an improvement. The comparison can come out the other way on a different engine or a heavier tail (section 6c).
+The expensive part of any solution here is the self-join's output, and approach 3 produces it with the fewest moving parts: it runs straight over the base table's primary key, with no temporary table before the aggregation and no extra pass. Approach 1 pays for every possible pair rather than every shared pair. Approach 2 has a sound idea, fewer join rows, but buys it with an extra pass and a materialised intermediate; when its saving is smaller than that bill it loses, which is why it pays to measure before calling an optimisation an improvement. On this data it loses clearly: about 1.7× approach 3 at 100K rows and 3.6× at 1M, with or without the extra index. Approach 1 times out at 100K rows even with the index. The comparison can come out the other way on a different engine or a heavier tail (section 6c).
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, then checked by the bench table:* approach 1 breaks first, since `P²` grows with the catalogue even when few pairs co-occur. Approaches 2 and 3 are then limited by the same thing: the exploded join is quadratic in basket size, so a few customers with very large baskets can dominate it.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* approach 1 breaks first, since `P²` grows with the catalogue even when few pairs co-occur: it times out at 100K rows, with or without the index. Approaches 2 and 3 are then limited by the same thing: the exploded join is quadratic in basket size, so a few customers with very large baskets can dominate it.
 
 **(b) One machine, ~1M–100M rows.**
 - The primary key `(user_id, product_id)` is exactly the index the self-join wants. `indexes.sql` adds `(product_id, user_id)` for the other direction: "customers per product" (approach 2's prune) and approach 1's probes are then answered from the index alone.
