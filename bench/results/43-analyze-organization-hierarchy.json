@@ -1,0 +1,250 @@
+{
+  "problem": "43-analyze-organization-hierarchy",
+  "generated_at": "2026-11-05T02:54:58+00:00",
+  "settings": {
+    "sizes": [
+      1000,
+      100000
+    ],
+    "warmup_runs": 1,
+    "timed_runs": 3,
+    "statistic": "median",
+    "timeout_ms": 60000,
+    "gen_seed": 1,
+    "phases": [
+      "no_indexes",
+      "with_indexes"
+    ]
+  },
+  "solutions": [
+    "01_closure_correlated_subqueries",
+    "02_closure_group_by",
+    "03_upward_closure_carry_salary"
+  ],
+  "optimal": "03_upward_closure_carry_salary",
+  "machine": {
+    "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+    "python": "3.11.18",
+    "pymysql": "1.4.6",
+    "cpu_count": 2,
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "mem_total": "8122104 kB",
+    "mysql": {
+      "version": "8.0.46",
+      "innodb_buffer_pool_size": 134217728,
+      "join_buffer_size": 262144,
+      "tmp_table_size": 16777216
+    },
+    "github": {
+      "RUNNER_OS": "Linux",
+      "RUNNER_ARCH": "X64",
+      "ImageOS": "ubuntu26",
+      "ImageVersion": "20261101.186.1",
+      "GITHUB_RUN_ID": "41957515969",
+      "GITHUB_SHA": "0da7fbc117c86a4ee6dd2b735cd8f7b9d8453c34"
+    },
+    "git_sha": "0da7fbc117c86a4ee6dd2b735cd8f7b9d8453c34"
+  },
+  "runs": [
+    {
+      "size": 1000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Employees": 1000
+      },
+      "load_seconds": 0.016,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_closure_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.011303703000010046,
+          "times_s": [
+            0.011303703000010046,
+            0.01079593500000442,
+            0.01142967900000258
+          ],
+          "result_rows": 1000,
+          "result_digest": "43ba07e7a0675f021d206ff3752cba66b23aca5f",
+          "explain_analyze": "-> Sort: l.`level`, budget DESC, e.employee_name  (actual time=10.3..10.3 rows=1000 loops=1)\n    -> Stream results  (cost=14790 rows=10100) (actual time=5.24..10 rows=1000 loops=1)\n        -> Nested loop inner join  (cost=14790 rows=10100) (actual time=1.59..2.21 rows=1000 loops=1)\n            -> Table scan on l  (cost=11126..11255 rows=10100) (actual time=1.58..1.66 rows=1000 loops=1)\n                -> Materialize recursive CTE levels  (cost=11126..11126 rows=10100) (actual time=1.58..1.58 rows=1000 loops=1)\n                    -> Filter: (Employees.manager_id is null)  (cost=101 rows=100) (actual time=0.0127..0.137 rows=1 loops=1)\n                        -> Table scan on Employees  (cost=101 rows=1000) (actual time=0.0123..0.113 rows=1000 loops=1)\n                    -> Repeat until convergence\n                        -> Inner hash join (e.manager_id = l.employee_id)  (cost=10015 rows=10000) (actual time=0.0375..0.139 rows=99.9 loops=10)\n                            -> Table scan on e  (cost=0.113 rows=1000) (actual time=0.00542..0.083 rows=1000 loops=10)\n                            -> Hash\n                                -> Scan new records on l  (cost=13.8 rows=100) (actual time=110e-6..0.00256 rows=100 loops=10)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=415e-6..436e-6 rows=1 loops=1000)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=111444..111444 rows=1) (actual time=0.00381..0.00384 rows=1 loops=1000)\n        -> Covering index lookup on r using <auto_key0> (manager_id=e.employee_id)  (cost=99187..102364 rows=9080) (actual time=0.00322..0.00358 rows=4.07 loops=1000)\n            -> Materialize recursive CTE reports  (cost=99186..99186 rows=90800) (actual time=2.87..2.87 rows=4074 loops=1)\n                -> Filter: (Employees.manager_id is not null)  (cost=101 rows=900) (actual time=0.00844..0.132 rows=999 loops=1)\n                    -> Table scan on Employees  (cost=101 rows=1000) (actual time=0.00813..0.0871 rows=1000 loops=1)\n                -> Repeat until convergence\n                    -> Inner hash join (e.manager_id = r.report_id)  (cost=90005 rows=89900) (actual time=0.0717..0.187 rows=342 loops=9)\n                        -> Table scan on e  (cost=0.0126 rows=1000) (actual time=0.00538..0.0884 rows=1000 loops=9)\n                        -> Hash\n                            -> Scan new records on r  (cost=104 rows=899) (actual time=65.7e-6..0.0111 rows=453 loops=9)\n-> Select #7 (subquery in projection; dependent)\n    -> Aggregate: sum(s.salary)  (cost=7264 rows=1) (actual time=0.00332..0.00334 rows=1 loops=1000)\n        -> Nested loop inner join  (cost=6356 rows=9080) (actual time=734e-6..0.00301 rows=4.07 loops=1000)\n            -> Filter: (r.report_id is not null)  (cost=99176..3178 rows=9080) (actual time=437e-6..0.00102 rows=4.07 loops=1000)\n                -> Covering index lookup on r using <auto_key0> (manager_id=e.employee_id)  (cost=99187..102364 rows=9080) (actual time=348e-6..754e-6 rows=4.07 loops=1000)\n                    -> Materialize recursive CTE reports  (cost=99186..99186 rows=90800) (never executed)\n            -> Single-row index lookup on s using PRIMARY (employee_id=r.report_id)  (cost=0.25 rows=1) (actual time=333e-6..354e-6 rows=1 loops=4074)\n"
+        },
+        {
+          "solution": "02_closure_group_by",
+          "status": "ok",
+          "median_s": 0.009920125000007829,
+          "times_s": [
+            0.009992213999993282,
+            0.009920125000007829,
+            0.009850725999996257
+          ],
+          "result_rows": 1000,
+          "result_digest": "43ba07e7a0675f021d206ff3752cba66b23aca5f",
+          "explain_analyze": "-> Sort: l.`level`, budget DESC, e.employee_name  (actual time=8.61..8.64 rows=1000 loops=1)\n    -> Stream results  (cost=233941 rows=0) (actual time=6.96..8.33 rows=1000 loops=1)\n        -> Nested loop left join  (cost=233941 rows=0) (actual time=6.95..8.12 rows=1000 loops=1)\n            -> Nested loop inner join  (cost=4674 rows=10100) (actual time=1.62..2.3 rows=1000 loops=1)\n                -> Filter: (l.employee_id is not null)  (cost=11125..1139 rows=10100) (actual time=1.62..1.73 rows=1000 loops=1)\n                    -> Table scan on l  (cost=11126..11255 rows=10100) (actual time=1.62..1.69 rows=1000 loops=1)\n                        -> Materialize recursive CTE levels  (cost=11126..11126 rows=10100) (actual time=1.62..1.62 rows=1000 loops=1)\n                            -> Filter: (Employees.manager_id is null)  (cost=101 rows=100) (actual time=0.0121..0.134 rows=1 loops=1)\n                                -> Table scan on Employees  (cost=101 rows=1000) (actual time=0.0116..0.11 rows=1000 loops=1)\n                            -> Repeat until convergence\n                                -> Inner hash join (e.manager_id = l.employee_id)  (cost=10015 rows=10000) (actual time=0.0376..0.142 rows=99.9 loops=10)\n                                    -> Table scan on e  (cost=0.113 rows=1000) (actual time=0.00565..0.0846 rows=1000 loops=10)\n                                    -> Hash\n                                        -> Scan new records on l  (cost=13.8 rows=100) (actual time=107e-6..0.00253 rows=100 loops=10)\n                -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=434e-6..455e-6 rows=1 loops=1000)\n            -> Index lookup on t using <auto_key0> (manager_id=l.employee_id)  (cost=0.25..22.7 rows=90.8) (actual time=0.00567..0.00571 rows=0.436 loops=1000)\n                -> Materialize CTE team  (cost=0..0 rows=0) (actual time=5.33..5.33 rows=436 loops=1)\n                    -> Table scan on <temporary>  (actual time=5.22..5.25 rows=436 loops=1)\n                        -> Aggregate using temporary table  (actual time=5.22..5.22 rows=436 loops=1)\n                            -> Nested loop inner join  (cost=41997 rows=90799) (actual time=2..4.42 rows=4074 loops=1)\n                                -> Filter: (r.report_id is not null)  (cost=99185..10217 rows=90799) (actual time=2..2.47 rows=4074 loops=1)\n                                    -> Table scan on r  (cost=99186..100324 rows=90800) (actual time=2..2.29 rows=4074 loops=1)\n                                        -> Materialize recursive CTE reports  (cost=99186..99186 rows=90800) (actual time=2..2 rows=4074 loops=1)\n                                            -> Filter: (Employees.manager_id is not null)  (cost=101 rows=900) (actual time=0.00649..0.126 rows=999 loops=1)\n                                                -> Table scan on Employees  (cost=101 rows=1000) (actual time=0.00625..0.0836 rows=1000 loops=1)\n                                            -> Repeat until convergence\n                                                -> Inner hash join (e.manager_id = r.report_id)  (cost=90005 rows=89900) (actual time=0.0745..0.189 rows=342 loops=9)\n                                                    -> Table scan on e  (cost=0.0126 rows=1000) (actual time=0.00528..0.0862 rows=1000 loops=9)\n                                                    -> Hash\n                                                        -> Scan new records on r  (cost=104 rows=899) (actual time=59e-6..0.0117 rows=453 loops=9)\n                                -> Single-row index lookup on s using PRIMARY (employee_id=r.report_id)  (cost=0.25 rows=1) (actual time=345e-6..365e-6 rows=1 loops=4074)\n"
+        },
+        {
+          "solution": "03_upward_closure_carry_salary",
+          "status": "ok",
+          "median_s": 0.008084253000021135,
+          "times_s": [
+            0.007932796999995162,
+            0.008084253000021135,
+            0.009497855000006439
+          ],
+          "result_rows": 1000,
+          "result_digest": "43ba07e7a0675f021d206ff3752cba66b23aca5f",
+          "explain_analyze": "-> Sort: `level`, budget DESC, e.employee_name  (actual time=11.1..11.2 rows=1000 loops=1)\n    -> Stream results  (cost=27849 rows=0) (actual time=8.53..10.5 rows=1000 loops=1)\n        -> Nested loop left join  (cost=27849 rows=0) (actual time=8.52..10.2 rows=1000 loops=1)\n            -> Nested loop left join  (cost=2613 rows=0) (actual time=5.48..6.35 rows=1000 loops=1)\n                -> Table scan on e  (cost=101 rows=1000) (actual time=0.0214..0.273 rows=1000 loops=1)\n                -> Index lookup on m using <auto_key0> (employee_id=e.employee_id)  (cost=0.25..2.51 rows=10) (actual time=0.00591..0.00596 rows=0.436 loops=1000)\n                    -> Materialize CTE as_manager  (cost=0..0 rows=0) (actual time=5.46..5.46 rows=436 loops=1)\n                        -> Table scan on <temporary>  (actual time=5.28..5.32 rows=436 loops=1)\n                            -> Aggregate using temporary table  (actual time=5.28..5.28 rows=436 loops=1)\n                                -> Table scan on chain  (cost=690..714 rows=1709) (actual time=4.03..4.34 rows=4074 loops=1)\n                                    -> Materialize recursive CTE chain  (cost=690..690 rows=1709) (actual time=4.02..4.02 rows=4074 loops=1)\n                                        -> Filter: (Employees.manager_id is not null)  (cost=101 rows=900) (actual time=0.0116..0.148 rows=999 loops=1)\n                                            -> Table scan on Employees  (cost=101 rows=1000) (actual time=0.0105..0.103 rows=1000 loops=1)\n                                        -> Repeat until convergence\n                                            -> Nested loop inner join  (cost=418 rows=809) (actual time=0.00444..1.77 rows=1538 loops=2)\n                                                -> Filter: (c.ancestor is not null)  (cost=104 rows=899) (actual time=681e-6..0.167 rows=2037 loops=2)\n                                                    -> Scan new records on c  (cost=104 rows=899) (actual time=410e-6..0.0666 rows=2037 loops=2)\n                                                -> Filter: (m.manager_id is not null)  (cost=0.25 rows=0.9) (actual time=597e-6..675e-6 rows=0.755 loops=4074)\n                                                    -> Single-row index lookup on m using PRIMARY (employee_id=c.ancestor)  (cost=0.25 rows=1) (actual time=482e-6..505e-6 rows=1 loops=4074)\n            -> Index lookup on r using <auto_key0> (employee_id=e.employee_id)  (cost=0.25..2.51 rows=10) (actual time=0.00349..0.00364 rows=0.999 loops=1000)\n                -> Materialize CTE as_report  (cost=0..0 rows=0) (actual time=3.03..3.03 rows=999 loops=1)\n                    -> Table scan on <temporary>  (actual time=2.4..2.53 rows=999 loops=1)\n                        -> Aggregate using temporary table  (actual time=2.4..2.4 rows=999 loops=1)\n                            -> Table scan on chain  (cost=690..714 rows=1709) (actual time=692e-6..0.541 rows=4074 loops=1)\n                                -> Materialize recursive CTE chain  (cost=690..690 rows=1709) (never executed)\n"
+        }
+      ]
+    },
+    {
+      "size": 1000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Employees": 1000
+      },
+      "load_seconds": 0.016,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_closure_correlated_subqueries",
+          "status": "ok",
+          "median_s": 0.012134971999984145,
+          "times_s": [
+            0.016220396999983677,
+            0.012134971999984145,
+            0.011825098999992179
+          ],
+          "result_rows": 1000,
+          "result_digest": "43ba07e7a0675f021d206ff3752cba66b23aca5f",
+          "explain_analyze": "-> Sort: l.`level`, budget DESC, e.employee_name  (actual time=11.5..11.5 rows=1000 loops=1)\n    -> Stream results  (cost=9.21 rows=5.58) (actual time=6.57..11.2 rows=1000 loops=1)\n        -> Nested loop inner join  (cost=9.21 rows=5.58) (actual time=1.01..1.63 rows=1000 loops=1)\n            -> Table scan on l  (cost=5.05..7.15 rows=5.58) (actual time=1.01..1.08 rows=1000 loops=1)\n                -> Materialize recursive CTE levels  (cost=4.59..4.59 rows=5.58) (actual time=1.01..1.01 rows=1000 loops=1)\n                    -> Filter: (Employees.manager_id is null)  (cost=0.35 rows=1) (actual time=0.00461..0.00568 rows=1 loops=1)\n                        -> Covering index lookup on Employees using idx_employees_manager (manager_id=NULL)  (cost=0.35 rows=1) (actual time=0.00407..0.00507 rows=1 loops=1)\n                    -> Repeat until convergence\n                        -> Nested loop inner join  (cost=3.68 rows=4.58) (actual time=0.00188..0.465 rows=500 loops=2)\n                            -> Filter: (l.employee_id is not null)  (cost=2.73 rows=2) (actual time=520e-6..0.035 rows=500 loops=2)\n                                -> Scan new records on l  (cost=2.73 rows=2) (actual time=285e-6..0.0127 rows=500 loops=2)\n                            -> Covering index lookup on e using idx_employees_manager (manager_id=l.employee_id)  (cost=0.365 rows=2.29) (actual time=584e-6..728e-6 rows=0.999 loops=1000)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.267 rows=1) (actual time=417e-6..438e-6 rows=1 loops=1000)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1566..1566 rows=1) (actual time=0.00574..0.00576 rows=1 loops=1000)\n        -> Covering index lookup on r using <auto_key0> (manager_id=e.employee_id)  (cost=1123..1237 rows=329) (actual time=0.00518..0.00551 rows=4.07 loops=1000)\n            -> Materialize recursive CTE reports  (cost=1122..1122 rows=3285) (actual time=4.82..4.82 rows=4074 loops=1)\n                -> Filter: (Employees.manager_id is not null)  (cost=200 rows=999) (actual time=0.00728..0.126 rows=999 loops=1)\n                    -> Covering index range scan on Employees using idx_employees_manager over (NULL < manager_id)  (cost=200 rows=999) (actual time=0.00686..0.084 rows=999 loops=1)\n                -> Repeat until convergence\n                    -> Nested loop inner join  (cost=594 rows=2286) (actual time=0.00112..1.74 rows=1538 loops=2)\n                        -> Filter: (r.report_id is not null)  (cost=115 rows=999) (actual time=250e-6..0.14 rows=2037 loops=2)\n                            -> Scan new records on r  (cost=115 rows=999) (actual time=135e-6..0.0498 rows=2037 loops=2)\n                        -> Covering index lookup on e using idx_employees_manager (manager_id=r.report_id)  (cost=0.251 rows=2.29) (actual time=561e-6..673e-6 rows=0.755 loops=4074)\n-> Select #7 (subquery in projection; dependent)\n    -> Aggregate: sum(s.salary)  (cost=263 rows=1) (actual time=0.00325..0.00327 rows=1 loops=1000)\n        -> Nested loop inner join  (cost=230 rows=329) (actual time=737e-6..0.00295 rows=4.07 loops=1000)\n            -> Filter: (r.report_id is not null)  (cost=1119..115 rows=329) (actual time=437e-6..0.001 rows=4.07 loops=1000)\n                -> Covering index lookup on r using <auto_key0> (manager_id=e.employee_id)  (cost=1123..1237 rows=329) (actual time=350e-6..736e-6 rows=4.07 loops=1000)\n                    -> Materialize recursive CTE reports  (cost=1122..1122 rows=3285) (never executed)\n            -> Single-row index lookup on s using PRIMARY (employee_id=r.report_id)  (cost=0.25 rows=1) (actual time=328e-6..349e-6 rows=1 loops=4074)\n"
+        },
+        {
+          "solution": "02_closure_group_by",
+          "status": "ok",
+          "median_s": 0.010844253000016124,
+          "times_s": [
+            0.01069230799998877,
+            0.011070863000014697,
+            0.010844253000016124
+          ],
+          "result_rows": 1000,
+          "result_digest": "43ba07e7a0675f021d206ff3752cba66b23aca5f",
+          "explain_analyze": "-> Sort: l.`level`, budget DESC, e.employee_name  (actual time=9.57..9.6 rows=1000 loops=1)\n    -> Stream results  (cost=54.6 rows=0) (actual time=7.96..9.3 rows=1000 loops=1)\n        -> Nested loop left join  (cost=54.6 rows=0) (actual time=7.96..9.1 rows=1000 loops=1)\n            -> Nested loop inner join  (cost=5.28 rows=6) (actual time=0.96..1.61 rows=1000 loops=1)\n                -> Filter: (l.employee_id is not null)  (cost=4.36..3.18 rows=6) (actual time=0.956..1.07 rows=1000 loops=1)\n                    -> Table scan on l  (cost=5.05..7.15 rows=5.58) (actual time=0.956..1.02 rows=1000 loops=1)\n                        -> Materialize recursive CTE levels  (cost=4.59..4.59 rows=5.58) (actual time=0.956..0.956 rows=1000 loops=1)\n                            -> Filter: (Employees.manager_id is null)  (cost=0.35 rows=1) (actual time=0.00532..0.00646 rows=1 loops=1)\n                                -> Covering index lookup on Employees using idx_employees_manager (manager_id=NULL)  (cost=0.35 rows=1) (actual time=0.00499..0.00605 rows=1 loops=1)\n                            -> Repeat until convergence\n                                -> Nested loop inner join  (cost=3.68 rows=4.58) (actual time=0.00181..0.443 rows=500 loops=2)\n                                    -> Filter: (l.employee_id is not null)  (cost=2.73 rows=2) (actual time=502e-6..0.0345 rows=500 loops=2)\n                                        -> Scan new records on l  (cost=2.73 rows=2) (actual time=241e-6..0.0124 rows=500 loops=2)\n                                    -> Covering index lookup on e using idx_employees_manager (manager_id=l.employee_id)  (cost=0.365 rows=2.29) (actual time=566e-6..699e-6 rows=0.999 loops=1000)\n                -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.267 rows=1) (actual time=414e-6..434e-6 rows=1 loops=1000)\n            -> Index lookup on t using <auto_key0> (manager_id=l.employee_id)  (cost=0.267..8.76 rows=32.9) (actual time=0.00732..0.00736 rows=0.436 loops=1000)\n                -> Materialize CTE team  (cost=0..0 rows=0) (actual time=6.99..6.99 rows=436 loops=1)\n                    -> Table scan on <temporary>  (actual time=6.81..6.84 rows=436 loops=1)\n                        -> Aggregate using temporary table  (actual time=6.81..6.81 rows=436 loops=1)\n                            -> Nested loop inner join  (cost=1522 rows=3285) (actual time=3.64..6.04 rows=4074 loops=1)\n                                -> Filter: (r.report_id is not null)  (cost=1122..372 rows=3285) (actual time=3.64..4.09 rows=4074 loops=1)\n                                    -> Table scan on r  (cost=1122..1166 rows=3285) (actual time=3.64..3.92 rows=4074 loops=1)\n                                        -> Materialize recursive CTE reports  (cost=1122..1122 rows=3285) (actual time=3.64..3.64 rows=4074 loops=1)\n                                            -> Filter: (Employees.manager_id is not null)  (cost=200 rows=999) (actual time=0.00718..0.124 rows=999 loops=1)\n                                                -> Covering index range scan on Employees using idx_employees_manager over (NULL < manager_id)  (cost=200 rows=999) (actual time=0.00703..0.082 rows=999 loops=1)\n                                            -> Repeat until convergence\n                                                -> Nested loop inner join  (cost=594 rows=2286) (actual time=0.0011..1.66 rows=1538 loops=2)\n                                                    -> Filter: (r.report_id is not null)  (cost=115 rows=999) (actual time=231e-6..0.138 rows=2037 loops=2)\n                                                        -> Scan new records on r  (cost=115 rows=999) (actual time=115e-6..0.0489 rows=2037 loops=2)\n                                                    -> Covering index lookup on e using idx_employees_manager (manager_id=r.report_id)  (cost=0.251 rows=2.29) (actual time=538e-6..639e-6 rows=0.755 loops=4074)\n                                -> Single-row index lookup on s using PRIMARY (employee_id=r.report_id)  (cost=0.25 rows=1) (actual time=347e-6..368e-6 rows=1 loops=4074)\n"
+        },
+        {
+          "solution": "03_upward_closure_carry_salary",
+          "status": "ok",
+          "median_s": 0.007602372999997442,
+          "times_s": [
+            0.007602372999997442,
+            0.007421680999982527,
+            0.0076544020000142154
+          ],
+          "result_rows": 1000,
+          "result_digest": "43ba07e7a0675f021d206ff3752cba66b23aca5f",
+          "explain_analyze": "-> Sort: `level`, budget DESC, e.employee_name  (actual time=6.17..6.2 rows=1000 loops=1)\n    -> Stream results  (cost=27786 rows=0) (actual time=4.63..5.9 rows=1000 loops=1)\n        -> Nested loop left join  (cost=27786 rows=0) (actual time=4.63..5.7 rows=1000 loops=1)\n            -> Nested loop left join  (cost=2610 rows=0) (actual time=3.69..4.24 rows=1000 loops=1)\n                -> Table scan on e  (cost=101 rows=1000) (actual time=0.0104..0.13 rows=1000 loops=1)\n                -> Index lookup on m using <auto_key0> (employee_id=e.employee_id)  (cost=0.25..2.51 rows=10) (actual time=0.00397..0.00401 rows=0.436 loops=1000)\n                    -> Materialize CTE as_manager  (cost=0..0 rows=0) (actual time=3.68..3.68 rows=436 loops=1)\n                        -> Table scan on <temporary>  (actual time=3.57..3.6 rows=436 loops=1)\n                            -> Aggregate using temporary table  (actual time=3.57..3.57 rows=436 loops=1)\n                                -> Table scan on chain  (cost=766..793 rows=1997) (actual time=2.75..3.03 rows=4074 loops=1)\n                                    -> Materialize recursive CTE chain  (cost=765..765 rows=1997) (actual time=2.75..2.75 rows=4074 loops=1)\n                                        -> Filter: (Employees.manager_id is not null)  (cost=101 rows=999) (actual time=0.00759..0.135 rows=999 loops=1)\n                                            -> Table scan on Employees  (cost=101 rows=1000) (actual time=0.00689..0.0926 rows=1000 loops=1)\n                                        -> Repeat until convergence\n                                            -> Nested loop inner join  (cost=465 rows=998) (actual time=0.00271..1.19 rows=1538 loops=2)\n                                                -> Filter: (c.ancestor is not null)  (cost=115 rows=999) (actual time=406e-6..0.138 rows=2037 loops=2)\n                                                    -> Scan new records on c  (cost=115 rows=999) (actual time=220e-6..0.0492 rows=2037 loops=2)\n                                                -> Filter: (m.manager_id is not null)  (cost=0.25 rows=0.999) (actual time=367e-6..414e-6 rows=0.755 loops=4074)\n                                                    -> Single-row index lookup on m using PRIMARY (employee_id=c.ancestor)  (cost=0.25 rows=1) (actual time=266e-6..287e-6 rows=1 loops=4074)\n            -> Index lookup on r using <auto_key0> (employee_id=e.employee_id)  (cost=0.25..2.51 rows=10) (actual time=0.00125..0.00134 rows=0.999 loops=1000)\n                -> Materialize CTE as_report  (cost=0..0 rows=0) (actual time=0.941..0.941 rows=999 loops=1)\n                    -> Table scan on <temporary>  (actual time=0.653..0.725 rows=999 loops=1)\n                        -> Aggregate using temporary table  (actual time=0.653..0.653 rows=999 loops=1)\n                            -> Table scan on chain  (cost=766..793 rows=1997) (actual time=372e-6..0.265 rows=4074 loops=1)\n                                -> Materialize recursive CTE chain  (cost=765..765 rows=1997) (never executed)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "no_indexes",
+      "rows_loaded": {
+        "Employees": 100000
+      },
+      "load_seconds": 0.566,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_closure_correlated_subqueries",
+          "status": "ok",
+          "median_s": 3.669857266000008,
+          "times_s": [
+            3.669857266000008,
+            3.656891089999988,
+            3.679059751000011
+          ],
+          "result_rows": 100000,
+          "result_digest": "b839b4cbb6bd8772165c98e7296efa45bbc51bfe",
+          "explain_analyze": "-> Sort: l.`level`, budget DESC, e.employee_name  (actual time=4070..4073 rows=100000 loops=1)\n    -> Stream results  (cost=146e+6 rows=100e+6) (actual time=2031..4024 rows=100000 loops=1)\n        -> Nested loop inner join  (cost=146e+6 rows=100e+6) (actual time=325..416 rows=100000 loops=1)\n            -> Table scan on l  (cost=110e+6..111e+6 rows=100e+6) (actual time=325..335 rows=100000 loops=1)\n                -> Materialize recursive CTE levels  (cost=110e+6..110e+6 rows=100e+6) (actual time=325..325 rows=100000 loops=1)\n                    -> Filter: (Employees.manager_id is null)  (cost=10070 rows=9997) (actual time=0.0653..10.5 rows=1 loops=1)\n                        -> Table scan on Employees  (cost=10070 rows=99974) (actual time=0.0641..8.17 rows=100000 loops=1)\n                    -> Repeat until convergence\n                        -> Inner hash join (e.manager_id = l.employee_id)  (cost=99.9e+6 rows=99.9e+6) (actual time=2.13..16.3 rows=5263 loops=19)\n                            -> Table scan on e  (cost=0.111 rows=99974) (actual time=0.024..8.23 rows=100000 loops=19)\n                            -> Hash\n                                -> Scan new records on l  (cost=1127 rows=9997) (actual time=706e-6..0.129 rows=5263 loops=19)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=673e-6..694e-6 rows=1 loops=100000)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=1.11e+9..1.11e+9 rows=1) (actual time=0.0226..0.0226 rows=1 loops=100000)\n        -> Covering index lookup on r using <auto_key0> (manager_id=e.employee_id)  (cost=990e+6..1.02e+9 rows=90e+6) (actual time=0.0162..0.0223 rows=6.93 loops=100000)\n            -> Materialize recursive CTE reports  (cost=990e+6..990e+6 rows=900e+6) (actual time=1486..1486 rows=693351 loops=1)\n                -> Filter: (Employees.manager_id is not null)  (cost=10070 rows=89977) (actual time=0.0385..12.7 rows=99999 loops=1)\n                    -> Table scan on Employees  (cost=10070 rows=99974) (actual time=0.0372..8.24 rows=100000 loops=1)\n                -> Repeat until convergence\n                    -> Inner hash join (e.manager_id = r.report_id)  (cost=900e+6 rows=900e+6) (actual time=7.2..27.8 rows=32964 loops=18)\n                        -> Table scan on e  (cost=0.0144 rows=99974) (actual time=0.0387..9.18 rows=100000 loops=18)\n                        -> Hash\n                            -> Scan new records on r  (cost=10125 rows=89976) (actual time=0.00585..2.71 rows=38520 loops=18)\n-> Select #7 (subquery in projection; dependent)\n    -> Aggregate: sum(s.salary)  (cost=72e+6 rows=1) (actual time=0.0128..0.0128 rows=1 loops=100000)\n        -> Nested loop inner join  (cost=63e+6 rows=90e+6) (actual time=0.00156..0.0123 rows=6.93 loops=100000)\n            -> Filter: (r.report_id is not null)  (cost=990e+6..31.5e+6 rows=90e+6) (actual time=0.00112..0.00647 rows=6.93 loops=100000)\n                -> Covering index lookup on r using <auto_key0> (manager_id=e.employee_id)  (cost=990e+6..1.02e+9 rows=90e+6) (actual time=0.00103..0.00607 rows=6.93 loops=100000)\n                    -> Materialize recursive CTE reports  (cost=990e+6..990e+6 rows=900e+6) (never executed)\n            -> Single-row index lookup on s using PRIMARY (employee_id=r.report_id)  (cost=0.25 rows=1) (actual time=698e-6..719e-6 rows=1 loops=693351)\n"
+        },
+        {
+          "solution": "02_closure_group_by",
+          "status": "ok",
+          "median_s": 1.9445293930000105,
+          "times_s": [
+            1.8009601410000187,
+            1.9445293930000105,
+            2.4893842449999966
+          ],
+          "result_rows": 100000,
+          "result_digest": "b839b4cbb6bd8772165c98e7296efa45bbc51bfe",
+          "explain_analyze": "-> Sort: l.`level`, budget DESC, e.employee_name  (actual time=1902..1906 rows=100000 loops=1)\n    -> Stream results  (cost=226e+9 rows=0) (actual time=1654..1857 rows=100000 loops=1)\n        -> Nested loop left join  (cost=226e+9 rows=0) (actual time=1654..1836 rows=100000 loops=1)\n            -> Nested loop inner join  (cost=46.3e+6 rows=100e+6) (actual time=326..429 rows=100000 loops=1)\n                -> Filter: (l.employee_id is not null)  (cost=110e+6..11.3e+6 rows=100e+6) (actual time=326..339 rows=100000 loops=1)\n                    -> Table scan on l  (cost=110e+6..111e+6 rows=100e+6) (actual time=326..334 rows=100000 loops=1)\n                        -> Materialize recursive CTE levels  (cost=110e+6..110e+6 rows=100e+6) (actual time=326..326 rows=100000 loops=1)\n                            -> Filter: (Employees.manager_id is null)  (cost=10079 rows=10007) (actual time=0.0656..10.6 rows=1 loops=1)\n                                -> Table scan on Employees  (cost=10079 rows=100072) (actual time=0.0647..8.27 rows=100000 loops=1)\n                            -> Repeat until convergence\n                                -> Inner hash join (e.manager_id = l.employee_id)  (cost=100e+6 rows=100e+6) (actual time=2.16..16.3 rows=5263 loops=19)\n                                    -> Table scan on e  (cost=0.111 rows=100072) (actual time=0.018..8.31 rows=100000 loops=19)\n                                    -> Hash\n                                        -> Scan new records on l  (cost=1128 rows=10007) (actual time=281e-6..0.127 rows=5263 loops=19)\n                -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.25 rows=1) (actual time=768e-6..790e-6 rows=1 loops=100000)\n            -> Index lookup on t using <auto_key0> (manager_id=l.employee_id)  (cost=0.25..2252 rows=9007) (actual time=0.0139..0.0139 rows=0.435 loops=100000)\n                -> Materialize CTE team  (cost=0..0 rows=0) (actual time=1328..1328 rows=43524 loops=1)\n                    -> Table scan on <temporary>  (actual time=1310..1313 rows=43524 loops=1)\n                        -> Aggregate using temporary table  (actual time=1310..1310 rows=43524 loops=1)\n                            -> Nested loop inner join  (cost=417e+6 rows=901e+6) (actual time=566..1147 rows=693351 loops=1)\n                                -> Filter: (r.report_id is not null)  (cost=991e+6..101e+6 rows=901e+6) (actual time=566..699 rows=693351 loops=1)\n                                    -> Table scan on r  (cost=991e+6..1e+9 rows=901e+6) (actual time=566..667 rows=693351 loops=1)\n                                        -> Materialize recursive CTE reports  (cost=991e+6..991e+6 rows=901e+6) (actual time=566..566 rows=693351 loops=1)\n                                            -> Filter: (Employees.manager_id is not null)  (cost=10079 rows=90065) (actual time=0.0456..12.9 rows=99999 loops=1)\n                                                -> Table scan on Employees  (cost=10079 rows=100072) (actual time=0.0448..8.48 rows=100000 loops=1)\n                                            -> Repeat until convergence\n                                                -> Inner hash join (e.manager_id = r.report_id)  (cost=901e+6 rows=901e+6) (actual time=5.31..23.7 rows=32964 loops=18)\n                                                    -> Table scan on e  (cost=0.0144 rows=100072) (actual time=0.0267..8.53 rows=100000 loops=18)\n                                                    -> Hash\n                                                        -> Scan new records on r  (cost=10135 rows=90064) (actual time=0.00162..1.21 rows=38520 loops=18)\n                                -> Single-row index lookup on s using PRIMARY (employee_id=r.report_id)  (cost=0.25 rows=1) (actual time=510e-6..531e-6 rows=1 loops=693351)\n"
+        },
+        {
+          "solution": "03_upward_closure_carry_salary",
+          "status": "ok",
+          "median_s": 1.2972561530000064,
+          "times_s": [
+            1.4107902219999744,
+            1.2972561530000064,
+            1.2799435530000096
+          ],
+          "result_rows": 100000,
+          "result_digest": "b839b4cbb6bd8772165c98e7296efa45bbc51bfe",
+          "explain_analyze": "-> Sort: `level`, budget DESC, e.employee_name  (actual time=1360..1364 rows=100000 loops=1)\n    -> Stream results  (cost=2.76e+6 rows=0) (actual time=1152..1312 rows=100000 loops=1)\n        -> Nested loop left join  (cost=2.76e+6 rows=0) (actual time=1152..1290 rows=100000 loops=1)\n            -> Nested loop left join  (cost=260261 rows=0) (actual time=908..982 rows=100000 loops=1)\n                -> Table scan on e  (cost=10079 rows=100072) (actual time=0.0721..13.6 rows=100000 loops=1)\n                -> Index lookup on m using <auto_key0> (employee_id=e.employee_id)  (cost=0.25..2.5 rows=10) (actual time=0.00949..0.00958 rows=0.435 loops=100000)\n                    -> Materialize CTE as_manager  (cost=0..0 rows=0) (actual time=908..908 rows=43524 loops=1)\n                        -> Table scan on <temporary>  (actual time=893..896 rows=43524 loops=1)\n                            -> Aggregate using temporary table  (actual time=893..893 rows=43524 loops=1)\n                                -> Table scan on chain  (cost=68849..70990 rows=171122) (actual time=686..781 rows=693351 loops=1)\n                                    -> Materialize recursive CTE chain  (cost=68849..68849 rows=171122) (actual time=686..686 rows=693351 loops=1)\n                                        -> Filter: (Employees.manager_id is not null)  (cost=10079 rows=90065) (actual time=0.0413..14.1 rows=99999 loops=1)\n                                            -> Table scan on Employees  (cost=10079 rows=100072) (actual time=0.0396..9.67 rows=100000 loops=1)\n                                        -> Repeat until convergence\n                                            -> Nested loop inner join  (cost=41657 rows=81058) (actual time=0.00739..253 rows=296676 loops=2)\n                                                -> Filter: (c.ancestor is not null)  (cost=10135 rows=90064) (actual time=0.00139..35.3 rows=346676 loops=2)\n                                                    -> Scan new records on c  (cost=10135 rows=90064) (actual time=917e-6..19 rows=346676 loops=2)\n                                                -> Filter: (m.manager_id is not null)  (cost=0.25 rows=0.9) (actual time=458e-6..516e-6 rows=0.856 loops=693351)\n                                                    -> Single-row index lookup on m using PRIMARY (employee_id=c.ancestor)  (cost=0.25 rows=1) (actual time=356e-6..378e-6 rows=1 loops=693351)\n            -> Index lookup on r using <auto_key0> (employee_id=e.employee_id)  (cost=0.25..2.5 rows=10) (actual time=0.00284..0.00295 rows=1 loops=100000)\n                -> Materialize CTE as_report  (cost=0..0 rows=0) (actual time=244..244 rows=99999 loops=1)\n                    -> Table scan on <temporary>  (actual time=197..204 rows=99999 loops=1)\n                        -> Aggregate using temporary table  (actual time=197..197 rows=99999 loops=1)\n                            -> Table scan on chain  (cost=68849..70990 rows=171122) (actual time=0.0317..96.5 rows=693351 loops=1)\n                                -> Materialize recursive CTE chain  (cost=68849..68849 rows=171122) (never executed)\n"
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "phase": "with_indexes",
+      "rows_loaded": {
+        "Employees": 100000
+      },
+      "load_seconds": 0.566,
+      "results_agree": true,
+      "solutions": [
+        {
+          "solution": "01_closure_correlated_subqueries",
+          "status": "ok",
+          "median_s": 3.468645586000008,
+          "times_s": [
+            3.5371044460000007,
+            3.439645860000013,
+            3.468645586000008
+          ],
+          "result_rows": 100000,
+          "result_digest": "b839b4cbb6bd8772165c98e7296efa45bbc51bfe",
+          "explain_analyze": "-> Sort: l.`level`, budget DESC, e.employee_name  (actual time=3623..3626 rows=100000 loops=1)\n    -> Stream results  (cost=11.4 rows=5.59) (actual time=1932..3575 rows=100000 loops=1)\n        -> Nested loop inner join  (cost=11.4 rows=5.59) (actual time=115..198 rows=100000 loops=1)\n            -> Table scan on l  (cost=7.28..9.38 rows=5.59) (actual time=115..128 rows=100000 loops=1)\n                -> Materialize recursive CTE levels  (cost=6.82..6.82 rows=5.59) (actual time=115..115 rows=100000 loops=1)\n                    -> Filter: (Employees.manager_id is null)  (cost=1.09 rows=1) (actual time=0.0166..0.0198 rows=1 loops=1)\n                        -> Covering index lookup on Employees using idx_employees_manager (manager_id=NULL)  (cost=1.09 rows=1) (actual time=0.0159..0.0191 rows=1 loops=1)\n                    -> Repeat until convergence\n                        -> Nested loop inner join  (cost=5.17 rows=4.59) (actual time=0.00366..54.6 rows=50000 loops=2)\n                            -> Filter: (l.employee_id is not null)  (cost=2.73 rows=2) (actual time=0.00118..3.57 rows=50000 loops=2)\n                                -> Scan new records on l  (cost=2.73 rows=2) (actual time=782e-6..1.28 rows=50000 loops=2)\n                            -> Covering index lookup on e using idx_employees_manager (manager_id=l.employee_id)  (cost=1.11 rows=2.29) (actual time=769e-6..896e-6 rows=1 loops=100000)\n            -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.267 rows=1) (actual time=559e-6..581e-6 rows=1 loops=100000)\n-> Select #2 (subquery in projection; dependent)\n    -> Aggregate: count(0)  (cost=115722..115722 rows=1) (actual time=0.022..0.022 rows=1 loops=100000)\n        -> Covering index lookup on r using <auto_key0> (manager_id=e.employee_id)  (cost=93451..99224 rows=16498) (actual time=0.0173..0.0217 rows=6.93 loops=100000)\n            -> Materialize recursive CTE reports  (cost=93450..93450 rows=164972) (actual time=1597..1597 rows=693351 loops=1)\n                -> Filter: (Employees.manager_id is not null)  (cost=10075 rows=50099) (actual time=0.0409..12.6 rows=99999 loops=1)\n                    -> Covering index range scan on Employees using idx_employees_manager over (NULL < manager_id)  (cost=10075 rows=50099) (actual time=0.0406..8.19 rows=99999 loops=1)\n                -> Repeat until convergence\n                    -> Nested loop inner join  (cost=66878 rows=114873) (actual time=0.0103..404 rows=296676 loops=2)\n                        -> Filter: (r.report_id is not null)  (cost=5639 rows=50099) (actual time=0.00233..49.4 rows=346676 loops=2)\n                            -> Scan new records on r  (cost=5639 rows=50099) (actual time=0.00199..33.1 rows=346676 loops=2)\n                        -> Covering index lookup on e using idx_employees_manager (manager_id=r.report_id)  (cost=0.993 rows=2.29) (actual time=782e-6..904e-6 rows=0.856 loops=693351)\n-> Select #7 (subquery in projection; dependent)\n    -> Aggregate: sum(s.salary)  (cost=13198 rows=1) (actual time=0.011..0.011 rows=1 loops=100000)\n        -> Nested loop inner join  (cost=11548 rows=16498) (actual time=0.00155..0.0106 rows=6.93 loops=100000)\n            -> Filter: (r.report_id is not null)  (cost=93445..5774 rows=16498) (actual time=0.00118..0.00607 rows=6.93 loops=100000)\n                -> Covering index lookup on r using <auto_key0> (manager_id=e.employee_id)  (cost=93451..99224 rows=16498) (actual time=0.00109..0.00566 rows=6.93 loops=100000)\n                    -> Materialize recursive CTE reports  (cost=93450..93450 rows=164972) (never executed)\n            -> Single-row index lookup on s using PRIMARY (employee_id=r.report_id)  (cost=0.25 rows=1) (actual time=496e-6..517e-6 rows=1 loops=693351)\n"
+        },
+        {
+          "solution": "02_closure_group_by",
+          "status": "ok",
+          "median_s": 1.876079451999999,
+          "times_s": [
+            1.876079451999999,
+            1.8747360119999996,
+            1.9299136529999998
+          ],
+          "result_rows": 100000,
+          "result_digest": "b839b4cbb6bd8772165c98e7296efa45bbc51bfe",
+          "explain_analyze": "-> Sort: l.`level`, budget DESC, e.employee_name  (actual time=1922..1925 rows=100000 loops=1)\n    -> Stream results  (cost=2480 rows=0) (actual time=1709..1877 rows=100000 loops=1)\n        -> Nested loop left join  (cost=2480 rows=0) (actual time=1709..1856 rows=100000 loops=1)\n            -> Nested loop inner join  (cost=5.28 rows=6) (actual time=112..193 rows=100000 loops=1)\n                -> Filter: (l.employee_id is not null)  (cost=6.21..3.18 rows=6) (actual time=112..126 rows=100000 loops=1)\n                    -> Table scan on l  (cost=7.28..9.38 rows=5.59) (actual time=112..121 rows=100000 loops=1)\n                        -> Materialize recursive CTE levels  (cost=6.82..6.82 rows=5.59) (actual time=112..112 rows=100000 loops=1)\n                            -> Filter: (Employees.manager_id is null)  (cost=1.09 rows=1) (actual time=0.0157..0.0203 rows=1 loops=1)\n                                -> Covering index lookup on Employees using idx_employees_manager (manager_id=NULL)  (cost=1.09 rows=1) (actual time=0.015..0.0196 rows=1 loops=1)\n                            -> Repeat until convergence\n                                -> Nested loop inner join  (cost=5.17 rows=4.59) (actual time=0.0042..53.3 rows=50000 loops=2)\n                                    -> Filter: (l.employee_id is not null)  (cost=2.73 rows=2) (actual time=0.00148..3.48 rows=50000 loops=2)\n                                        -> Scan new records on l  (cost=2.73 rows=2) (actual time=0.00104..1.23 rows=50000 loops=2)\n                                    -> Covering index lookup on e using idx_employees_manager (manager_id=l.employee_id)  (cost=1.11 rows=2.29) (actual time=752e-6..876e-6 rows=1 loops=100000)\n                -> Single-row index lookup on e using PRIMARY (employee_id=l.employee_id)  (cost=0.267 rows=1) (actual time=544e-6..565e-6 rows=1 loops=100000)\n            -> Index lookup on t using <auto_key0> (manager_id=l.employee_id)  (cost=0.267..440 rows=1650) (actual time=0.0165..0.0165 rows=0.435 loops=100000)\n                -> Materialize CTE team  (cost=0..0 rows=0) (actual time=1597..1597 rows=43524 loops=1)\n                    -> Table scan on <temporary>  (actual time=1579..1582 rows=43524 loops=1)\n                        -> Aggregate using temporary table  (actual time=1579..1579 rows=43524 loops=1)\n                            -> Nested loop inner join  (cost=76302 rows=164971) (actual time=872..1440 rows=693351 loops=1)\n                                -> Filter: (r.report_id is not null)  (cost=93450..18562 rows=164971) (actual time=872..1006 rows=693351 loops=1)\n                                    -> Table scan on r  (cost=93450..95515 rows=164972) (actual time=872..974 rows=693351 loops=1)\n                                        -> Materialize recursive CTE reports  (cost=93450..93450 rows=164972) (actual time=872..872 rows=693351 loops=1)\n                                            -> Filter: (Employees.manager_id is not null)  (cost=10075 rows=50099) (actual time=0.0411..12.4 rows=99999 loops=1)\n                                                -> Covering index range scan on Employees using idx_employees_manager over (NULL < manager_id)  (cost=10075 rows=50099) (actual time=0.0408..8.07 rows=99999 loops=1)\n                                            -> Repeat until convergence\n                                                -> Nested loop inner join  (cost=66878 rows=114873) (actual time=0.00579..364 rows=296676 loops=2)\n                                                    -> Filter: (r.report_id is not null)  (cost=5639 rows=50099) (actual time=0.0014..28 rows=346676 loops=2)\n                                                        -> Scan new records on r  (cost=5639 rows=50099) (actual time=0.001..12.2 rows=346676 loops=2)\n                                                    -> Covering index lookup on e using idx_employees_manager (manager_id=r.report_id)  (cost=0.993 rows=2.29) (actual time=745e-6..854e-6 rows=0.856 loops=693351)\n                                -> Single-row index lookup on s using PRIMARY (employee_id=r.report_id)  (cost=0.25 rows=1) (actual time=490e-6..511e-6 rows=1 loops=693351)\n"
+        },
+        {
+          "solution": "03_upward_closure_carry_salary",
+          "status": "ok",
+          "median_s": 1.2609255110000106,
+          "times_s": [
+            1.2685395770000127,
+            1.2519677870000123,
+            1.2609255110000106
+          ],
+          "result_rows": 100000,
+          "result_digest": "b839b4cbb6bd8772165c98e7296efa45bbc51bfe",
+          "explain_analyze": "-> Sort: `level`, budget DESC, e.employee_name  (actual time=1327..1330 rows=100000 loops=1)\n    -> Stream results  (cost=2.77e+6 rows=0) (actual time=1129..1281 rows=100000 loops=1)\n        -> Nested loop left join  (cost=2.77e+6 rows=0) (actual time=1129..1260 rows=100000 loops=1)\n            -> Nested loop left join  (cost=260614 rows=0) (actual time=886..956 rows=100000 loops=1)\n                -> Table scan on e  (cost=10092 rows=100198) (actual time=0.053..12.9 rows=100000 loops=1)\n                -> Index lookup on m using <auto_key0> (employee_id=e.employee_id)  (cost=0.25..2.5 rows=10) (actual time=0.00925..0.00933 rows=0.435 loops=100000)\n                    -> Materialize CTE as_manager  (cost=0..0 rows=0) (actual time=886..886 rows=43524 loops=1)\n                        -> Table scan on <temporary>  (actual time=871..874 rows=43524 loops=1)\n                            -> Aggregate using temporary table  (actual time=871..871 rows=43524 loops=1)\n                                -> Table scan on chain  (cost=40780..41722 rows=75148) (actual time=671..763 rows=693351 loops=1)\n                                    -> Materialize recursive CTE chain  (cost=40780..40780 rows=75148) (actual time=671..671 rows=693351 loops=1)\n                                        -> Filter: (Employees.manager_id is not null)  (cost=10092 rows=50099) (actual time=0.0413..13.7 rows=99999 loops=1)\n                                            -> Table scan on Employees  (cost=10092 rows=100198) (actual time=0.0394..9.35 rows=100000 loops=1)\n                                        -> Repeat until convergence\n                                            -> Nested loop inner join  (cost=23173 rows=25050) (actual time=0.00665..246 rows=296676 loops=2)\n                                                -> Filter: (c.ancestor is not null)  (cost=5639 rows=50099) (actual time=0.00126..34.8 rows=346676 loops=2)\n                                                    -> Scan new records on c  (cost=5639 rows=50099) (actual time=966e-6..18.9 rows=346676 loops=2)\n                                                -> Filter: (m.manager_id is not null)  (cost=0.25 rows=0.5) (actual time=445e-6..501e-6 rows=0.856 loops=693351)\n                                                    -> Single-row index lookup on m using PRIMARY (employee_id=c.ancestor)  (cost=0.25 rows=1) (actual time=348e-6..369e-6 rows=1 loops=693351)\n            -> Index lookup on r using <auto_key0> (employee_id=e.employee_id)  (cost=0.25..2.5 rows=10) (actual time=0.0028..0.00291 rows=1 loops=100000)\n                -> Materialize CTE as_report  (cost=0..0 rows=0) (actual time=242..242 rows=99999 loops=1)\n                    -> Table scan on <temporary>  (actual time=196..202 rows=99999 loops=1)\n                        -> Aggregate using temporary table  (actual time=196..196 rows=99999 loops=1)\n                            -> Table scan on chain  (cost=40780..41722 rows=75148) (actual time=0.0235..96.6 rows=693351 loops=1)\n                                -> Materialize recursive CTE chain  (cost=40780..40780 rows=75148) (never executed)\n"
+        }
+      ]
+    }
+  ]
+}
