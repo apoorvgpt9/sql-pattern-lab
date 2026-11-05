@@ -90,6 +90,9 @@ jobs:
       - name: Benchmark ${{ matrix.batch }}
         run: |
           mkdir -p bench/results
+          # Upload only what this job measures: the checkout's existing results would otherwise ride along
+          # in the artifact and overwrite newer files committed by another run in the meantime.
+          rm -f bench/results/*.json
           echo "batch ${{ matrix.batch }} run ${{ github.run_id }}" > "bench/results/_batch_${{ matrix.batch }}.txt"
           if [ "${{ matrix.batch }}" = "custom" ]; then
             python -m harness.bench --problems "${{ inputs.problems }}" --sizes "${{ inputs.sizes }}"
