@@ -40,7 +40,7 @@ Confidence is `medium`: the rounding of the percentage and the inclusivity of th
 
 <details><summary>Hint 1</summary>
 
-Pattern: **conditional aggregation + filtering on aggregates** (`HAVING`), with a time-of-day flag per row.
+Pattern: **conditional aggregation + filtering on aggregates**. Every criterion is a per-customer measure compared with a threshold.
 
 </details>
 
@@ -188,11 +188,11 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 9V74 80-Core 
 
 ### Why the optimal one wins
 
-Approach 3 reads the table once and evaluates each row-level expression once, so adding a criterion costs one more column in the CTE, not another scan or join. Approach 2 can be close, since its extra scan is cheap when the time test is selective, so the margin is for the bench table to show, not for the reasoning to promise. Approach 1 is the outlier: its work is per customer × per measure, on every customer including the ones that could never qualify.
+Approach 3 reads the table once and evaluates each row-level expression once, so adding a criterion costs one more column in the CTE, not another scan or join. Approach 2 is close, and the bench shows how close: without the index the two are a tie at 1M rows (within 2%). With `indexes.sql`, approach 3 pulls ahead (about 1.3× faster than approach 2) because its single aggregate streams in index order, while approach 2 still runs two aggregates and a join. The index itself makes approach 3 about 2.7× faster. So approach 3 is the safe choice, not a dramatic winner. Approach 1 is the outlier: its work is per customer × per measure, on every customer including the ones that could never qualify.
 
 ## 6. At scale
 
-**(a) What breaks first.** *Reasoned, to be checked against the bench table:* approach 1 without an index on `customer_id` (quadratic). Approach 2 and 3 are linear; the next limit is the per-row `TIME()` evaluation, which cannot use any index, and then the memory for per-customer aggregation state, which grows with distinct customers, not with orders.
+**(a) What breaks first.** *Measured to 1M rows, reasoned beyond:* approach 1 without an index on `customer_id` (quadratic): it times out already at 100K rows. Approach 2 and 3 are linear; the next limit is the per-row `TIME()` evaluation, which cannot use any index, and then the memory for per-customer aggregation state, which grows with distinct customers, not with orders.
 
 **(b) One machine, ~1M–100M rows.**
 - `indexes.sql` adds `(customer_id, order_timestamp, order_rating)`: covering for all three, makes approach 1 feasible, and lets the aggregation stream in customer order without a temporary table.
