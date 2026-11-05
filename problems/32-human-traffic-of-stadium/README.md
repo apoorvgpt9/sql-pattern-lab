@@ -158,7 +158,7 @@ _Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, INTEL(R) XEON(R) PLATI
 
 ### Why the optimal one wins
 
-Approach 3 is the only one whose cost and code do not depend on the threshold. "At least 3" and "at least 30" are the same query with a different constant, and the island label is reusable for follow-ups (run start, run end, longest run). Approach 2 is a legitimate competitor on MySQL for a fixed small k, so read the bench table rather than assuming. Approach 1 is the one to avoid: without an index its OR-join is a cartesian product, and with an index it is fast only because the planner re-plans the probe for every row.
+Approach 3 is the only one whose cost and code do not depend on the threshold. "At least 3" and "at least 30" are the same query with a different constant, and the island label is reusable for follow-ups (run start, run end, longest run). Approach 2 is close at 100K rows (425 ms vs 361 ms) but falls behind at 1M (10.9 s vs 5.06 s, 2.1× slower): its four LAG/LEAD columns need a look-ahead buffer, while approach 3's `ROW_NUMBER` streams. Approach 1 is the one to avoid: without an index its OR-join is a cartesian product, and with an index it is fast only because the planner re-plans the probe for every row.
 
 ## 6. At scale
 
