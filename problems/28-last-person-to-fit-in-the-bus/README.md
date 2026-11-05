@@ -135,29 +135,29 @@ The SQL is the assembled query in section 4.
 > **Renumbered after this bench run.** The table below was measured when the window query was file `02_window_running_sum` and the recursive CTE was `03_recursive_boarding` (then labelled optimal). They are now `03_window_running_sum` (optimal) and `02_recursive_boarding`. The numbers are unchanged; the labels refresh on the next bench run.
 
 <!-- BENCH:28-last-person-to-fit-in-the-bus -->
-_Measured 2026-11-04 by the bench workflow: MySQL 8.0.46, AMD EPYC 7763 64-Core Processor, 2 vCPU. Median of 3 runs after 1 warm-up; each statement capped at 60 s. Sizes are main-table rows from `gen.py`. Raw numbers and EXPLAIN ANALYZE: `bench/results/28-last-person-to-fit-in-the-bus.json`._
+_Measured 2026-11-05 by the bench workflow: MySQL 8.0.46, AMD EPYC 9V74 80-Core Processor, 2 vCPU. Median of 3 runs after 1 warm-up; each statement capped at 60 s. Sizes are main-table rows from `gen.py`. Raw numbers and EXPLAIN ANALYZE: `bench/results/28-last-person-to-fit-in-the-bus.json`._
 
 **Without indexes**
 
 | Solution | 1,000 rows | 100,000 rows | 1,000,000 rows | × slower than optimal @ 1,000,000 |
 |---|---:|---:|---:|---:|
-| `01_self_join_prefix_sum` | 1.37 s | timeout >60s | timeout >60s † | > 20× |
-| `02_window_running_sum` | 1.25 ms | 81.8 ms | 1.24 s | 0.4× |
-| `03_recursive_boarding` (optimal) | 3.71 ms | 298 ms | 3.07 s | 1.0× |
+| `01_self_join_prefix_sum` | 1.01 s | timeout >60s | timeout >60s † | > 67× |
+| `02_recursive_boarding` | 2.86 ms | 231 ms | 2.34 s | 2.6× |
+| `03_window_running_sum` (optimal) | 946 µs | 61.4 ms | 890 ms | 1.0× |
 
 † not run at this size: it already timed out at a smaller size.
-
-A ratio below 1.0× means that approach was faster than the one labelled optimal here.
 
 **With `indexes.sql`**
 
 | Solution | 1,000 rows | 100,000 rows | 1,000,000 rows | × slower than optimal @ 1,000,000 |
 |---|---:|---:|---:|---:|
-| `01_self_join_prefix_sum` | 1.31 s | timeout >60s | timeout >60s † | > 88427× |
-| `02_window_running_sum` | 1.2 ms | 78.5 ms | 1.19 s | 1754.3× |
-| `03_recursive_boarding` (optimal) | 654 µs | 638 µs | 679 µs | 1.0× |
+| `01_self_join_prefix_sum` | 977 ms | timeout >60s | timeout >60s † | > 70× |
+| `02_recursive_boarding` | 490 µs | 494 µs | 551 µs | 0.0× |
+| `03_window_running_sum` (optimal) | 903 µs | 56.1 ms | 860 ms | 1.0× |
 
 † not run at this size: it already timed out at a smaller size.
+
+A ratio below 1.0× means that approach was faster than the one labelled optimal here.
 
 > GitHub-hosted runners are shared, noisy VMs: compare the ratios between rows, not the absolute times.
 <!-- /BENCH -->
