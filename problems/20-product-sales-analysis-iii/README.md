@@ -67,6 +67,8 @@ FROM (
 WHERE yr = first_year;                                    -- step 2
 ```
 
+This assembly is approach 2. The decomposition does not change if step 1 is computed as `GROUP BY product_id` plus a join back on `(product_id, year)` (approach 3), and that form measures faster on MySQL: tied at 100K rows, about 1.25× faster at 1M, 1.6× with `indexes.sql` (section 5).
+
 Self-check before you submit: take one product with a later-year row and confirm that row is gone; take one product with two first-year rows and confirm both are present; check that the output row count is at least the number of distinct products.
 
 ## 5. Approaches: brute force → optimal

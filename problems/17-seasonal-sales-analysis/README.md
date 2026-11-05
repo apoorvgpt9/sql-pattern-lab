@@ -94,7 +94,7 @@ WHERE rn = 1                                           -- step 4
 ORDER BY season;
 ```
 
-Step 1 is an optimisation, not part of the logic: dropping it and grouping the joined rows by (season, category) directly gives the same result (that is approach 3). Whether the pre-aggregation pays off depends on how expensive the join is in your engine; see section 5.
+Step 1 is an optimisation, not part of the logic: dropping it and grouping the joined rows by (season, category) directly gives the same result (that is approach 3, the one labelled optimal). Whether the pre-aggregation pays off depends on how expensive the join is in your engine. On MySQL the bench says it pays at 100K rows (about 1.8× faster) and costs at 1M rows (about 2× slower), because its (product, season) group-by grows with the catalogue (section 5). Learn the decomposition with step 1, and ship it without step 1 unless the join is the expensive part.
 
 Self-check before you submit: at most 4 rows, one per season, no season repeated. Then take one boundary day (31 May, 1 June, 29 February) and confirm it lands in the season you expect.
 

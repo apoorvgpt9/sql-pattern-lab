@@ -66,7 +66,7 @@ Read the output left to right: two product ids, their categories, a customer cou
 1. **Self-join `ProductPurchases` on `user_id` with `b.product_id > a.product_id`.**
    *Why a self-join:* the two products of a pair live in two different rows of the same table, and the only thing relating them is the customer. *Why `>`:* it makes each unordered pair appear once and never pairs a product with itself. This is where the grain goes **up**: a customer with `k` products yields `k(k−1)/2` rows.
 2. **`GROUP BY a.product_id, b.product_id`, `COUNT(DISTINCT a.user_id)`.**
-   *Why a GROUP BY here:* the answer is a count of customers per pair; the grain goes **down** to one row per pair. `DISTINCT` is protection that costs nothing here, because `(user_id, product_id)` is a key (follow-up 5).
+   *Why a GROUP BY here:* the answer is a count of customers per pair; the grain goes **down** to one row per pair. `DISTINCT` is protection only: `(user_id, product_id)` is a key, so `COUNT(*)` would give the same number (follow-up 5). Whether the `DISTINCT` costs anything on MySQL was not measured separately.
 3. **`HAVING COUNT(DISTINCT a.user_id) >= 3`.**
    *Why HAVING, not WHERE:* "at least 3 different customers" is a condition on an aggregate.
 4. **Final: `pairs LEFT JOIN ProductInfo` twice.**

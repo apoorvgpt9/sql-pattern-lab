@@ -55,7 +55,7 @@ Key trick: keep the players who did **not** match in the denominator. `LEFT JOIN
 "Fraction of players … retained" = `retained players / all players`. Both counts need one row per player, so first build that set.
 
 1. **`x`: for each player's rows, number them by date and look one row ahead.**
-   *Why a window function here:* we need, for each player, the first activity date and the *next* activity date. With rows ordered by date inside each player, row 1 is the first login and `LEAD(event_date)` on that row is the second active day. This avoids both a `GROUP BY` and a join back.
+   *Why a window function here:* we need, for each player, the first activity date and the *next* activity date. With rows ordered by date inside each player, row 1 is the first login and `LEAD(event_date)` on that row is the second active day. This avoids both a `GROUP BY` and a join back. (Avoiding them is not a speed-up on MySQL: this form measures about 6× slower than the `GROUP BY` + `LEFT JOIN` of approach 3 at 1M rows, because the window sorts, buffers and materialises every activity row; section 5.)
 2. **Keep `rn = 1`.**
    *Why a filter here:* it leaves exactly one row per player, which is the grain the ratio needs, and it makes the denominator "all players" without a separate count.
 3. **Flag and average.**

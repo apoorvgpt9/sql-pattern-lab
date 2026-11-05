@@ -66,6 +66,8 @@ FROM (
 GROUP BY product_id;
 ```
 
+This assembly is approach 2, the one-pass form, chosen because it shows every step. On MySQL it measures slowest (about 2.2× the others at 1M rows; section 5). Approach 3 keeps step 3 and replaces steps 1–2 with one correlated "latest change on or before the date" lookup per distinct product.
+
 Self-check before you submit: the number of output rows equals `SELECT COUNT(DISTINCT product_id) FROM Products`. Then find one product whose only changes are after the date and confirm it shows 10.
 
 ## 5. Approaches: brute force → optimal

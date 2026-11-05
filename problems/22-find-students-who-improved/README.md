@@ -72,6 +72,8 @@ GROUP BY student_id, subject, first_score, latest_score    -- step 3
 ORDER BY student_id, subject;
 ```
 
+This assembly is approach 2: it maps the wording onto steps most directly. On MySQL it measures about 2.5× slower than approach 3 at 1M rows (section 5). Approach 3 keeps the same three ideas, but computes step 1 as `MIN`/`MAX(exam_date)` per pair and reads the two scores by joining back on the primary key.
+
 Self-check before you submit: take one improving pair with three exams and confirm that the returned first/latest are the first and last *by date*, not the lowest/highest. Check that no (student, subject) appears twice.
 
 ## 5. Approaches: brute force → optimal
